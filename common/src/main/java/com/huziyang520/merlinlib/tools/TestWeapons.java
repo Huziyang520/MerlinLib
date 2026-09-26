@@ -81,6 +81,14 @@ public final class TestWeapons {
     private static final Identifier DAMAGE_MODIFIER = Item.BASE_ATTACK_DAMAGE_ID;
     /** Namespace of the attack speed modifier. */
     private static final Identifier SPEED_MODIFIER = Item.BASE_ATTACK_SPEED_ID;
+    /**
+     * The damage modifier id older builds wrote.
+     *
+     * <p>Kept so a testing weapon created by one of those builds is still recognised and stays editable: the
+     * id lives inside the item's component, so changing it in code never reaches an existing world.
+     */
+    private static final Identifier LEGACY_DAMAGE_MODIFIER =
+            Identifier.fromNamespaceAndPath(Constants.MOD_ID, "test_weapon_damage");
 
     /** Which vanilla weapon a testing weapon mirrors. */
     private enum Kind {
@@ -334,8 +342,25 @@ public final class TestWeapons {
      * @return {@code true} when this stack is one of the testing weapons
      */
     public static boolean isTestWeapon(ItemStack stack) {
-        return stack != null && !stack.isEmpty() && stack.has(DataComponents.ATTRIBUTE_MODIFIERS)
-                && damageModifierAmount(stack).isPresent();
+        return spec(stack) != null;
+    }
+
+    /**
+     * The weapon spec behind a stack.
+     *
+     * <p>Recognised by the item itself, not by what the stack happens to carry: an id on the item is
+     * permanent, while a component can be missing, stripped or written by an older build with a different
+     * modifier id. Looking at the component is what once made a testing weapon in an existing world look
+     * like an ordinary item, and its damage row disappear from the editor.
+     *
+     * @param stack the stack to inspect, may be {@code null}
+     * @return the spec, or {@code null} when the stack is not one of the testing weapons
+     */
+    private static WeaponSpec spec(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return null;
+        }
+        return SPECS.get(BuiltInRegistries.ITEM.getKey(stack.getItem()));
     }
 
     /**
@@ -357,11 +382,25 @@ public final class TestWeapons {
             return Optional.empty();
         }
         for (ItemAttributeModifiers.Entry entry : modifiers.modifiers()) {
-            if (entry.attribute().equals(Attributes.ATTACK_DAMAGE) && DAMAGE_MODIFIER.equals(entry.modifier().id())) {
+            if (entry.attribute().equals(Attributes.ATTACK_DAMAGE) && isDamageModifier(entry.modifier().id())) {
                 return Optional.of(entry.modifier().amount());
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * Whether a modifier id is one this mod has used for the nominal damage.
+     *
+     * <p>The id is part of the component, so an item created by an older build keeps the old one forever:
+     * renaming it in code does not reach into a world. Both ids are therefore still recognised, and the
+     * value is rewritten under the vanilla id when it is next edited.
+     *
+     * @param id the modifier id
+     * @return {@code true} when the id belongs to this mod's damage modifier
+     */
+    private static boolean isDamageModifier(Identifier id) {
+        return DAMAGE_MODIFIER.equals(id) || LEGACY_DAMAGE_MODIFIER.equals(id);
     }
 
     /**
@@ -377,13 +416,25 @@ public final class TestWeapons {
         }
         ItemAttributeModifiers current = stack.get(DataComponents.ATTRIBUTE_MODIFIERS);
         ItemAttributeModifiers.Builder builder = ItemAttributeModifiers.builder();
-        for (ItemAttributeModifiers.Entry entry : current.modifiers()) {
-            if (DAMAGE_MODIFIER.equals(entry.modifier().id())) {
-                builder.add(entry.attribute(), new AttributeModifier(
-                        DAMAGE_MODIFIER, damage - 1.0D, AttributeModifier.Operation.ADD_VALUE), entry.slot());
-            } else {
-                builder.add(entry.attribute(), entry.modifier(), entry.slot());
+        boolean written = false;
+        if (current != null) {
+            for (ItemAttributeModifiers.Entry entry : current.modifiers()) {
+                if (isDamageModifier(entry.modifier().id())) {
+                    // Rewritten under the current id, so editing an old weapon also brings it up to date.
+                    builder.add(entry.attribute(), new AttributeModifier(
+                            DAMAGE_MODIFIER, damage - 1.0D, AttributeModifier.Operation.ADD_VALUE), entry.slot());
+                    written = true;
+                } else {
+                    builder.add(entry.attribute(), entry.modifier(), entry.slot());
+                }
             }
+        }
+        if (!written) {
+            // A component that lost its damage entry would leave the editor with nothing to write, so one is
+            // added instead of silently doing nothing.
+            builder.add(Attributes.ATTACK_DAMAGE,
+                    new AttributeModifier(DAMAGE_MODIFIER, damage - 1.0D, AttributeModifier.Operation.ADD_VALUE),
+                    EquipmentSlotGroup.MAINHAND);
         }
         stack.set(DataComponents.ATTRIBUTE_MODIFIERS, builder.build());
         return true;

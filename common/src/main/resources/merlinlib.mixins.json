@@ -9,7 +9,8 @@
   ],
   "client": [
     "MixinMinecraft",
-    "MixinMinecraftUseItem"
+    "MixinMinecraftUseItem",
+    "MixinHud"
   ],
   "server": [],
   "injectors": {
