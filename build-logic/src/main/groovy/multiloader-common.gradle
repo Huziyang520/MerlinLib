@@ -1,0 +1,112 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+base {
+    // Artifact naming rule: <mod_id>-<version>-<loader>-<minecraft_version>.jar (docs 01 section 1.5).
+    archivesName = "${mod_id}-${version}-${project.name}-${minecraft_version}"
+}
+
+// archivesName already carries the version, but Gradle appends -<version> again. Clearing it on Jar
+// alone is not enough: Loom's remapJar is a RemapJarTask, which would emit ...-0.1.0-0.1.0.jar.
+tasks.withType(AbstractArchiveTask).configureEach {
+    archiveVersion = ''
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(java_version)
+    // No withSourcesJar() / withJavadocJar() on purpose: this project does not publish them (docs 01 section 1.5).
+}
+
+repositories {
+    // Domestic mirrors first (docs 02 section 2.3.3). Fabric / NeoForged / Mojang are added by the plugins.
+    maven {
+        name = 'AliyunPublic'
+        url = 'https://maven.aliyun.com/repository/public'
+    }
+    maven {
+        name = 'TencentPublic'
+        url = 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/'
+    }
+    mavenCentral()
+}
+
+// Windows defaults to GBK for javac, which corrupts Chinese characters in sources (docs 06 section 6.4).
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.encoding = 'UTF-8'
+    // Without this doclint turns missing @param / @return into errors and fails the whole build.
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+tasks.withType(Jar).configureEach {
+    from(rootProject.file('LICENSE')) {
+        rename { "${it}_${mod_name}" }
+    }
+}
+
+jar {
+    manifest {
+        attributes([
+                'Specification-Title'   : mod_name,
+                'Specification-Vendor'  : mod_author,
+                'Specification-Version' : version,
+                'Implementation-Title'  : project.name,
+                'Implementation-Version': version,
+                'Implementation-Vendor' : mod_author,
+                'Built-On-Minecraft'    : minecraft_version
+        ])
+    }
+}
+
+processResources {
+    // NOTE: 'group' must not appear here. On Gradle 9 it is read as the task's own group property and
+    // fails with "property 'group' doesn't have a configured value" (docs 06 section 6.1.1).
+    var expandProps = [
+            'version'                : version,
+            'minecraft_version'      : minecraft_version,
+            'minecraft_version_range': minecraft_version_range,
+            'fabric_version'         : fabric_version,
+            'fabric_loader_version'  : fabric_loader_version,
+            'mod_name'               : mod_name,
+            'mod_author'             : mod_author,
+            'mod_id'                 : mod_id,
+            'license'                : license,
+            'description'            : project.description,
+            'neoforge_version'       : neoforge_version,
+            'credits'                : credits,
+            'java_version'           : java_version
+    ]
+
+    var jsonExpandProps = expandProps.collectEntries {
+        key, value -> [(key): value instanceof String ? value.replace('\n', '\\\\n') : value]
+    }
+
+    filesMatching(['META-INF/mods.toml', 'META-INF/neoforge.mods.toml']) {
+        expand expandProps
+    }
+
+    filesMatching(['fabric.mod.json', '*.mixins.json']) {
+        expand jsonExpandProps
+    }
+
+    inputs.properties(expandProps)
+}
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            artifactId base.archivesName.get()
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url System.getenv('local_maven_url')
+        }
+    }
+}

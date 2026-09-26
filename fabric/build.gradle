@@ -1,0 +1,60 @@
+plugins {
+    id 'multiloader-loader'
+    id 'net.fabricmc.fabric-loom'
+}
+repositories {
+    maven { url = 'https://maven.terraformersmc.com/releases/' }
+}
+
+dependencies {
+    // Mod Menu integration: compile only so the mod still runs without it.
+    compileOnly("com.terraformersmc:modmenu:21.0.0-beta.1")
+    minecraft("com.mojang:minecraft:${minecraft_version}")
+    // Plain implementation: probed on 2026-09-24 with Loom 1.18.1, modImplementation() no longer
+    // exists on Loom 1.18 (the old docs 06 section 6.3.2 rule only applies to the Loom 1.8/1.9 line).
+    implementation("net.fabricmc:fabric-loader:${fabric_loader_version}")
+    implementation("net.fabricmc.fabric-api:fabric-api:${fabric_version}")
+    // The fabric module recompiles the common sources, which reference Mixin; this loader line no
+    // longer exposes it transitively (docs 06 section 6.3.3).
+    compileOnly('net.fabricmc:sponge-mixin:0.17.3+mixin.0.8.7')
+}
+
+loom {
+    def aw = project(':common').file("src/main/resources/${mod_id}.accesswidener")
+    if (aw.exists()) {
+        accessWidenerPath.set(aw)
+    }
+    runs {
+        client {
+            client()
+            setConfigName('Fabric Client')
+            ideConfigGenerated(true)
+            runDir('runs/client')
+        }
+        server {
+            server()
+            setConfigName('Fabric Server')
+            ideConfigGenerated(true)
+            runDir('runs/server')
+        }
+    }
+}
+
+// Implement mcgradleconventions loader attribute
+def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+['apiElements', 'runtimeElements', 'sourcesElements', 'javadocElements', 'includeInternal', 'modCompileClasspath'].each { variant ->
+    configurations.matching { it.name == variant }.configureEach {
+        attributes {
+            attribute(loaderAttribute, 'fabric')
+        }
+    }
+}
+sourceSets.configureEach {
+    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName].each { variant->
+        configurations.named(variant) {
+            attributes {
+                attribute(loaderAttribute, 'fabric')
+            }
+        }
+    }
+}

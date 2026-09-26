@@ -1,0 +1,438 @@
+package com.huziyang520.merlinlib.tools.ui.vanilla;
+
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+
+import java.util.List;
+
+/**
+ * The vanilla look and feel of every MerlinLib screen, expressed as drawing primitives plus the few
+ * measurements screens must not invent for themselves.
+ *
+ * <h2>Where every number comes from</h2>
+ *
+ * <p>Nothing here is invented. Each value is either a vanilla sprite or a colour copied from the vanilla
+ * class that owns it, so a MerlinLib screen cannot drift away from the game's own look:
+ *
+ * <ul>
+ *   <li><b>panel</b>: the container panel, drawn in its own colours (black frame, {@code #C6C6C6} body,
+ *       white top and left edge, {@code #555555} bottom and right). The only generic panel sprite 26.3
+ *       ships, {@code popup/background}, has a <em>dark</em> body ({@code #303030}) - that is the modern
+ *       popup look, and using it is what made these screens look nothing like a container screen;</li>
+ *   <li><b>scrollbar</b>: the {@code widget/scroller} and {@code widget/scroller_background} sprites;</li>
+ *   <li><b>list area</b>: opaque black with a one pixel outline, exactly what
+ *       {@code AbstractSelectionList#extractSelection} draws ({@code -16777216} fill, {@code -8355712}
+ *       outline, white when the list is focused);</li>
+ *   <li><b>text</b>: always drawn with a shadow, which is what makes white text readable on a light
+ *       panel - the same combination vanilla uses for its own dialogs.</li>
+ * </ul>
+ *
+ * <h2>Layout is measured, never hard coded</h2>
+ *
+ * <p>Every helper that takes text also takes the width it may occupy, and {@link #measureWidth} derives a
+ * panel width from the actual translated labels. A screen built from these helpers therefore fits Chinese,
+ * English or any other language without a per-language constant.
+ *
+ * <p>This is library surface: other mods may build screens on it, so signatures change only for good
+ * reason, and every rule encoded here was chosen to keep screens pixel aligned at GUI scale 1, 2 and 3.
+ */
+public final class VanillaUi {
+
+    // ------------------------------------------------------------------ vanilla sprites
+
+    /**
+     * The vanilla dialog panel, nine slice scaled by its own metadata.
+     *
+     * <p>One sprite draws outline, corners, bevel highlight and body at any rectangle size, which is why
+     * the library never draws a panel with fills.
+     */
+    public static final Identifier PANEL_SPRITE = Identifier.withDefaultNamespace("popup/background");
+    /** The vanilla list scrollbar handle. */
+    public static final Identifier SCROLLER_SPRITE = Identifier.withDefaultNamespace("widget/scroller");
+    /** The vanilla list scrollbar track. */
+    public static final Identifier SCROLLER_TRACK_SPRITE = Identifier.withDefaultNamespace("widget/scroller_background");
+    /** The vanilla slot frame, as used by every container screen. */
+    public static final Identifier SLOT_SPRITE = Identifier.withDefaultNamespace("container/slot");
+
+    // ------------------------------------------------------------------ metrics (vanilla grid)
+
+    /** Vanilla widget height. Every control is this tall. */
+    public static final int WIDGET_HEIGHT = 20;
+    /** Vertical distance between two control rows: the widget plus a 4 pixel gap. */
+    public static final int ROW_STEP = 24;
+    /** Padding between the panel frame and its content. */
+    public static final int PADDING = 8;
+    /** Horizontal gap between two controls on the same row. */
+    public static final int GAP = 6;
+    /** Width of the compact - / + / X buttons used inside list rows. */
+    public static final int STEP_BUTTON = 18;
+    /** Width of the vanilla scrollbar. */
+    public static final int SCROLLBAR_WIDTH = 6;
+    /** Height of one compact list row. */
+    public static final int LIST_ROW_HEIGHT = 20;
+    /** Smallest handle the scrollbar keeps, so it stays grabbable. */
+    public static final int MIN_HANDLE_HEIGHT = 20;
+
+    // ------------------------------------------------------------------ colours (copied from vanilla)
+
+    /** Panel frame: the black line around a container panel. */
+    public static final int PANEL_OUTLINE = 0xFF000000;
+    /** Panel body: the container grey. */
+    public static final int PANEL_BODY = 0xFFC6C6C6;
+    /** Panel top and left edge: white, as the container textures have it. */
+    public static final int PANEL_HIGHLIGHT = 0xFFFFFFFF;
+    /** Panel bottom and right edge. */
+    public static final int PANEL_SHADOW = 0xFF555555;
+    /** Body text: white, the colour vanilla uses on that panel. */
+    public static final int TEXT = 0xFFFFFFFF;
+    /** Secondary or hint text. Also white; the shadow provides the separation. */
+    public static final int TEXT_HINT = 0xFFFFFFFF;
+    /** Text of a disabled control: vanilla's grey. */
+    public static final int TEXT_DISABLED = 0xFFA0A0A0;
+    /** Error text. */
+    public static final int TEXT_ERROR = 0xFFFF5555;
+    /** Numeric highlights such as enchantment levels: vanilla yellow. */
+    public static final int TEXT_HIGHLIGHT = 0xFFFFFF55;
+    /** The separator line under a panel header: vanilla's list button grey. */
+    public static final int SEPARATOR = 0xFF8B8B8B;
+    /** The recessed list area: vanilla draws exactly this opaque black. */
+    public static final int LIST_BACKGROUND = 0xFF000000;
+    /** The list's one pixel outline; {@code -8355712} in {@code AbstractSelectionList}. */
+    public static final int LIST_OUTLINE = 0xFF808080;
+    /** The outline of the focused or selected row; {@code -1} in {@code AbstractSelectionList}. */
+    public static final int LIST_OUTLINE_FOCUSED = 0xFFFFFFFF;
+
+    private VanillaUi() {
+    }
+
+    // ------------------------------------------------------------------ drawing
+
+    /**
+     * Draws the vanilla container panel over the given rectangle.
+     *
+     * <p>Call it from {@code Screen#extractBackground} so it lands after the world dimming and before the
+     * widgets: drawing it later would cover the controls, drawing it earlier would let the world show
+     * through.
+     *
+     * <p><b>Drawn by code, in the container colours.</b> 26.3 offers exactly one generic panel sprite,
+     * {@code popup/background}, and its body is dark grey ({@code #303030}) with a light one pixel inner
+     * frame - the modern popup look, not the container look. A library screen that is supposed to read as a
+     * vanilla container panel therefore draws it: black frame, {@code #C6C6C6} body, white edge along the
+     * top and left, {@code #555555} along the bottom and right. Nothing a resource pack or a UI mod does to
+     * that sprite can change it.
+     *
+     * @param graphics the render state extractor
+     * @param x        panel left
+     * @param y        panel top
+     * @param width    panel width, at least 4
+     * @param height   panel height, at least 4
+     */
+    public static void panel(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
+        graphics.fill(x, y, x + width, y + height, PANEL_OUTLINE);
+        graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, PANEL_BODY);
+        graphics.fill(x + 1, y + 1, x + width - 1, y + 2, PANEL_HIGHLIGHT);
+        graphics.fill(x + 1, y + 1, x + 2, y + height - 1, PANEL_HIGHLIGHT);
+        graphics.fill(x + 1, y + height - 2, x + width - 1, y + height - 1, PANEL_SHADOW);
+        graphics.fill(x + width - 2, y + 1, x + width - 1, y + height - 1, PANEL_SHADOW);
+    }
+
+    /**
+     * Draws a vanilla slot frame, the square border used for item slots.
+     *
+     * @param graphics the render state extractor
+     * @param x        left edge
+     * @param y        top edge
+     */
+    public static void slot(GuiGraphicsExtractor graphics, int x, int y) {
+        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SLOT_SPRITE, x, y, 18, 18);
+    }
+
+    /**
+     * Draws a list scrollbar: the track plus the handle at its current position.
+     *
+     * @param graphics     the render state extractor
+     * @param x            scrollbar left, the handle and track are {@link #SCROLLBAR_WIDTH} wide
+     * @param y            scrollbar top
+     * @param height       scrollbar height, which is the viewport height
+     * @param handleTop    absolute y of the handle
+     * @param handleHeight height of the handle, at least {@link #MIN_HANDLE_HEIGHT}
+     */
+    public static void scroller(GuiGraphicsExtractor graphics, int x, int y, int height,
+                                int handleTop, int handleHeight) {
+        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SCROLLER_TRACK_SPRITE, x, y,
+                SCROLLBAR_WIDTH, height);
+        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SCROLLER_SPRITE, x, handleTop,
+                SCROLLBAR_WIDTH, handleHeight);
+    }
+
+    /**
+     * Draws a thin separator line, the way a panel header is separated from its content.
+     *
+     * @param graphics the render state extractor
+     * @param x1       left edge
+     * @param x2       right edge
+     * @param y        vertical position
+     */
+    public static void separator(GuiGraphicsExtractor graphics, int x1, int x2, int y) {
+        graphics.fill(x1, y, x2, y + 1, SEPARATOR);
+    }
+
+    /**
+     * Draws a recessed list area: opaque black inside, one pixel outline around it.
+     *
+     * <p>This is one fill and one outline rather than a translucent panel colour, because a translucent
+     * background turns into mud over the light dialog panel and stops looking like the game.
+     *
+     * @param graphics the render state extractor
+     * @param x        left edge
+     * @param y        top edge
+     * @param width    width
+     * @param height   height
+     */
+    public static void listArea(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
+        graphics.fill(x, y, x + width, y + height, LIST_BACKGROUND);
+        graphics.fill(x, y, x + width, y + 1, LIST_OUTLINE);
+        graphics.fill(x, y + height - 1, x + width, y + height, LIST_OUTLINE);
+        graphics.fill(x, y, x + 1, y + height, LIST_OUTLINE);
+        graphics.fill(x + width - 1, y, x + width, y + height, LIST_OUTLINE);
+    }
+
+    /**
+     * Outlines one row of a list, the way vanilla marks the row under the cursor.
+     *
+     * @param graphics the render state extractor
+     * @param x        row left
+     * @param y        row top
+     * @param width    row width
+     * @param height   row height
+     * @param focused  {@code true} for the selected row, {@code false} for a hovered one
+     */
+    public static void rowOutline(GuiGraphicsExtractor graphics, int x, int y, int width, int height,
+                                  boolean focused) {
+        int colour = focused ? LIST_OUTLINE_FOCUSED : LIST_OUTLINE;
+        graphics.fill(x, y, x + width, y + 1, colour);
+        graphics.fill(x, y + height - 1, x + width, y + height, colour);
+        graphics.fill(x, y, x + 1, y + height, colour);
+        graphics.fill(x + width - 1, y, x + width, y + height, colour);
+    }
+
+    // ------------------------------------------------------------------ text
+
+    /**
+     * Draws one line of text, shadowed and clipped to a maximum width instead of overflowing its control.
+     *
+     * <p>The shadow is not optional: white text on a light panel relies on it for contrast, and it is what
+     * vanilla does for every label it draws. Clipping is what makes the screens language independent: a
+     * long translation loses its tail rather than running over the next widget.
+     *
+     * @param graphics the render state extractor
+     * @param font     the font
+     * @param text     the text
+     * @param x        left edge
+     * @param y        baseline row top
+     * @param color    the ARGB colour
+     * @param maxWidth maximum pixel width before an ellipsis is appended
+     */
+    public static void text(GuiGraphicsExtractor graphics, Font font, Component text, int x, int y,
+                            int color, int maxWidth) {
+        graphics.text(font, Component.literal(clip(font, text.getString(), maxWidth)), x, y, color, true);
+    }
+
+    /**
+     * Draws one line of shadowed text without clipping. Only for strings that are known to fit.
+     *
+     * @param graphics the render state extractor
+     * @param font     the font
+     * @param text     the text
+     * @param x        left edge
+     * @param y        baseline row top
+     * @param color    the ARGB colour
+     */
+    public static void text(GuiGraphicsExtractor graphics, Font font, Component text, int x, int y, int color) {
+        graphics.text(font, text, x, y, color, true);
+    }
+
+    /**
+     * Draws shadowed text whose right edge is pinned to a coordinate, clipped from the left as needed.
+     *
+     * @param graphics the render state extractor
+     * @param font     the font
+     * @param text     the text
+     * @param right    the x coordinate the text ends at
+     * @param y        baseline row top
+     * @param color    the ARGB colour
+     * @param maxWidth maximum pixel width
+     * @return the x coordinate the text starts at
+     */
+    public static int textRight(GuiGraphicsExtractor graphics, Font font, Component text, int right, int y,
+                                int color, int maxWidth) {
+        String clipped = clip(font, text.getString(), maxWidth);
+        int width = font.width(clipped);
+        graphics.text(font, Component.literal(clipped), right - width, y, color, true);
+        return right - width;
+    }
+
+    /**
+     * Shortens text so it never overflows, appending an ellipsis when it had to be cut.
+     *
+     * @param font     the font
+     * @param text     the text to fit
+     * @param maxWidth maximum pixel width
+     * @return the original text, or a clipped version ending in an ellipsis
+     */
+    public static String clip(Font font, String text, int maxWidth) {
+        if (maxWidth <= 0) {
+            return "";
+        }
+        if (font.width(text) <= maxWidth) {
+            return text;
+        }
+        String ellipsis = "...";
+        int limit = maxWidth - font.width(ellipsis);
+        if (limit <= 0) {
+            return font.plainSubstrByWidth(text, maxWidth);
+        }
+        return font.plainSubstrByWidth(text, limit) + ellipsis;
+    }
+
+    // ------------------------------------------------------------------ measurement
+
+    /**
+     * The width needed for the widest of the given labels, which is what makes a label column line up
+     * across rows in any language.
+     *
+     * @param font   the font
+     * @param labels the labels of the panel
+     * @return the widest label width in pixels, 0 when there is none
+     */
+    public static int labelWidth(Font font, List<Component> labels) {
+        int widest = 0;
+        for (Component label : labels) {
+            widest = Math.max(widest, font.width(label));
+        }
+        return widest;
+    }
+
+    /**
+     * Derives a content width from the text that has to fit, instead of guessing a constant.
+     *
+     * @param font         the font
+     * @param labels       every label that shares the panel's left column
+     * @param controlWidth the widest control on the right of a row
+     * @param minWidth     a lower bound for very sparse panels
+     * @return a content width that fits both columns
+     */
+    public static int measureWidth(Font font, List<Component> labels, int controlWidth, int minWidth) {
+        return Math.max(minWidth, labelWidth(font, labels) + GAP + controlWidth + PADDING);
+    }
+
+    // ------------------------------------------------------------------ controls
+
+    /**
+     * Builds a vanilla button.
+     *
+     * @param label   the button text
+     * @param onPress the press handler
+     * @param x       left edge
+     * @param y       top edge
+     * @param width   width, height is {@link #WIDGET_HEIGHT}
+     * @return the button
+     */
+    public static Button button(Component label, Button.OnPress onPress, int x, int y, int width) {
+        return Button.builder(label, onPress).bounds(x, y, width, WIDGET_HEIGHT).build();
+    }
+
+    /**
+     * Builds a compact button for a list row.
+     *
+     * @param label   the button text
+     * @param onPress the press handler
+     * @param x       left edge
+     * @param y       top edge
+     * @return the button
+     */
+    public static Button compact(Component label, Button.OnPress onPress, int x, int y) {
+        return Button.builder(label, onPress).bounds(x, y, STEP_BUTTON, STEP_BUTTON).build();
+    }
+
+    /**
+     * Builds an edit box.
+     *
+     * @param font      the font
+     * @param x         left edge
+     * @param y         top edge
+     * @param width     width, height is {@link #WIDGET_HEIGHT}
+     * @param label     the narration label
+     * @param value     the initial value
+     * @param maxLength maximum character count
+     * @return the edit box
+     */
+    public static EditBox field(Font font, int x, int y, int width, Component label, String value,
+                                int maxLength) {
+        EditBox box = new EditBox(font, x, y, width, WIDGET_HEIGHT, label);
+        box.setMaxLength(maxLength);
+        box.setValue(value);
+        return box;
+    }
+
+    // ------------------------------------------------------------------ numbers & text helpers
+
+    /**
+     * Converts a level to a roman numeral, the way vanilla shows enchantment levels.
+     *
+     * @param value the level, expected to be positive
+     * @return the roman numeral, or the plain number above 10
+     */
+    public static String roman(int value) {
+        if (value <= 0) {
+            return "0";
+        }
+        if (value > 10) {
+            return Integer.toString(value);
+        }
+        return switch (value) {
+            case 1 -> "I";
+            case 2 -> "II";
+            case 3 -> "III";
+            case 4 -> "IV";
+            case 5 -> "V";
+            case 6 -> "VI";
+            case 7 -> "VII";
+            case 8 -> "VIII";
+            case 9 -> "IX";
+            default -> "X";
+        };
+    }
+
+    /**
+     * Clamps a value into a range.
+     *
+     * @param value the value to clamp
+     * @param min   lower bound
+     * @param max   upper bound
+     * @return the clamped value
+     */
+    public static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    /**
+     * Parses a signed decimal integer, accepting surrounding spaces.
+     *
+     * @param text     the text to parse
+     * @param fallback the value to return when the text is not a number
+     * @return the parsed value, or the fallback
+     */
+    public static int parseInt(String text, int fallback) {
+        try {
+            return Integer.parseInt(text.trim());
+        } catch (NumberFormatException exception) {
+            return fallback;
+        }
+    }
+}
