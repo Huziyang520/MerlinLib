@@ -3,13 +3,17 @@ package com.huziyang520.merlinlib.mixin;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.Hud;
+import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.ModifyArgs;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
 /**
  * Draws very large health as one vanilla heart plus the numbers, instead of one heart per two points.
@@ -23,11 +27,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *
  * <h2>The fix, and why it is not a clamp</h2>
  *
- * <p>Clamping the numbers would hide what the player set. Instead, above {@link #COMPACT_THRESHOLD} health
- * the heart loop is given a value that produces exactly <em>one</em> heart, and the exact numbers are drawn
- * next to it. The heart itself is still vanilla's own sprite and colour, so poison, wither, freezing and
- * absorption remain visible at a glance - which is the point of keeping a heart when the numbers are huge.
- * The health attribute, the health value, the damage dealt and the network are untouched.
+ * <p>Clamping the values would hide what the player set. Instead, above {@link #COMPACT_THRESHOLD} health the
+ * heart loop is asked for exactly <em>one</em> heart, and the exact numbers are drawn next to it. The heart
+ * itself is still vanilla's own sprite and colour, so poison, wither, freezing and absorption stay visible at
+ * a glance - which is the point of keeping a heart when the numbers are huge. The attribute, the health
+ * value, the damage dealt and the network are untouched.
+ *
+ * <h2>The three injection points</h2>
+ *
+ * <p>{@code Hud#extractPlayerHealth} is where the health row is computed and drawn, and it is the only method
+ * that calls {@code extractHearts}. Both hooks below are anchored there by name and by the exact call they
+ * modify, so a change in the surrounding code cannot silently retarget them.
  */
 @Mixin(Hud.class)
 public class MixinHud {
@@ -38,58 +48,64 @@ public class MixinHud {
     /** The value that makes the vanilla loop draw a single heart. */
     private static final float ONE_HEART = 2.0F;
 
+    /** The same, as one row's worth of health, for the layout calculation. */
+    private static final double ONE_ROW_OF_HEALTH = 20.0D;
+
     /** Gap between the heart and the numbers, and the text's vertical nudge. */
     private static final int TEXT_OFFSET_X = 12;
     private static final int TEXT_OFFSET_Y = 1;
 
     /**
-     * Keeps the heart row to a single row's worth of space.
+     * Keeps the heart row to a single row of space.
      *
-     * <p>This is the layout copy only: it decides how much room the row takes and where the armour, food and
-     * air rows sit. The drawing pass below reads the player's real values, so nothing is hidden by it.
+     * <p>This is the layout copy of the maximum only: it decides how much room the row takes and where the
+     * armour, food and air rows sit. What is drawn comes from the player's real values, so nothing is hidden
+     * by it.
      *
-     * @param maxHealth the health the layout is about to use
+     * @param player    the player the row belongs to
+     * @param attribute the attribute being read, always the maximum health
      * @return the same value, brought down to one vanilla row
      */
-    @ModifyVariable(method = "extractHealthLevel", at = @At("STORE"), ordinal = 0)
-    private float merlinlib$layoutOneRow(float maxHealth) {
-        return Math.min(maxHealth, COMPACT_THRESHOLD);
+    @Redirect(method = "extractPlayerHealth", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/world/entity/player/Player;getAttributeValue(Lnet/minecraft/core/Holder;)D"))
+    private double merlinlib$layoutOneRow(Player player, Holder<Attribute> attribute) {
+        return Math.min(player.getAttributeValue(attribute), ONE_ROW_OF_HEALTH);
     }
 
     /**
      * Reduces the heart count to one once the health is large.
      *
-     * <p>Vanilla keeps doing the drawing: with this value its loop runs exactly once, and it still picks the
-     * sprite for the player's state. The threshold is tested against the player's real maximum, not against
-     * the value passed in, because that one was already reduced by {@link #merlinlib$layoutOneRow(float)}.
+     * <p>The player argument of the call is what tells us the real maximum: the value being passed has
+     * already been brought down for the layout, so it can never answer this question.
      *
-     * @param maxHealth the health the heart loop is about to use
-     * @param player    the player the row belongs to
-     * @return one heart's worth of value for a large health, otherwise the value unchanged
+     * @param args the arguments of the {@code extractHearts} call
      */
-    @ModifyVariable(method = "extractHearts", at = @At("HEAD"), argsOnly = true, ordinal = 0)
-    private float merlinlib$oneHeartWhenHuge(float maxHealth, GuiGraphicsExtractor graphics, Player player,
-                                             int xLeft, int yLineBase, int healthRowHeight, int heartOffsetIndex,
-                                             float original, int currentHealth, int oldHealth, int absorption,
-                                             boolean blink) {
-        return realHealth(player, currentHealth, oldHealth) > COMPACT_THRESHOLD ? ONE_HEART : maxHealth;
+    @ModifyArgs(method = "extractPlayerHealth", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/gui/Hud;extractHearts(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/world/entity/player/Player;IIIIFIIIZ)V"))
+    private void merlinlib$oneHeartWhenHuge(Args args) {
+        Player player = args.get(1);
+        int currentHealth = args.get(7);
+        int oldHealth = args.get(8);
+        if (realHealth(player, currentHealth, oldHealth) > COMPACT_THRESHOLD) {
+            args.set(6, ONE_HEART);
+        }
     }
 
     /**
      * Writes the exact numbers next to the single heart.
      *
-     * @param graphics      the render state extractor
-     * @param player        the player the row belongs to
-     * @param xLeft         the left edge of the heart row
-     * @param yLineBase     the baseline of the heart row
+     * @param graphics        the render state extractor
+     * @param player          the player the row belongs to
+     * @param xLeft           the left edge of the heart row
+     * @param yLineBase       the baseline of the heart row
      * @param healthRowHeight the vanilla row spacing, unused here
      * @param heartOffsetIndex the vanilla regeneration heartbeat offset, unused here
-     * @param maxHealth     the value the loop used, already reduced when the health is large
-     * @param currentHealth the health as a whole number
-     * @param oldHealth     the previously displayed health
-     * @param absorption    the absorption amount
-     * @param blink         whether the row is blinking after a change
-     * @param info          the injection callback
+     * @param maxHealth       the value the loop used, already reduced when the health is large
+     * @param currentHealth   the health as a whole number
+     * @param oldHealth       the previously displayed health
+     * @param absorption      the absorption amount
+     * @param blink           whether the row is blinking after a change
+     * @param info            the injection callback
      */
     @Inject(method = "extractHearts", at = @At("TAIL"))
     private void merlinlib$healthNumbers(GuiGraphicsExtractor graphics, Player player, int xLeft, int yLineBase,
