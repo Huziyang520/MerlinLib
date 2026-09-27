@@ -3,6 +3,7 @@ package com.huziyang520.merlinlib.tools.ui;
 import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.config.ConfigManager;
 import com.huziyang520.merlinlib.impl.PermissionGate;
+import com.huziyang520.merlinlib.tools.HealthEditorItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.component.DataComponents;
@@ -197,17 +198,19 @@ public final class MerlinScreens {
     /**
      * Opens the health editor for one entity, when it is allowed.
      *
-     * <p>The return value exists for the one caller that has to know: the sneak right click hook, which
-     * swallows the click only when a screen really opened. Everywhere else the screen simply opens or the
-     * reason is in the log.
+     * <p>Whether the health editor item has to be held is answered here, from the main hand, rather than
+     * passed in by the caller. A caller-supplied flag was wrong for exactly one path - sneak using an entity
+     * passed "not holding the item" because the item was not *used* on it - so the switch refused the very
+     * interaction it was meant to allow.
      *
-     * @param parent            the screen to return to
-     * @param target            the entity to edit
-     * @param holdingEditorItem whether the player used the health editor item to get here; when the server
-     *                          requires the item and this is {@code false}, the screen stays shut
+     * <p>The return value exists for the one caller that has to know: the sneak right click hook, which
+     * swallows the click only when a screen really opened.
+     *
+     * @param parent the screen to return to
+     * @param target the entity to edit
      * @return {@code true} when the screen was opened
      */
-    public static boolean openHealthEditor(Screen parent, LivingEntity target, boolean holdingEditorItem) {
+    public static boolean openHealthEditor(Screen parent, LivingEntity target) {
         Minecraft minecraft = Minecraft.getInstance();
         Player player = minecraft.player;
         if (player == null || target == null) {
@@ -219,9 +222,11 @@ public final class MerlinScreens {
         if (!mayOpenEditorLocally(player, true)) {
             return false;
         }
-        if (ConfigManager.server().healthEditorRequiresItem() && !holdingEditorItem) {
+        boolean holdingItem = player.getMainHandItem().getItem() instanceof HealthEditorItem;
+        if (ConfigManager.server().healthEditorRequiresItem() && !holdingItem) {
             Constants.LOG.info("[MerlinLib] the health editor needs the health editor item held "
                     + "(server.toml: tools.health_editor_requires_item = true)");
+            player.sendOverlayMessage(Component.translatable("gui.merlinlib.health.need_item"));
             return false;
         }
         minecraft.setScreenAndShow(new HealthEditorScreen(parent, target));

@@ -33,11 +33,13 @@ import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
  * a glance - which is the point of keeping a heart when the numbers are huge. The attribute, the health
  * value, the damage dealt and the network are untouched.
  *
- * <h2>The three injection points</h2>
+ * <h2>The three injection points, and why each names two methods</h2>
  *
- * <p>{@code Hud#extractPlayerHealth} is where the health row is computed and drawn, and it is the only method
- * that calls {@code extractHearts}. Both hooks below are anchored there by name and by the exact call they
- * modify, so a change in the surrounding code cannot silently retarget them.
+ * <p>The health row is drawn by {@code extractPlayerHealth} on Fabric, while NeoForge's patches split the same
+ * code into {@code extractHealthLevel} (with a deprecated {@code extractPlayerHealth} that merely calls it).
+ * A hook that names only one of them finds no target on the other loader and aborts the whole mixin - which is
+ * exactly how the first version of this class crashed both clients. Naming both, with {@code require = 1},
+ * means the injection lands wherever the call really is.
  */
 @Mixin(Hud.class)
 public class MixinHud {
@@ -66,7 +68,7 @@ public class MixinHud {
      * @param attribute the attribute being read, always the maximum health
      * @return the same value, brought down to one vanilla row
      */
-    @Redirect(method = "extractPlayerHealth", at = @At(value = "INVOKE",
+    @Redirect(method = {"extractPlayerHealth", "extractHealthLevel"}, require = 1, at = @At(value = "INVOKE",
             target = "Lnet/minecraft/world/entity/player/Player;getAttributeValue(Lnet/minecraft/core/Holder;)D"))
     private double merlinlib$layoutOneRow(Player player, Holder<Attribute> attribute) {
         return Math.min(player.getAttributeValue(attribute), ONE_ROW_OF_HEALTH);
@@ -80,7 +82,7 @@ public class MixinHud {
      *
      * @param args the arguments of the {@code extractHearts} call
      */
-    @ModifyArgs(method = "extractPlayerHealth", at = @At(value = "INVOKE",
+    @ModifyArgs(method = {"extractPlayerHealth", "extractHealthLevel"}, require = 1, at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/Hud;extractHearts(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/world/entity/player/Player;IIIIFIIIZ)V"))
     private void merlinlib$oneHeartWhenHuge(Args args) {
         Player player = args.get(1);

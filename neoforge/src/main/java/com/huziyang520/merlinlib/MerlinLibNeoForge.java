@@ -156,12 +156,21 @@ public class MerlinLibNeoForge {
 
         if (MerlinCreativeEntries.TAB.equals(event.getTabKey())) {
             for (ItemStack stack : MerlinCreativeEntries.enchantedBooks(event.getParameters().holders())) {
+                // NeoForge rejects a stack that the tab already holds with
+                // "Itemstack ... already exists in the tab's list", and a tab is rebuilt whenever the
+                // creative screen is opened, so the same book arrives more than once per session.
+                if (event.getParentEntries().contains(stack) || event.getSearchEntries().contains(stack)) {
+                    continue;
+                }
                 event.accept(stack, CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
             }
             return;
         }
         if (MerlinCreativeEntries.TOOLS_TAB.equals(event.getTabKey())) {
             for (ItemStack stack : MerlinCreativeEntries.testWeapons()) {
+                if (event.getParentEntries().contains(stack) || event.getSearchEntries().contains(stack)) {
+                    continue;
+                }
                 event.accept(stack, CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
             }
         }

@@ -46,13 +46,17 @@ public class MixinMinecraftUseItem {
         if (player == null || !player.isShiftKeyDown()) {
             return;
         }
+        // 26.3 keeps the current screen on the Gui, not on Minecraft itself.
+        if (minecraft.gui.screen() != null) {
+            // A screen is already up. Never stack another one on top: the use key is polled while it is held,
+            // so without this the editor reopened as soon as it was closed, which reads as flicker.
+            return;
+        }
         HitResult hit = minecraft.hitResult;
         if (hit != null && hit.getType() != HitResult.Type.MISS) {
             return;
         }
-        ItemStack held = player.getItemInHand(InteractionHand.MAIN_HAND);
-        boolean holdingItem = held.getItem() instanceof HealthEditorItem;
-        if (MerlinScreens.openHealthEditor(null, player, holdingItem)) {
+        if (MerlinScreens.openHealthEditor(null, player)) {
             info.cancel();
         }
     }

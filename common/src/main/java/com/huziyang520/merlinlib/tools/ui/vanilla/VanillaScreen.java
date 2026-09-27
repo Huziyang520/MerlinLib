@@ -72,7 +72,9 @@ public abstract class VanillaScreen extends Screen {
     @Override
     public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.extractBackground(graphics, mouseX, mouseY, partialTick);
-        if (drawsPanel()) {
+        // A window size of zero means this frame arrives before the first layout pass; drawing the panel then
+        // would put a tiny one in the corner for that frame, which reads as a flash.
+        if (drawsPanel() && this.width > 0 && this.height > 0) {
             layout().draw(graphics);
         }
         drawContentBackground(graphics);

@@ -78,15 +78,17 @@ public class MerlinLibFabricClient implements ClientModInitializer {
         ServerSender.setSink(payload ->
                 ClientPlayNetworking.send((CustomPacketPayload) payload));
         com.huziyang520.merlinlib.tools.HealthEditorItem.setOpener(target ->
-                MerlinScreens.openHealthEditor(null, target, true));
+                MerlinScreens.openHealthEditor(null, target));
         MacroStorage.load();
 
         // Sneak using an entity opens the health editor for it.
         UseEntityCallback.EVENT.register((player, level, hand, entity, hitResult) -> {
+            // No switch is consulted here: openHealthEditor answers "may this open, and is the item held"
+            // itself. Checking healthEditorRequiresItem here as well made the sneak click work only while
+            // the server did NOT require the item, which is the opposite of what the switch means.
             if (level.isClientSide() && player.isShiftKeyDown()
-                    && !com.huziyang520.merlinlib.config.ConfigManager.server().healthEditorRequiresItem()
-                    && entity instanceof net.minecraft.world.entity.LivingEntity living) {
-                MerlinScreens.openHealthEditor(null, living, false);
+                    && entity instanceof net.minecraft.world.entity.LivingEntity living
+                    && MerlinScreens.openHealthEditor(null, living)) {
                 return net.minecraft.world.InteractionResult.SUCCESS;
             }
             return net.minecraft.world.InteractionResult.PASS;

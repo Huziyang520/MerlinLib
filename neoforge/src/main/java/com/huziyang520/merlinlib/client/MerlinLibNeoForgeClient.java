@@ -57,7 +57,7 @@ public class MerlinLibNeoForgeClient {
                         (net.minecraft.network.protocol.common.custom.CustomPacketPayload) payload));
         MacroStorage.load();
         com.huziyang520.merlinlib.tools.HealthEditorItem.setOpener(target ->
-                MerlinScreens.openHealthEditor(null, target, true));
+                MerlinScreens.openHealthEditor(null, target));
     }
 
     private void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
@@ -114,10 +114,11 @@ public class MerlinLibNeoForgeClient {
      */
     private void onUseEntity(PlayerInteractEvent.EntityInteract event) {
 
+        // openHealthEditor decides everything, including whether the health editor item has to be held: the
+        // check that used to sit here demanded the opposite of what that switch means.
         if (event.getLevel().isClientSide() && event.getEntity().isShiftKeyDown()
-                && !com.huziyang520.merlinlib.config.ConfigManager.server().healthEditorRequiresItem()
                 && event.getTarget() instanceof net.minecraft.world.entity.LivingEntity living) {
-            MerlinScreens.openHealthEditor(null, living, false);
+            MerlinScreens.openHealthEditor(null, living);
         }
     }
 }

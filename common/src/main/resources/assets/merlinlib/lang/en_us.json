@@ -46,6 +46,7 @@
   "gui.merlinlib.health.limit": "Any whole number from 0 to %s",
   "gui.merlinlib.health.hint": "Right click an entity to edit it; sneak right click to edit yourself. With \"requires item\" on, hold the health editor first",
   "gui.merlinlib.health.invalid": "Enter 0 or a positive whole number",
+  "gui.merlinlib.health.need_item": "Hold the health editor to edit (turn off \"requires the item\" in the settings)",
 
   "gui.merlinlib.macro.title": "Command Macros",
   "gui.merlinlib.macro.list": "Macros",

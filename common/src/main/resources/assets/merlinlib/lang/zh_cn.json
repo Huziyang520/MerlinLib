@@ -46,6 +46,7 @@
   "gui.merlinlib.health.limit": "可填 0 ~ %s 的整数",
   "gui.merlinlib.health.hint": "右键实体编辑该实体；潜行右键编辑自己。开启「需要对应物品」后必须先手持血量编辑器",
   "gui.merlinlib.health.invalid": "请输入 0 或正整数",
+  "gui.merlinlib.health.need_item": "需要手持血量编辑器才能编辑（可在设置里关闭「需要对应物品」）",
 
   "gui.merlinlib.macro.title": "指令宏",
   "gui.merlinlib.macro.list": "宏列表",
