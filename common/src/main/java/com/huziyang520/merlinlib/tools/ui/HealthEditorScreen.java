@@ -30,8 +30,10 @@ public class HealthEditorScreen extends VanillaScreen {
     private static final int MIN_CONTENT_WIDTH = 208;
     /** Width of a value field. */
     private static final int FIELD_WIDTH = 100;
-    /** Label block: label line, gap, field. */
-    private static final int FIELD_BLOCK = 10 + 2 + VanillaUi.WIDGET_HEIGHT + 6;
+    /** Height of the title, the target line and the separator under them. */
+    private static final int HEADER_HEIGHT = 28;
+    /** Height of one label-plus-field row. */
+    private static final int FIELD_ROW = VanillaUi.WIDGET_HEIGHT + 8;
 
     private final Screen parent;
     private final LivingEntity target;
@@ -74,8 +76,8 @@ public class HealthEditorScreen extends VanillaScreen {
 
     @Override
     protected int contentHeight() {
-        return 22                        // header: title and target
-                + FIELD_BLOCK * 2        // current and maximum
+        return HEADER_HEIGHT             // title, target and the separator under them
+                + FIELD_ROW * 2          // current and maximum
                 + 10 + 10 + 10           // limit, hint and error lines
                 + 6 + VanillaUi.WIDGET_HEIGHT;
     }
@@ -86,10 +88,12 @@ public class HealthEditorScreen extends VanillaScreen {
         int content = layout.contentWidth();
         int fieldX = layout.right() - FIELD_WIDTH;
 
-        layout.gap(22);
+        layout.gap(HEADER_HEIGHT);
 
-        this.currentLabelY = layout.cursor();
-        int currentY = layout.row(10 + 2 + VanillaUi.WIDGET_HEIGHT);
+        // The label sits next to its field, not on top of it: both used to be placed at the cursor before it
+        // was advanced, which put the label, the separator and the field on the same line.
+        this.currentLabelY = layout.cursor() + 6;
+        int currentY = layout.row(VanillaUi.WIDGET_HEIGHT);
         this.currentBox = VanillaUi.field(this.font, fieldX, currentY, FIELD_WIDTH,
                 Component.translatable("gui.merlinlib.health.current"),
                 Integer.toString(Math.round(this.target.getHealth())), 10);
@@ -97,8 +101,8 @@ public class HealthEditorScreen extends VanillaScreen {
         this.addRenderableWidget(this.currentBox);
         layout.gap(6);
 
-        this.maxLabelY = layout.cursor();
-        int maxY = layout.row(10 + 2 + VanillaUi.WIDGET_HEIGHT);
+        this.maxLabelY = layout.cursor() + 6;
+        int maxY = layout.row(VanillaUi.WIDGET_HEIGHT);
         this.maxBox = VanillaUi.field(this.font, fieldX, maxY, FIELD_WIDTH,
                 Component.translatable("gui.merlinlib.health.max"),
                 Integer.toString(Math.round(this.target.getMaxHealth())), 10);

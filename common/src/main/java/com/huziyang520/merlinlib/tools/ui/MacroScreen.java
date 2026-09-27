@@ -64,6 +64,8 @@ public class MacroScreen extends VanillaScreen {
 
     private int selected = -1;
     private KeyCombo pending = KeyCombo.of();
+    /** The combination a capture started from, restored when it is cancelled. */
+    private KeyCombo beforeCapture = KeyCombo.of();
     private boolean capturing;
 
     private EditBox nameBox;
@@ -336,12 +338,23 @@ public class MacroScreen extends VanillaScreen {
         if (this.selected < 0) {
             return;
         }
+        // Remembered so Escape can put it back: starting a capture drops the old binding, and "cancel" that
+        // only stops the capture would leave the binding destroyed - which is what it used to do.
+        this.beforeCapture = this.pending;
         this.pending = KeyCombo.of();
         this.capturing = true;
         refreshKeyButton();
     }
 
+    /** Ends the capture, keeping what was pressed: this is the "click elsewhere to finish" path. */
     private void endCapture() {
+        this.capturing = false;
+        refreshKeyButton();
+    }
+
+    /** Ends the capture and restores the combination it started from. */
+    private void cancelCapture() {
+        this.pending = this.beforeCapture;
         this.capturing = false;
         refreshKeyButton();
     }
@@ -374,7 +387,7 @@ public class MacroScreen extends VanillaScreen {
             // Escape is the way out; Enter is an ordinary key here, so a combination may contain it. The
             // capture ends on a click elsewhere (see mouseClicked), which is what the button says.
             if (event.key() == MerlinUi.KEY_ESCAPE) {
-                endCapture();
+                cancelCapture();
                 return true;
             }
             // Toggling is what makes a combination correctable: press a key to add it, press it again to drop

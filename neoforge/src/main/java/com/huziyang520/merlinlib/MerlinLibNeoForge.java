@@ -113,8 +113,13 @@ public class MerlinLibNeoForge {
                 if (existing != null) {
                     attribute.removeModifier(id);
                 }
-                attribute.addTransientModifier(new AttributeModifier(id, max - base,
-                        AttributeModifier.Operation.ADD_VALUE));
+                if (max > 0) {
+                    // Permanent, not transient: the edit belongs to the holder and is meant to survive a death
+                    // and respawn. Setting the maximum to zero instead removes it, so a death at zero health -
+                    // the one case where the player asked to be reset - comes back with the default maximum.
+                    attribute.addPermanentModifier(new AttributeModifier(id, max - base,
+                            AttributeModifier.Operation.ADD_VALUE));
+                }
             }
             target.setHealth(Math.min(current, target.getMaxHealth()));
         }

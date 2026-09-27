@@ -34,7 +34,8 @@ public final class ServerConfig {
             health_editor_requires_permission = true
 
             [tools]
-            # Master switch of the whole testing toolkit. The items and screens disappear when disabled.
+            # Master switch of the testing screens: with it off, no toolkit screen opens (the item editor, the
+            # health editor and the macro screen all refuse). The testing items stay in the creative tab.
             enable_testing_toolkit = true
             # Upper bound for the damage value of the test weapons. Defaults to the integer limit.
             max_test_weapon_damage = 2147483647
@@ -51,6 +52,9 @@ public final class ServerConfig {
             # not weapons, tools or equipment. On by default: the editor is an item editor, and it only ever
             # offers what the item can really hold unless mismatched enchantments are switched on above.
             allow_editing_all_items = true
+            # When true, the base damage of an ordinary weapon can be edited too, not only of a testing weapon.
+            # Off by default: ordinary weapons are what vanilla balance and other mods rely on.
+            allow_non_test_item_damage = false
             # When true, the health editor only opens while holding the health editor item.
             health_editor_requires_item = true
             # File layout version. Written by the mod, read only to bring a file from an older build up to
@@ -72,6 +76,7 @@ public final class ServerConfig {
     private boolean allowLevelsAboveMax = true;
     private boolean allowMismatchedEnchantments;
     private boolean allowEditingAllItems = true;
+    private boolean allowNonTestItemDamage;
     private boolean healthEditorRequiresItem = true;
     private boolean disableGeneratedEnchantments;
     private List<ContentError> errors = List.of();
@@ -95,6 +100,7 @@ public final class ServerConfig {
         config.allowLevelsAboveMax = file.getBoolean("tools.allow_levels_above_max", true);
         config.allowMismatchedEnchantments = file.getBoolean("tools.allow_mismatched_enchantments", false);
         config.allowEditingAllItems = file.getBoolean("tools.allow_editing_all_items", true);
+        config.allowNonTestItemDamage = file.getBoolean("tools.allow_non_test_item_damage", false);
         config.healthEditorRequiresItem = file.getBoolean("tools.health_editor_requires_item", true);
         config.disableGeneratedEnchantments = file.getBoolean("content.disable_generated_enchantments", false);
         config.errors = file.errors();
@@ -195,6 +201,11 @@ public final class ServerConfig {
     /** @return whether the item editor opens for items that are not weapons, tools or equipment. */
     public boolean allowEditingAllItems() {
         return this.allowEditingAllItems;
+    }
+
+    /** @return {@code true} when an ordinary weapon's base damage may be edited as well. */
+    public boolean allowNonTestItemDamage() {
+        return this.allowNonTestItemDamage;
     }
 
     /** @return whether the health editor only opens while holding the health editor item. */

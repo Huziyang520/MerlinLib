@@ -108,6 +108,20 @@ public class ItemEditorScreen extends VanillaScreen {
 
     // ---------------------------------------------------------------- measured size
 
+    /**
+     * Whether the base damage row is shown.
+     *
+     * <p>A testing weapon always has one - that is what it is for. Any other weapon has one only while
+     * {@code tools.allow_non_test_item_damage} is on, because editing the damage of an ordinary weapon
+     * changes what vanilla balance and other mods expect.
+     *
+     * @return {@code true} when the row belongs on this screen
+     */
+    private boolean showsDamageRow() {
+        return TestWeapons.hasEditableDamage(this.working)
+                && (this.testWeapon || ConfigManager.server().allowNonTestItemDamage());
+    }
+
     private List<Component> labels() {
         List<Component> labels = new ArrayList<>();
         labels.add(Component.translatable("gui.merlinlib.editor.name"));
@@ -139,7 +153,7 @@ public class ItemEditorScreen extends VanillaScreen {
     protected int contentHeight() {
         int height = HEADER;
         height += LABEL + VanillaUi.WIDGET_HEIGHT + 6;                 // name
-        if (this.testWeapon) {
+        if (showsDamageRow()) {
             height += LABEL + VanillaUi.WIDGET_HEIGHT + 6;             // damage
         }
         height += LABEL + visibleRows() * LIST_ROW + 6;                // enchantment list
@@ -161,7 +175,7 @@ public class ItemEditorScreen extends VanillaScreen {
     private int visibleRows() {
         int fixed = HEADER
                 + LABEL + VanillaUi.WIDGET_HEIGHT + 6
-                + (this.testWeapon ? LABEL + VanillaUi.WIDGET_HEIGHT + 6 : 0)
+                + (showsDamageRow() ? LABEL + VanillaUi.WIDGET_HEIGHT + 6 : 0)
                 + LABEL + 6
                 + VanillaUi.WIDGET_HEIGHT + 6
                 + 10 + 6
@@ -195,14 +209,14 @@ public class ItemEditorScreen extends VanillaScreen {
         this.addRenderableWidget(this.nameBox);
         layout.gap(6);
 
-        if (this.testWeapon) {
+        if (showsDamageRow()) {
             this.damageLabelY = layout.cursor();
             layout.gap(LABEL);
             int damageY = layout.row(VanillaUi.WIDGET_HEIGHT);
             this.damageBox = VanillaUi.field(this.font, left + VanillaUi.STEP_BUTTON + 4, damageY,
                     content - (VanillaUi.STEP_BUTTON + 4) * 2,
                     Component.translatable("gui.merlinlib.editor.damage"),
-                    Integer.toString(TestWeapons.nominalDamage(this.working).orElse(1)), 10);
+                    Integer.toString(TestWeapons.weaponDamage(this.working).orElse(1)), 10);
             this.addRenderableWidget(this.damageBox);
             this.addRenderableWidget(VanillaUi.button(Component.literal("-"),
                     button -> stepDamage(-1, Minecraft.getInstance().hasShiftDown()),
@@ -284,7 +298,10 @@ public class ItemEditorScreen extends VanillaScreen {
         for (int slot = 0; slot < visibleRows(); slot++) {
             int index = firstRow + slot;
             boolean visible = index < this.rows.size();
-            int y = this.list.y() + slot * LIST_ROW + 2;
+            int rowY = this.list.y() + slot * LIST_ROW;
+            // Centred in the row: the field and the buttons next to it have different heights, so a shared
+            // top edge made the row look crooked.
+            int y = rowY + (LIST_ROW - 16) / 2;
             EditBox field = this.levelFields.get(slot);
             field.setY(y);
             field.setHeight(16);
@@ -300,7 +317,7 @@ public class ItemEditorScreen extends VanillaScreen {
             }
             for (int column = 0; column < 3; column++) {
                 Button button = this.rowButtons.get(slot * 3 + column);
-                button.setY(y + 1);
+                button.setY(rowY + (LIST_ROW - VanillaUi.STEP_BUTTON) / 2);
                 button.visible = visible;
                 button.active = visible;
             }
@@ -486,13 +503,13 @@ public class ItemEditorScreen extends VanillaScreen {
         } else {
             this.working.set(DataComponents.CUSTOM_NAME, Component.literal(typed));
         }
-        if (this.testWeapon && this.damageBox != null) {
+        if (showsDamageRow() && this.damageBox != null) {
             // The typed value is clamped here as well as in the - / + buttons: typing bypasses the buttons,
             // and a value above the ceiling would be a way around the limit the server advertises. The
             // ceiling itself is whatever server.toml says, up to the integer limit.
             int maximum = Math.max(1, ConfigManager.server().maxTestWeaponDamage());
             int damage = VanillaUi.clamp(VanillaUi.parseInt(this.damageBox.getValue(), 1), 0, maximum);
-            TestWeapons.setNominalDamage(this.working, damage);
+            TestWeapons.setWeaponDamage(this.working, damage);
         }
         // The stack is applied locally so the hand updates immediately, and sent to the server, which is the
         // only side that can persist it: a client side change alone is replaced by the next inventory sync.
@@ -600,7 +617,7 @@ public class ItemEditorScreen extends VanillaScreen {
 
         VanillaUi.text(graphics, this.font, Component.translatable("gui.merlinlib.editor.name"),
                 left, this.nameLabelY, VanillaUi.TEXT_HINT, content);
-        if (this.testWeapon) {
+        if (showsDamageRow()) {
             VanillaUi.text(graphics, this.font, Component.translatable("gui.merlinlib.editor.damage"),
                     left, this.damageLabelY, VanillaUi.TEXT_HINT, content);
         }
@@ -621,7 +638,7 @@ public class ItemEditorScreen extends VanillaScreen {
                 break;
             }
             Holder<Enchantment> holder = this.rows.get(index);
-            int rowY = this.list.y() + slot * LIST_ROW + 6;
+            int rowY = this.list.y() + slot * LIST_ROW + (LIST_ROW - 8) / 2;
             VanillaUi.text(graphics, this.font, holder.value().description(), left + 4, rowY,
                     VanillaUi.TEXT, nameWidth);
         }

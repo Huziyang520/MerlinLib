@@ -173,6 +173,8 @@ public class MerlinConfigScreen extends VanillaScreen {
                     toggle("tools.allow_levels_above_max", false, T + "above_max", server.allowLevelsAboveMax()),
                     toggle("tools.allow_editing_all_items", false, T + "all_items",
                             server.allowEditingAllItems()),
+                    toggle("tools.allow_non_test_item_damage", false, T + "weapon_damage_edit",
+                            server.allowNonTestItemDamage()),
                     integer("tools.max_enchantment_level", false, T + "enchant_level",
                             server.maxEnchantmentLevel(), 1, Integer.MAX_VALUE),
                     integer("tools.max_test_weapon_damage", false, T + "weapon_damage",
@@ -318,10 +320,11 @@ public class MerlinConfigScreen extends VanillaScreen {
         layout.cursorTo(this.settingsArea.y() + this.settingsArea.height());
         layoutRows();
 
-        this.hintY = layout.cursor() + 6;
-        layout.gap(6 + HINTS[this.tab].length * 10 + 6);
-
-        int bottom = layout.row(VanillaUi.WIDGET_HEIGHT);
+        // Anchored to the bottom of the panel, not to the content: with the panel sized for the tallest tab,
+        // a shorter tab left the buttons floating in the middle, so they moved every time a tab was clicked.
+        int bottom = layout.contentBottom() - VanillaUi.WIDGET_HEIGHT;
+        this.hintY = bottom - 6 - HINTS[this.tab].length * 10;
+        layout.cursorTo(bottom + VanillaUi.WIDGET_HEIGHT);
         int half = layout.sliceWidth(2);
         this.save = this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.config.save"),
                 button -> this.save(), layout.sliceX(0, 2), bottom, half));

@@ -60,7 +60,7 @@
   "gui.merlinlib.macro.press_key": "请选择按键",
   "gui.merlinlib.macro.untitled": "未命名宏",
   "gui.merlinlib.macro.empty": "（还没有宏，点下面的「新建宏」）",
-  "gui.merlinlib.macro.hint": "左键选中宏（行尾 X 删除该宏）；点「快捷键」开始捕获，捕获中再点该按钮可绑鼠标键，依次按下要同时按住的键（再按同键移除），点击别处结束，Esc 取消",
+  "gui.merlinlib.macro.hint": "左键选中宏（行尾 X 删除该宏）；点「快捷键」开始捕获，捕获中再点该按钮可绑鼠标键，依次按下要同时按住的键（再按同键移除），点击别处结束（保留），Esc 取消并还原原绑定",
   "gui.merlinlib.macro.capturing": "正在捕获：%s（点击别处结束，Esc 取消）",
   "gui.merlinlib.macro.conflict_preview": "%s 冲突：%s",
 
@@ -75,7 +75,7 @@
   "gui.merlinlib.config.tab.hud": "HUD 与飘字",
   "gui.merlinlib.config.tab.macro": "命令宏",
 
-  "gui.merlinlib.config.warning.toolkit_off": "总开关已关闭：测试物品与全部测试界面都不可用（创造栏里也不会显示这些物品）",
+  "gui.merlinlib.config.warning.toolkit_off": "总开关已关闭，全部测试界面都不可用（测试物品仍在创造栏里）",
 
   "gui.merlinlib.config.hint.general": "服务端项：单人游戏立即生效；专用服务器以服务器上的 server.toml 为准。",
   "gui.merlinlib.config.hint.editor": "服务端项单人游戏立即生效，客户端项写在本机 client.toml。热键默认关闭，可用 /merlinlib editorhotkey on 开启。「需要命令权限」= 只有 OP 能打开与保存，非 OP 会被当场拦下并在提示栏告知。",
@@ -84,7 +84,7 @@
   "gui.merlinlib.config.hint.hud": "准星伤害显示为武器标称伤害；飘字显示实际造成的伤害。",
   "gui.merlinlib.config.hint.macro": "宏的快捷键在指令宏界面里逐个设置，支持两个及以上按键同时按。",
 
-  "gui.merlinlib.config.toolkit": "启用测试工具集",
+  "gui.merlinlib.config.toolkit": "启用测试界面",
   "gui.merlinlib.config.operators": "工具集仅 OP 可用",
   "gui.merlinlib.config.generated": "禁用配置注入的附魔",
 
@@ -96,6 +96,7 @@
   "gui.merlinlib.config.mismatched": "允许添加不匹配附魔",
   "gui.merlinlib.config.above_max": "允许附魔突破等级上限",
   "gui.merlinlib.config.all_items": "对所有物品启用编辑",
+  "gui.merlinlib.config.weapon_damage_edit": "可调整非测试武器伤害",
   "gui.merlinlib.config.enchant_level": "附魔等级上限",
   "gui.merlinlib.config.weapon_damage": "测试武器伤害上限",
 

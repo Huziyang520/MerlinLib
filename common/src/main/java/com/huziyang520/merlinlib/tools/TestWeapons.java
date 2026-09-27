@@ -373,6 +373,44 @@ public final class TestWeapons {
         return damageModifierAmount(stack).map(amount -> (int) Math.round(amount + 1.0D));
     }
 
+    /**
+     * The base attack damage of any item that declares one, not only of a testing weapon.
+     *
+     * <p>Same reading as {@link #nominalDamage(ItemStack)}: the amount of the attack damage modifier plus the
+     * player's own base of one, which is exactly the number the tooltip shows as "attack damage".
+     *
+     * @param stack the stack to read
+     * @return the damage, empty when the item carries no attack damage modifier
+     */
+    public static Optional<Integer> weaponDamage(ItemStack stack) {
+        return damageModifierAmount(stack).map(amount -> (int) Math.round(amount + 1.0D));
+    }
+
+    /**
+     * @param stack the stack to inspect
+     * @return {@code true} when the stack's attack damage can be read and written
+     */
+    public static boolean hasEditableDamage(ItemStack stack) {
+        return damageModifierAmount(stack).isPresent();
+    }
+
+    /**
+     * Writes a new base attack damage onto any item that declares one.
+     *
+     * <p>The general form of {@link #setNominalDamage(ItemStack, int)}, for ordinary weapons: the value is
+     * written under the vanilla modifier id, so the tooltip keeps the vanilla "attack damage" wording.
+     *
+     * @param stack  the stack to modify
+     * @param damage the new damage
+     * @return {@code true} when the value was applied
+     */
+    public static boolean setWeaponDamage(ItemStack stack, int damage) {
+        if (stack == null || stack.isEmpty() || damageModifierAmount(stack).isEmpty()) {
+            return false;
+        }
+        return writeDamage(stack, damage);
+    }
+
     private static Optional<Double> damageModifierAmount(ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
             return Optional.empty();
@@ -381,12 +419,21 @@ public final class TestWeapons {
         if (modifiers == null) {
             return Optional.empty();
         }
+        Double fallback = null;
         for (ItemAttributeModifiers.Entry entry : modifiers.modifiers()) {
-            if (entry.attribute().equals(Attributes.ATTACK_DAMAGE) && isDamageModifier(entry.modifier().id())) {
+            if (!entry.attribute().equals(Attributes.ATTACK_DAMAGE)) {
+                continue;
+            }
+            if (isDamageModifier(entry.modifier().id())) {
                 return Optional.of(entry.modifier().amount());
             }
+            if (fallback == null) {
+                // A weapon from another mod may use its own modifier id; the first attack damage entry is then
+                // the best answer available, and it is what the tooltip shows as the weapon's damage.
+                fallback = entry.modifier().amount();
+            }
         }
-        return Optional.empty();
+        return Optional.ofNullable(fallback);
     }
 
     /**
@@ -414,6 +461,17 @@ public final class TestWeapons {
         if (!isTestWeapon(stack)) {
             return false;
         }
+        return writeDamage(stack, damage);
+    }
+
+    /**
+     * Rewrites the attack damage modifier of a stack, keeping every other modifier untouched.
+     *
+     * @param stack  the stack to modify
+     * @param damage the new damage
+     * @return {@code true} when the component was written
+     */
+    private static boolean writeDamage(ItemStack stack, int damage) {
         ItemAttributeModifiers current = stack.get(DataComponents.ATTRIBUTE_MODIFIERS);
         ItemAttributeModifiers.Builder builder = ItemAttributeModifiers.builder();
         boolean written = false;

@@ -156,7 +156,7 @@ public class EnchantSelectionScreen extends VanillaScreen {
             final int index = slot;
             this.rowButtons.add(this.addRenderableWidget(VanillaUi.button(
                     Component.translatable("gui.merlinlib.select.add"),
-                    button -> pick(index), left + content - ADD_WIDTH, 0, ADD_WIDTH)));
+                    button -> pick(index), this.list.x() + this.list.rowWidth() - ADD_WIDTH, 0, ADD_WIDTH)));
         }
         layoutRows();
     }

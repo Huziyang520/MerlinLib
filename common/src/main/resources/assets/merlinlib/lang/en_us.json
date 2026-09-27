@@ -60,7 +60,7 @@
   "gui.merlinlib.macro.press_key": "Press a key",
   "gui.merlinlib.macro.untitled": "Untitled macro",
   "gui.merlinlib.macro.empty": "(no macros yet, use \"New macro\" below)",
-  "gui.merlinlib.macro.hint": "Click a macro to select it (the X in a row deletes it); press the key button to start a capture, click that button again to bind a mouse button, press the keys to hold together (press one again to remove it); click elsewhere to finish, Escape cancels",
+  "gui.merlinlib.macro.hint": "Click a macro to select it (the X in a row deletes it); press the key button to start a capture, click that button again to bind a mouse button, press the keys to hold together (press one again to remove it); click elsewhere to keep it, Escape cancels and restores the previous binding",
   "gui.merlinlib.macro.capturing": "Capturing: %s (click elsewhere to finish, Escape cancels)",
   "gui.merlinlib.macro.conflict_preview": "%s is shared: %s",
 
@@ -75,7 +75,7 @@
   "gui.merlinlib.config.tab.hud": "HUD and damage numbers",
   "gui.merlinlib.config.tab.macro": "Command macros",
 
-  "gui.merlinlib.config.warning.toolkit_off": "The master switch is off: no testing item and no testing screen is available (the items are not in the creative inventory either)",
+  "gui.merlinlib.config.warning.toolkit_off": "The master switch is off: no testing screen is available (the testing items stay in the creative inventory)",
 
   "gui.merlinlib.config.hint.general": "Server options: in single player they apply at once, on a dedicated server the server's own server.toml is authoritative.",
   "gui.merlinlib.config.hint.editor": "Server options apply at once in single player, client options are written to this computer's client.toml. The hotkey is off by default; /merlinlib editorhotkey on switches it on. \"Requires command permission\" = only operators may open and save; anybody else is stopped and told.",
@@ -84,7 +84,7 @@
   "gui.merlinlib.config.hint.hud": "The crosshair number is the weapon's listed damage; the flying numbers are the damage actually dealt.",
   "gui.merlinlib.config.hint.macro": "Each macro's key is set in the command macro screen, and may be several keys held together.",
 
-  "gui.merlinlib.config.toolkit": "Enable the testing toolkit",
+  "gui.merlinlib.config.toolkit": "Enable the testing screens",
   "gui.merlinlib.config.operators": "Toolkit for operators only",
   "gui.merlinlib.config.generated": "Disable enchantments from config",
 
@@ -96,6 +96,7 @@
   "gui.merlinlib.config.mismatched": "Allow mismatched enchantments",
   "gui.merlinlib.config.above_max": "Allow levels above the maximum",
   "gui.merlinlib.config.all_items": "Enable editing for all items",
+  "gui.merlinlib.config.weapon_damage_edit": "Edit the damage of any weapon",
   "gui.merlinlib.config.enchant_level": "Maximum enchantment level",
   "gui.merlinlib.config.weapon_damage": "Maximum test weapon damage",
 

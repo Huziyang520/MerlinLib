@@ -106,8 +106,14 @@ public class MerlinLibFabric implements ModInitializer {
                     Identifier id = Identifier.fromNamespaceAndPath(
                             com.huziyang520.merlinlib.Constants.MOD_ID, "health_editor");
                     attribute.removeModifier(id);
-                    attribute.addTransientModifier(new AttributeModifier(id, max - attribute.getBaseValue(),
-                            AttributeModifier.Operation.ADD_VALUE));
+                    if (max > 0) {
+                        // Permanent, not transient: the edit belongs to the holder and is meant to survive a
+                        // death and respawn. Setting the maximum to zero instead removes it, so a death at
+                        // zero health - the one case where the player asked to be reset - comes back with the
+                        // default maximum, which is the safety net this switch exists for.
+                        attribute.addPermanentModifier(new AttributeModifier(id, max - attribute.getBaseValue(),
+                                AttributeModifier.Operation.ADD_VALUE));
+                    }
                 }
                 target.setHealth(Math.min(current, target.getMaxHealth()));
             }
