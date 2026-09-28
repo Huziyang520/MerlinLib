@@ -6,7 +6,10 @@ import com.huziyang520.merlinlib.impl.ContentManager;
 import com.huziyang520.merlinlib.tools.HealthEditorItem;
 import com.huziyang520.merlinlib.tools.TestWeapons;
 import com.huziyang520.merlinlib.mixin.RangedAttributeAccessor;
+import com.huziyang520.merlinlib.api.MerlinApi;
+import com.huziyang520.merlinlib.loot.LootInjector;
 import com.huziyang520.merlinlib.platform.Services;
+import com.huziyang520.merlinlib.util.SmeltingLookup;
 import net.minecraft.core.Holder;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -49,8 +52,12 @@ public class MerlinLib {
 
         Services.PACK.bootstrap(loaderContext);
         Services.REGISTRATIONS.bootstrap(loaderContext);
+        Services.LIFECYCLE.bootstrap(loaderContext);
+        Services.LOOT.bootstrap(loaderContext);
+        LootInjector.install();
         ConfigManager.reload();
         widenAttributeCeilings();
+        MerlinApi.lifecycle().onServerStarting(SmeltingLookup::initialize);
         BuiltInContent.register();
         TestWeapons.register();
         HealthEditorItem.register();

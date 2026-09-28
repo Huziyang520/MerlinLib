@@ -58,7 +58,7 @@ public class MerlinConfigScreen extends VanillaScreen {
             {"gui.merlinlib.config.hint.general"},
             {"gui.merlinlib.config.hint.editor", "gui.merlinlib.config.hint.editor_shift"},
             {"gui.merlinlib.config.hint.health"},
-            {"gui.merlinlib.config.hint.hud"},
+            {"gui.merlinlib.config.hint.hud", "gui.merlinlib.config.hint.particles"},
             {"gui.merlinlib.config.hint.macro"},
     };
 
@@ -192,7 +192,9 @@ public class MerlinConfigScreen extends VanillaScreen {
                             client.floatingTextBaseScale(), 0.1D, 8.0D),
                     toggle("hud.crosshair_damage", true, T + "crosshair", client.crosshairDamage()),
                     integer("hud.crosshair_damage_ticks", true, T + "crosshair_ticks",
-                            client.crosshairDamageTicks(), 1, 400));
+                            client.crosshairDamageTicks(), 1, 400),
+                    toggle("particles.limit_enabled", true, T + "particles", client.particleLimitEnabled()),
+                    integer("particles.limit", true, T + "particles_limit", client.particleLimit(), 1, 1000000));
             default -> List.of(
                     toggle("macros.enabled", true, T + "macros", client.macrosEnabled()));
         };

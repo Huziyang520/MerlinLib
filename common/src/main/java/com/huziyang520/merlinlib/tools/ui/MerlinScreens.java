@@ -223,6 +223,15 @@ public final class MerlinScreens {
             return false;
         }
         boolean holdingItem = player.getMainHandItem().getItem() instanceof HealthEditorItem;
+        if (target == player && !holdingItem) {
+            // Editing yourself is a feature of the item and nothing else, so it needs the item whatever the
+            // "requires item" switch says. Without this the switch's off position turned a bare-handed sneak
+            // right click into a self edit, which also made the item look pointless.
+            Constants.LOG.info("[MerlinLib] a self edit was refused: the health editor item must be held to "
+                    + "edit yourself");
+            player.sendOverlayMessage(Component.translatable("gui.merlinlib.health.need_item"));
+            return false;
+        }
         if (ConfigManager.server().healthEditorRequiresItem() && !holdingItem) {
             Constants.LOG.info("[MerlinLib] the health editor needs the health editor item held "
                     + "(server.toml: tools.health_editor_requires_item = true)");

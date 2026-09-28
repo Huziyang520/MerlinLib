@@ -58,6 +58,18 @@ public final class ClientConfig {
             [macros]
             # Enable the macro toolkit: the macro screen and running macros from their bound keys.
             enabled = true
+
+            [particles]
+            # Cap how many particles this client draws. Some paths of the game ask for one particle per point
+            # of damage, so a single hit with a very large number can freeze the client while it builds them
+            # all - the frame never finishes because it is still making particles. When enabled, at most
+            # `limit` particles are drawn per 1/20 second; the rest are dropped before they exist. On by
+            # default.
+            limit_enabled = true
+            # How many particles may be drawn per 1/20 second. 512 is far above what normal play produces
+            # (rain, explosions, a busy farm) and still keeps a damage number in the thousands from freezing
+            # the client. Lower it if a very large hit still stutters.
+            limit = 512
             """;
 
     private boolean crosshairDamage;
@@ -73,6 +85,8 @@ public final class ClientConfig {
     private int editorScrollStep = 1;
     private int editorScrollStepFast = 10;
     private boolean macrosEnabled = true;
+    private boolean particleLimitEnabled = true;
+    private int particleLimit = 512;
     private List<ContentError> errors = List.of();
 
     public static ClientConfig load() {
@@ -92,6 +106,8 @@ public final class ClientConfig {
         config.editorScrollStep = file.getInt("editor.scroll_step", 1, 1, 1000);
         config.editorScrollStepFast = file.getInt("editor.scroll_step_fast", 10, 1, 100000);
         config.macrosEnabled = file.getBoolean("macros.enabled", true);
+        config.particleLimitEnabled = file.getBoolean("particles.limit_enabled", true);
+        config.particleLimit = file.getInt("particles.limit", 512, 1, 1000000);
         config.errors = file.errors();
         return config;
     }
@@ -169,6 +185,16 @@ public final class ClientConfig {
     /** @return whether the macro toolkit is enabled. */
     public boolean macrosEnabled() {
         return this.macrosEnabled;
+    }
+
+    /** @return whether the number of drawn particles is capped. */
+    public boolean particleLimitEnabled() {
+        return this.particleLimitEnabled;
+    }
+
+    /** @return how many particles may be drawn per 1/20 second. */
+    public int particleLimit() {
+        return this.particleLimit;
     }
 
     /** @return problems found while reading the file during the last reload. */

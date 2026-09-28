@@ -9,7 +9,9 @@ import com.huziyang520.merlinlib.network.ItemEditPayload;
 import com.huziyang520.merlinlib.tools.MerlinCreativeEntries;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import com.huziyang520.merlinlib.tools.HealthCeiling;
 import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -37,6 +39,11 @@ public class MerlinLibFabric implements ModInitializer {
         CommandRegistrationCallback.EVENT.register(MerlinCommand::register);
 
         registerDamageFeedback();
+
+        // A death respawn rebuilds the player and copies attribute base values only, so the health ceiling
+        // has to be carried over by hand or every edit is lost on death.
+        ServerPlayerEvents.COPY_FROM.register((oldPlayer, newPlayer, alive) ->
+                HealthCeiling.copyTo(oldPlayer, newPlayer));
 
         // 26.3 renamed the item group api to the creative tab api; the output carries the display
         // parameters, whose holder lookup is exactly what the data driven enchantment registry needs.
@@ -101,20 +108,7 @@ public class MerlinLibFabric implements ModInitializer {
             if (player.level().getEntity(payload.targetId()) instanceof LivingEntity target) {
                 int max = Math.max(0, payload.max());
                 int current = Math.max(0, Math.min(max, payload.current()));
-                AttributeInstance attribute = target.getAttribute(Attributes.MAX_HEALTH);
-                if (attribute != null) {
-                    Identifier id = Identifier.fromNamespaceAndPath(
-                            com.huziyang520.merlinlib.Constants.MOD_ID, "health_editor");
-                    attribute.removeModifier(id);
-                    if (max > 0) {
-                        // Permanent, not transient: the edit belongs to the holder and is meant to survive a
-                        // death and respawn. Setting the maximum to zero instead removes it, so a death at
-                        // zero health - the one case where the player asked to be reset - comes back with the
-                        // default maximum, which is the safety net this switch exists for.
-                        attribute.addPermanentModifier(new AttributeModifier(id, max - attribute.getBaseValue(),
-                                AttributeModifier.Operation.ADD_VALUE));
-                    }
-                }
+                HealthCeiling.apply(target, max);
                 target.setHealth(Math.min(current, target.getMaxHealth()));
             }
         });

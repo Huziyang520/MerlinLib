@@ -213,26 +213,24 @@ public class HealthEditorScreen extends VanillaScreen {
         if (!this.valid) {
             VanillaUi.text(graphics, this.font, Component.translatable("gui.merlinlib.health.invalid"),
                     left, this.errorY + 10, VanillaUi.TEXT_ERROR, content);
-            outline(graphics, this.currentBox, parseHealth(this.currentBox.getValue()) != null);
-            outline(graphics, this.maxBox, parseHealth(this.maxBox.getValue()) != null);
         }
+        // A field with a bad value says so with red text. The first version painted the field's whole rectangle
+        // red instead, which hid the very value the player was trying to correct and looked like the box had
+        // been selected rather than rejected; both fields are tinted every frame, so a corrected value goes
+        // back to the normal colour as soon as it is typed.
+        tint(this.currentBox, parseHealth(this.currentBox.getValue()) != null);
+        tint(this.maxBox, parseHealth(this.maxBox.getValue()) != null);
     }
 
     /**
-     * Draws a red outline around a field that does not hold a valid value.
+     * Colours a field's text to show whether its value is acceptable.
      *
-     * @param graphics the render state extractor
-     * @param box      the field
-     * @param ok       whether the field is acceptable
+     * @param box the field
+     * @param ok  whether the field holds a value that can be sent
      */
-    private static void outline(GuiGraphicsExtractor graphics, EditBox box, boolean ok) {
-        if (ok || box == null) {
-            return;
+    private static void tint(EditBox box, boolean ok) {
+        if (box != null) {
+            box.setTextColor(ok ? EditBox.DEFAULT_TEXT_COLOR : VanillaUi.TEXT_ERROR);
         }
-        int x = box.getX();
-        int y = box.getY();
-        int width = box.getWidth();
-        int height = box.getHeight();
-        graphics.fill(x - 1, y - 1, x + width + 1, y + height + 1, VanillaUi.TEXT_ERROR);
     }
 }

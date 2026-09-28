@@ -58,20 +58,24 @@ public class MixinHud {
     private static final int TEXT_OFFSET_Y = 1;
 
     /**
-     * Keeps the heart row to a single row of space.
+     * Keeps the heart row to a single row of space, but only once the health is really large.
      *
-     * <p>This is the layout copy of the maximum only: it decides how much room the row takes and where the
-     * armour, food and air rows sit. What is drawn comes from the player's real values, so nothing is hidden
-     * by it.
+     * <p>This is the layout copy of the maximum: it decides how much room the row takes, how many hearts the
+     * loop draws and where the armour, food and air rows sit. It is therefore the value the threshold has to be
+     * applied to - a first version of this class clamped it to one row <em>unconditionally</em>, which left
+     * every player between twenty-one and a hundred health with a single row of hearts, where vanilla would
+     * have drawn two to five. Up to the threshold the real value is passed through untouched, so that range is
+     * plain vanilla; above it the row is one heart and the numbers carry the truth.
      *
      * @param player    the player the row belongs to
      * @param attribute the attribute being read, always the maximum health
-     * @return the same value, brought down to one vanilla row
+     * @return the real value, brought down to one vanilla row only when it is large
      */
     @Redirect(method = {"extractPlayerHealth", "extractHealthLevel"}, require = 1, at = @At(value = "INVOKE",
             target = "Lnet/minecraft/world/entity/player/Player;getAttributeValue(Lnet/minecraft/core/Holder;)D"))
     private double merlinlib$layoutOneRow(Player player, Holder<Attribute> attribute) {
-        return Math.min(player.getAttributeValue(attribute), ONE_ROW_OF_HEALTH);
+        double real = player.getAttributeValue(attribute);
+        return real > COMPACT_THRESHOLD ? ONE_ROW_OF_HEALTH : real;
     }
 
     /**

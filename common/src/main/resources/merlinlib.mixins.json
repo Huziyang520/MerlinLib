@@ -6,12 +6,22 @@
   "mixins": [
     "RangedAttributeAccessor",
     "MixinItemEnchantments",
-    "MixinItemEnchantmentsMutable"
+    "MixinItemEnchantmentsMutable",
+    "MixinPlayerAttack",
+    "MixinLivingEntityHurt",
+    "MixinLivingEntityDie",
+    "MixinServerPlayerDie",
+    "MixinLivingEntityTick",
+    "MixinProjectileHit",
+    "MixinBlockDrops",
+    "MixinFoodDataTick",
+    "MixinPlayerDestroyBlock"
   ],
   "client": [
     "MixinMinecraft",
     "MixinMinecraftUseItem",
-    "MixinHud"
+    "MixinHud",
+    "MixinClientLevelParticles"
   ],
   "server": [],
   "injectors": {

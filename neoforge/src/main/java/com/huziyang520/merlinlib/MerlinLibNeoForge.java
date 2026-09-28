@@ -25,6 +25,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
+import com.huziyang520.merlinlib.tools.HealthCeiling;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -42,6 +43,9 @@ public class MerlinLibNeoForge {
         eventBus.addListener(this::onRegisterPayloads);
         NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(this::onIncomingDamage);
+        // A death respawn rebuilds the player and copies attribute base values only (restoreFrom calls
+        // assignPermanentModifiers solely when restoreAll is true), so the ceiling is carried over here.
+        NeoForge.EVENT_BUS.addListener(this::onPlayerClone);
         // The mods list screen picks this up and shows the config button for MerlinLib. The factory
         // lambda only references the client side screen class inside its body, so a dedicated server
         // never loads it. The named local resolves the registerExtensionPoint overload ambiguity:
@@ -104,25 +108,18 @@ public class MerlinLibNeoForge {
         if (player.level().getEntity(payload.targetId()) instanceof LivingEntity target) {
             int max = Math.max(0, payload.max());
             int current = Math.max(0, Math.min(max, payload.current()));
-            AttributeInstance attribute = target.getAttribute(Attributes.MAX_HEALTH);
-            if (attribute != null) {
-                Identifier id = Identifier.fromNamespaceAndPath(
-                        com.huziyang520.merlinlib.Constants.MOD_ID, "health_editor");
-                AttributeModifier existing = attribute.getModifier(id);
-                double base = attribute.getBaseValue();
-                if (existing != null) {
-                    attribute.removeModifier(id);
-                }
-                if (max > 0) {
-                    // Permanent, not transient: the edit belongs to the holder and is meant to survive a death
-                    // and respawn. Setting the maximum to zero instead removes it, so a death at zero health -
-                    // the one case where the player asked to be reset - comes back with the default maximum.
-                    attribute.addPermanentModifier(new AttributeModifier(id, max - base,
-                            AttributeModifier.Operation.ADD_VALUE));
-                }
-            }
+            HealthCeiling.apply(target, max);
             target.setHealth(Math.min(current, target.getMaxHealth()));
         }
+    }
+
+    /**
+     * Carries the health ceiling over to the player that replaces the old one on respawn.
+     *
+     * @param event the clone event, fired on respawn and on a dimension change
+     */
+    private void onPlayerClone(net.neoforged.neoforge.event.entity.player.PlayerEvent.Clone event) {
+        HealthCeiling.copyTo(event.getOriginal(), event.getEntity());
     }
 
     /**

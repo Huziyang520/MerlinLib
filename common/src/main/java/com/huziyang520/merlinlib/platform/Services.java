@@ -1,6 +1,8 @@
 package com.huziyang520.merlinlib.platform;
 
 import com.huziyang520.merlinlib.Constants;
+import com.huziyang520.merlinlib.platform.services.ILifecycleBridge;
+import com.huziyang520.merlinlib.platform.services.ILootBridge;
 import com.huziyang520.merlinlib.platform.services.IPackBridge;
 import com.huziyang520.merlinlib.platform.services.IPlatformHelper;
 import com.huziyang520.merlinlib.platform.services.IRegistrationBridge;
@@ -31,6 +33,18 @@ public class Services {
      * effects and potions.
      */
     public static final IRegistrationBridge REGISTRATIONS = load(IRegistrationBridge.class);
+
+    /**
+     * Loader specific hooks for the server lifecycle, used by
+     * {@link com.huziyang520.merlinlib.api.MerlinApi#lifecycle()}.
+     */
+    public static final ILifecycleBridge LIFECYCLE = load(ILifecycleBridge.class);
+
+    /**
+     * Loader specific hooks for adding pools to loot tables while they load, used by
+     * {@link com.huziyang520.merlinlib.api.MerlinApi#loot()}.
+     */
+    public static final ILootBridge LOOT = load(ILootBridge.class);
 
     /**
      * Loads the implementation of the requested service for the current environment.

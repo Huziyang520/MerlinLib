@@ -16,6 +16,7 @@ public final class MerlinApi {
     private static final EnchantmentApi ENCHANTMENTS = EnchantmentRegistry.INSTANCE;
     private static final EffectApi EFFECTS = EffectRegistry.INSTANCE;
     private static final PotionApi POTIONS = PotionRegistry.INSTANCE;
+    private static final EventApi EVENTS = EventApi.INSTANCE;
 
     private MerlinApi() {
     }
@@ -41,5 +42,30 @@ public final class MerlinApi {
      */
     public static PotionApi potions() {
         return POTIONS;
+    }
+
+    /**
+     * @return the server lifecycle hooks, for work that has to run once per server (reading configuration,
+     *         registering a join notice, warming a cache). Safe to call from a mod constructor, before
+     *         MerlinLib has initialised.
+     */
+    public static LifecycleApi lifecycle() {
+        return LifecycleApi.INSTANCE;
+    }
+
+    /**
+     * @return the enchantment event api, for handing an enchantment a callback on attacks, hurts, projectile
+     *         hits, block drops and ticks. Safe to call from a mod constructor.
+     */
+    public static EventApi events() {
+        return EVENTS;
+    }
+
+    /**
+     * @return the loot injection api, for putting an enchantment into the game's own loot tables as an
+     *         enchanted book. Safe to call from a mod constructor.
+     */
+    public static LootApi loot() {
+        return LootApi.INSTANCE;
     }
 }
