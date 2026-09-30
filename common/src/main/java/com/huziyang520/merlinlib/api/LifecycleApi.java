@@ -2,6 +2,7 @@ package com.huziyang520.merlinlib.api;
 
 import com.huziyang520.merlinlib.platform.Services;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.util.function.Consumer;
 
@@ -69,5 +70,30 @@ public final class LifecycleApi {
      */
     public void onServerStopping(Consumer<MinecraftServer> callback) {
         Services.LIFECYCLE.onServerStopping(callback);
+    }
+
+    /**
+     * Runs the callback once the server has finished starting, handing it the server.
+     *
+     * <p>The moment to use when the work resolves anything out of the data driven registries - enchantments,
+     * for instance: they are empty at {@link #onServerStarting(Runnable)} because the data packs have not been
+     * read yet, and populated by the time this runs.
+     *
+     * @param callback the work to run, never {@code null}
+     */
+    public void onServerStarted(Consumer<MinecraftServer> callback) {
+        Services.LIFECYCLE.onServerStarted(callback);
+    }
+
+    /**
+     * Runs the callback every time a player joins, handing it the player.
+     *
+     * <p>The moment for anything a player should see as they arrive: a welcome message, a version notice, a
+     * first-join reward. Sending from here reaches them right after the world finished loading.
+     *
+     * @param callback the work to run, never {@code null}
+     */
+    public void onPlayerJoin(Consumer<ServerPlayer> callback) {
+        Services.LIFECYCLE.onPlayerJoin(callback);
     }
 }
