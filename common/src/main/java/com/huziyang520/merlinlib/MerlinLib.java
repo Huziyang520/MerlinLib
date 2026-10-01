@@ -8,6 +8,7 @@ import com.huziyang520.merlinlib.tools.TestWeapons;
 import com.huziyang520.merlinlib.mixin.RangedAttributeAccessor;
 import com.huziyang520.merlinlib.api.MerlinApi;
 import com.huziyang520.merlinlib.loot.LootInjector;
+import com.huziyang520.merlinlib.notice.NoticeManager;
 import com.huziyang520.merlinlib.platform.Services;
 import com.huziyang520.merlinlib.util.SmeltingLookup;
 import net.minecraft.core.Holder;
@@ -55,6 +56,8 @@ public class MerlinLib {
         Services.LIFECYCLE.bootstrap(loaderContext);
         Services.LOOT.bootstrap(loaderContext);
         LootInjector.install();
+        // Join notices: registered from here, so a business mod may have registered its own before or after.
+        NoticeManager.install();
         ConfigManager.reload();
         widenAttributeCeilings();
         MerlinApi.lifecycle().onServerStarting(SmeltingLookup::initialize);

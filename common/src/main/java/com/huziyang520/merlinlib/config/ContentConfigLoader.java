@@ -70,7 +70,15 @@ public final class ContentConfigLoader {
 
         Map<Identifier, EffectOverrides.Entry> effectOverrides = new LinkedHashMap<>();
         for (Path file : ConfigDirectory.jsonFiles()) {
-            if (EFFECTS_FILE.equals(file.getFileName().toString())) {
+            String name = file.getFileName().toString();
+            if (RESERVED_FILES.contains(name)) {
+                // MerlinLib's own files sit in the same folder as the content files. Reading one of them as a
+                // list of enchantments does not fail loudly - it fails per entry, so a macro file with two
+                // macros produced two "this definition could not be loaded" warnings on every reload, which
+                // made a healthy configuration look broken. Names listed here are simply not content.
+                continue;
+            }
+            if (EFFECTS_FILE.equals(name)) {
                 readEffectOverrides(file, effectOverrides, errors);
             } else {
                 readFile(file, fromConfig, disabled, errors);
@@ -396,6 +404,14 @@ public final class ContentConfigLoader {
 
     /** File name holding effect colour and disable overrides. */
     public static final String EFFECTS_FILE = "effects.json";
+
+    /**
+     * Files in the configuration folder that are not enchantment content.
+     *
+     * <p>{@code macros.json} belongs to the macro toolkit ({@code MacroStorage}); anything else added here must
+     * be a file MerlinLib itself owns and writes.
+     */
+    private static final java.util.Set<String> RESERVED_FILES = java.util.Set.of("macros.json");
 
     /**
      * Reads {@code effects.json}: a list of entries shaped

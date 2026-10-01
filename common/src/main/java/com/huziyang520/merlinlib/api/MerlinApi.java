@@ -68,4 +68,13 @@ public final class MerlinApi {
     public static LootApi loot() {
         return LootApi.INSTANCE;
     }
+
+    /**
+     * @return the join notice api, for a message a business mod wants shown in the chat when a player
+     *         arrives. Safe to call from a mod constructor, and again from {@code onServerStarting} when the
+     *         default should follow the mod's own configuration.
+     */
+    public static NoticeApi notices() {
+        return NoticeApi.INSTANCE;
+    }
 }

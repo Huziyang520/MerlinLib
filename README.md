@@ -99,6 +99,14 @@ scroll_step_fast = 10
 [macros]
 # Enable the macro toolkit (the macro screen and running macros from their bound keys).
 enabled = true
+
+[particles]
+# Cap how many particles this client draws per 1/20 second, and how many particles one server send may
+# carry. Some paths of the game ask for one particle per point of damage, so a hit with a very large damage
+# number asked for a count in the hundreds of millions. The cap cuts the count down at both ends: the server
+# clamps what it sends, and the client drops whatever still arrives above the limit.
+limit_enabled = true
+limit = 512
 ```
 
 #### server.toml
@@ -133,6 +141,13 @@ config_version = 3
 [content]
 # Emergency switch: when true, none of the enchantments in config/MerlinLib/*.json are generated.
 disable_generated_enchantments = false
+
+[notices]
+# Show the join notices business mods registered through MerlinLib (MerlinApi.notices()). On by default.
+enabled = true
+# Per mod switches, written by the settings screen as "<modid>=true;<modid>=false>". A mod that is not
+# listed uses the default it declared when it registered.
+per_mod = ""
 ```
 
 `server.toml` is authoritative: the client only shows what the server allows, and every write is validated on the server. In single player the integrated server shares the process, so a change applies at once.
@@ -222,6 +237,98 @@ Adding enchantments from a configuration file is the core of MerlinLib. The fiel
 ### Java API
 
 The single entry point is `com.huziyang520.merlinlib.api.MerlinApi`.
+
+#### Join notices
+
+A message a mod wants shown in the chat when a player arrives:
+
+```java
+MerlinApi.notices().register(
+        Identifier.fromNamespaceAndPath("mymod", "dependency_change"),
+        NoticeMode.EVERY_JOIN,
+        Component.translatable("mymod.notice.dependency_change"));
+```
+
+- The id's namespace is the owning mod: the settings screen groups by it, and the per mod switch is stored
+  under it.
+- `NoticeMode.EVERY_JOIN` (every arrival), `ONCE_PER_SAVE` (once per player per world) and `FIRST_JOIN`
+  (once per world, for whoever arrives first).
+- Colours come from the component, so a line may carry as many colours as it has styles.
+- Register from `onServerStarted`, after your own configuration has been read, to pass
+  `enabledByDefault` from it. Registering the same id again replaces the earlier entry.
+
+A data pack can add one at `data/<namespace>/merlinlib/notices/<name>.json`:
+
+```json
+{
+  "mode": "once_per_save",
+  "enabled_by_default": true,
+  "lines": [
+    [ {"text": "My Mod: ", "color": "#55FF55"}, {"text": "thanks for installing", "color": "gold"} ],
+    [ "a second line" ]
+  ]
+}
+```
+
+`mode` is `every_join`, `once_per_save` or `first_join`. A line is either a plain string or a list of
+segments, each with `text` plus optional `color` (`#RRGGBB`, `0xRRGGBB`, a decimal number or a colour name),
+`bold`, `italic` and `underlined`. Pack notices are read when a player joins, so a reloaded pack is picked
+up on the next arrival. A file that does not parse is logged and skipped rather than allowed to stop the
+join.
+
+Players and operators control all of it from the settings screen: *General → Join notices in chat* is the
+master switch, and *Edit each mod's join notices* lists MerlinLib's own notices first, then one row per
+business mod that registered one. Only mods that opted in appear; if none has, the screen says so. The
+switches are stored in `server.toml` under `[notices]`, because the server is what sends the message.
+
+#### Server lifecycle
+
+```java
+MerlinApi.lifecycle().onServerStarting(() -> MyConfig.load());
+MerlinApi.lifecycle().onServerStarted(server -> MyEnchantments.bind(server.registryAccess()));
+MerlinApi.lifecycle().onServerStopping(MyCache::clear);
+MerlinApi.lifecycle().onPlayerJoin(player -> player.sendSystemMessage(...));
+```
+
+Registration is safe from a mod constructor: the callbacks are buffered and run when the loader event fires,
+in registration order, and one that throws is logged without stopping the others. The two start moments are
+not interchangeable - `onServerStarting` is early, so it is where loot rules must be registered (the packs
+have not been read yet), while `onServerStarted` is the first moment the dynamic registries hold anything, so
+it is where an enchantment `Holder` can be resolved.
+
+#### Enchantment events
+
+```java
+MerlinApi.events().register(venomHolder, BuiltInEvents.POST_ATTACK, (event, context) -> {
+    event.target().addEffect(new MobEffectInstance(MobEffects.POISON, 100, context.level() - 1));
+});
+```
+
+- Eight built-in types: `POST_ATTACK`, `MODIFY_DAMAGE`, `POST_HURT`, `POST_KILL`, `PROJECTILE_HIT`,
+  `ENTITY_TICK`, `MODIFY_BLOCK_DROPS` and `POST_BLOCK_BREAK`. Each event's record is nested in `BuiltInEvents`.
+- The equipment is scanned for you (main hand, armour, off hand), and effects that outlive the swing - a
+  thrown trident, an arrow in flight - are found through the weapon snapshot the projectile carries.
+- Callbacks are matched by enchantment **id**, so they survive a data pack reload, and the context hands you
+  the live holder, the level of the enchantment and the item it was found on.
+- A callback that throws is logged and skipped, and an event type nobody listens to costs a single bit test:
+  no scan happens at all until something registers.
+
+#### Loot injection
+
+```java
+MerlinApi.loot().register(LootInjectionBuilder.create()
+        .toTables("minecraft:chests/simple_dungeon")
+        .asBook()
+        .withEnchantments("mymod:frostbite")
+        .chance(0.1F)
+        .weight(1)
+        .quality(1));
+```
+
+Each rule becomes one loot pool holding an enchanted book (`asBook`) or an item (`asItem`) behind a
+random-chance condition. `LootTables` lists the vanilla table names as constants so a typo is a compile error
+instead of a rule that silently never fires. Rules are applied on both loaders while the tables load, and an
+enchantment that does not exist is logged and skipped - a missing entry never stops a table from loading.
 
 #### Registering an enchantment
 
@@ -533,6 +640,13 @@ scroll_step_fast = 10
 [macros]
 # 命令宏总开关（宏界面与按键触发）
 enabled = true
+
+[particles]
+# 粒子数量上限：既是客户端每 1/20 秒最多绘制的数量，也是服务端单次发送的上限。原版有些路径按
+# 伤害点数逐点要粒子，一击打出极大伤害时会要到上亿的计数。上限在两端同时夹住：服务端少发、客户端
+# 丢弃仍然超标的那些。
+limit_enabled = true
+limit = 512
 ```
 
 #### server.toml
@@ -567,6 +681,12 @@ config_version = 3
 [content]
 # 应急开关：为 true 时不生成 config/MerlinLib/*.json 里的附魔（代码 API 注册不受影响）
 disable_generated_enchantments = false
+
+[notices]
+# 是否显示业务模组通过 MerlinLib 注册的进服聊天提示（默认开启）
+enabled = true
+# 各模组的开关，由设置界面写成 "<模组id>=true;<模组id>=false>"；未列出的模组用其注册时声明的默认值
+per_mod = ""
 ```
 
 `server.toml` 是权威：客户端只展示服务端允许的范围，每次写入都由服务端校验。单人游戏下集成服务端与本进程共享配置，改动立即生效。
@@ -656,6 +776,89 @@ disable_generated_enchantments = false
 ### Java API
 
 统一入口是 `com.huziyang520.merlinlib.api.MerlinApi`。
+
+#### 进服聊天提示
+
+业务模组想让玩家进入世界时在聊天栏看到一条消息，交给库来发：
+
+```java
+MerlinApi.notices().register(
+        Identifier.fromNamespaceAndPath("mymod", "dependency_change"),
+        NoticeMode.EVERY_JOIN,
+        Component.translatable("mymod.notice.dependency_change"));
+```
+
+- **id 的命名空间就是归属模组**：设置界面按它分组，逐模组开关也存在它名下。
+- 三种时机：`EVERY_JOIN`（每次进入世界）、`ONCE_PER_SAVE`（每个存档每名玩家一次）、
+  `FIRST_JOIN`（每个存档只发一次，发给先进来的那位）。
+- 颜色来自组件本身，所以一行里可以有多种颜色（组件有多少样式就有多少颜色）。
+- 在 `onServerStarted` 里注册、且排在自己的配置读取之后，就能把配置值当作 `enabledByDefault` 传进来；
+  同一 id 重复注册是覆盖，换世界再次启动服务器不会重复提示。
+
+数据包也可以加，位置 `data/<命名空间>/merlinlib/notices/<名字>.json`：
+
+```json
+{
+  "mode": "once_per_save",
+  "enabled_by_default": true,
+  "lines": [
+    [ {"text": "我的模组：", "color": "#55FF55"}, {"text": "感谢安装", "color": "gold"} ],
+    [ "第二行" ]
+  ]
+}
+```
+
+`mode` 取 `every_join` / `once_per_save` / `first_join`。一行要么是普通字符串，要么是片段数组，每个片段
+有 `text`，可选 `color`（`#RRGGBB`、`0xRRGGBB`、十进制数字或颜色名）、`bold`、`italic`、`underlined`。
+数据包内容在玩家进服时读取，所以改完数据包下次进服即生效；解析失败的文件只记日志跳过，不会阻断进服。
+
+玩家与管理员在设置界面里控制这一切：**通用 → 进入世界聊天栏提示**是总开关，**编辑各模组聊天栏提示**
+里先列 MerlinLib 自己的通知，然后每个"主动适配了本功能"的业务模组一行；没有模组适配时会明确写出这一点。
+开关存在 `server.toml` 的 `[notices]` 段——消息是服务端发的，判断就得在服务端做。
+
+#### 服务器生命周期
+
+```java
+MerlinApi.lifecycle().onServerStarting(() -> MyConfig.load());
+MerlinApi.lifecycle().onServerStarted(server -> MyEnchantments.bind(server.registryAccess()));
+MerlinApi.lifecycle().onServerStopping(MyCache::clear);
+MerlinApi.lifecycle().onPlayerJoin(player -> player.sendSystemMessage(...));
+```
+
+在模组构造器里注册是安全的：回调先缓冲、等加载器事件触发时按注册顺序执行，某一条抛异常只记日志、
+不影响其余。两个"启动"时机不能互换——`onServerStarting` 更早，数据包还没读，所以战利品规则必须挂在
+它上面；`onServerStarted` 是动态注册表第一次有内容的时刻，解析附魔 `Holder` 要等它。
+
+#### 附魔事件
+
+```java
+MerlinApi.events().register(venomHolder, BuiltInEvents.POST_ATTACK, (event, context) -> {
+    event.target().addEffect(new MobEffectInstance(MobEffects.POISON, 100, context.level() - 1));
+});
+```
+
+- 八种内置事件：`POST_ATTACK`、`MODIFY_DAMAGE`、`POST_HURT`、`POST_KILL`、`PROJECTILE_HIT`、
+  `ENTITY_TICK`、`MODIFY_BLOCK_DROPS`、`POST_BLOCK_BREAK`；各事件的记录类型嵌在 `BuiltInEvents` 里。
+- 装备由库帮你扫（主手、护甲、副手）；挥砍结束后仍在生效的武器效果——投出去的三叉戟、飞行中的箭——
+  通过弹射物携带的武器快照找到。
+- 回调按附魔 **id** 匹配，所以数据包重载后依然有效；上下文回传活 `Holder`、附魔等级与命中的物品。
+- 回调抛异常只记日志并跳过；没有任何回调的事件类型只做一次位测试，**一次扫描都不会发生**。
+
+#### 战利品注入
+
+```java
+MerlinApi.loot().register(LootInjectionBuilder.create()
+        .toTables("minecraft:chests/simple_dungeon")
+        .asBook()
+        .withEnchantments("mymod:frostbite")
+        .chance(0.1F)
+        .weight(1)
+        .quality(1));
+```
+
+每条规则变成一个战利品池，池里是按随机概率判定的附魔书（`asBook`）或指定物品（`asItem`）。
+`LootTables` 把原版表名写成常量，拼错是编译错误，而不是"规则悄悄不触发"。两端都在战利品表加载时应用；
+写错/不存在的附魔只记日志跳过，绝不让一张表加载失败。
 
 #### 注册附魔
 

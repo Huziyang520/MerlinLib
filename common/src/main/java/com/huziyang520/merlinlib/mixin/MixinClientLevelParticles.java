@@ -2,6 +2,7 @@ package com.huziyang520.merlinlib.mixin;
 
 import com.huziyang520.merlinlib.config.ClientConfig;
 import com.huziyang520.merlinlib.config.ConfigManager;
+import com.huziyang520.merlinlib.tools.ParticleDiagnostics;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.particles.ParticleOptions;
 import org.spongepowered.asm.mixin.Mixin;
@@ -78,6 +79,7 @@ public class MixinClientLevelParticles {
             merlinlib$drawn = 0;
         }
         if (merlinlib$drawn >= config.particleLimit()) {
+            ParticleDiagnostics.recordDrop("client draw", 1);
             info.cancel();
             return;
         }

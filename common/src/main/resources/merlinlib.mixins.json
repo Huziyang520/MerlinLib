@@ -15,13 +15,15 @@
     "MixinProjectileHit",
     "MixinBlockDrops",
     "MixinFoodDataTick",
-    "MixinPlayerDestroyBlock"
+    "MixinPlayerDestroyBlock",
+    "MixinServerLevelParticles"
   ],
   "client": [
     "MixinMinecraft",
     "MixinMinecraftUseItem",
     "MixinHud",
-    "MixinClientLevelParticles"
+    "MixinClientLevelParticles",
+    "MixinClientPacketListenerParticles"
   ],
   "server": [],
   "injectors": {

@@ -227,15 +227,18 @@ public final class MerlinScreens {
             // Editing yourself is a feature of the item and nothing else, so it needs the item whatever the
             // "requires item" switch says. Without this the switch's off position turned a bare-handed sneak
             // right click into a self edit, which also made the item look pointless.
+            //
+            // Both refusals are silent towards the player on purpose: the requirement is already stated in the
+            // item's own tooltip and on the config screen, and repeating it in the middle of the screen on
+            // every stray right click is noise. The log lines stay, because "why does nothing happen" is a
+            // question the log can answer and the screen cannot.
             Constants.LOG.info("[MerlinLib] a self edit was refused: the health editor item must be held to "
                     + "edit yourself");
-            player.sendOverlayMessage(Component.translatable("gui.merlinlib.health.need_item"));
             return false;
         }
         if (ConfigManager.server().healthEditorRequiresItem() && !holdingItem) {
             Constants.LOG.info("[MerlinLib] the health editor needs the health editor item held "
                     + "(server.toml: tools.health_editor_requires_item = true)");
-            player.sendOverlayMessage(Component.translatable("gui.merlinlib.health.need_item"));
             return false;
         }
         minecraft.setScreenAndShow(new HealthEditorScreen(parent, target));

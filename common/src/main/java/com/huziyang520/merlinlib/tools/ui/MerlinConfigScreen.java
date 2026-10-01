@@ -90,7 +90,7 @@ public class MerlinConfigScreen extends VanillaScreen {
     private static final int TEXT_WARNING = 0xFFFF5555;
 
     /** What a setting's value looks like, which decides how it is validated. */
-    private enum Kind { TOGGLE, INTEGER, DECIMAL }
+    private enum Kind { TOGGLE, INTEGER, DECIMAL, ACTION }
 
     /**
      * One row of the screen.
@@ -115,10 +115,14 @@ public class MerlinConfigScreen extends VanillaScreen {
     private final List<Button> toggleButtons = new ArrayList<>();
     /** The number fields, in row order; the n-th belongs to the n-th numeric row. */
     private final List<EditBox> fields = new ArrayList<>();
+    /** The action buttons, in row order; the n-th belongs to the n-th action row. */
+    private final List<Button> actionButtons = new ArrayList<>();
 
     private int tab;
     /** The tab a button asked for; applied on the next frame instead of during the click. */
     private int pendingTab = -1;
+    /** Whether the notice switches were asked for; applied on the next frame, like a tab switch. */
+    private boolean pendingNoticeSettings;
     private int titleY;
     private int warningY;
     private int hintY;
@@ -159,7 +163,9 @@ public class MerlinConfigScreen extends VanillaScreen {
                     toggle("security.restrict_tools_to_operators", false, T + "operators",
                             server.restrictToolsToOperators()),
                     toggle("content.disable_generated_enchantments", false, T + "generated",
-                            server.disableGeneratedEnchantments()));
+                            server.disableGeneratedEnchantments()),
+                    toggle("notices.enabled", false, T + "notices", server.noticesEnabled()),
+                    action("notices.per_mod", T + "notices_edit"));
             case 1 -> List.of(
                     toggle("editor.hotkey_enabled", true, T + "hotkey", client.editorHotkeyEnabled()),
                     toggle("security.editor_requires_permission", false, T + "editor_permission",
@@ -216,6 +222,17 @@ public class MerlinConfigScreen extends VanillaScreen {
                 Double.toString(value));
     }
 
+    /**
+     * A row that opens another screen instead of holding a value.
+     *
+     * @param key   the row's key, used only to keep the rows distinct
+     * @param label the row label
+     * @return the row
+     */
+    private static Setting action(String key, String label) {
+        return new Setting(key, false, Kind.ACTION, Component.translatable(label), 0, 0, "");
+    }
+
     // ---------------------------------------------------------------- measured size
 
     /** @return true when the toolkit master switch is off, which disables everything else. */
@@ -260,6 +277,7 @@ public class MerlinConfigScreen extends VanillaScreen {
         this.collectors.clear();
         this.fields.clear();
         this.toggleButtons.clear();
+        this.actionButtons.clear();
         // The pending changes are deliberately kept: a tab switch rebuilds this screen, and clearing them here
         // threw away every edit made on the previous tab, which is what made the tabs feel like they reset.
         this.invalid = false;
@@ -297,7 +315,10 @@ public class MerlinConfigScreen extends VanillaScreen {
         this.rowY = new int[this.rows.size()];
         this.settingsArea.setContentHeight(this.rows.size() * ROW);
 
-        int controlX = left + content - CONTROL_WIDTH;
+        // Rows live inside the scroll area, so their right edge has to stop short of the scrollbar: sizing the
+        // controls from the panel width put them straight under the bar the moment the list had to scroll,
+        // which is what hid the macro tab's buttons and fields behind it.
+        int controlX = left + this.settingsArea.rowWidth() - CONTROL_WIDTH;
         for (int index = 0; index < this.rows.size(); index++) {
             Setting setting = this.rows.get(index);
             int y = this.settingsArea.rowTop(index);
@@ -310,6 +331,12 @@ public class MerlinConfigScreen extends VanillaScreen {
                             button.setMessage(stateLabel(state[0]));
                         }, controlX, y, CONTROL_WIDTH)));
                 this.collectors.add(() -> record(setting, Boolean.toString(state[0])));
+            } else if (setting.kind() == Kind.ACTION) {
+                // The button is the whole control of an action row: the settings it opens are saved by the
+                // screen that owns them, so this row records nothing.
+                this.actionButtons.add(this.addRenderableWidget(VanillaUi.button(
+                        Component.translatable(T + "edit"), button -> this.pendingNoticeSettings = true,
+                        controlX, y, CONTROL_WIDTH)));
             } else {
                 EditBox box = VanillaUi.field(this.font, controlX, y, CONTROL_WIDTH, setting.label(),
                         valueOf(setting), 12);
@@ -343,12 +370,18 @@ public class MerlinConfigScreen extends VanillaScreen {
         }
         int toggles = 0;
         int edits = 0;
+        int actions = 0;
         for (int index = 0; index < this.rows.size(); index++) {
             int y = this.settingsArea.rowTop(index);
             this.rowY[index] = y;
             boolean visible = this.settingsArea.rowVisible(index);
             if (this.rows.get(index).kind() == Kind.TOGGLE) {
                 Button button = this.toggleButtons.get(toggles++);
+                button.setY(y);
+                button.visible = visible;
+                button.active = visible;
+            } else if (this.rows.get(index).kind() == Kind.ACTION) {
+                Button button = this.actionButtons.get(actions++);
                 button.setY(y);
                 button.visible = visible;
                 button.active = visible;
@@ -416,7 +449,7 @@ public class MerlinConfigScreen extends VanillaScreen {
         this.invalid = false;
         for (int index = 0; index < this.rows.size() && !this.invalid; index++) {
             Setting setting = this.rows.get(index);
-            if (setting.kind() == Kind.TOGGLE) {
+            if (setting.kind() == Kind.TOGGLE || setting.kind() == Kind.ACTION) {
                 continue;
             }
             String text = this.fields.get(fieldIndex(index)).getValue();
@@ -430,7 +463,8 @@ public class MerlinConfigScreen extends VanillaScreen {
     private int fieldIndex(int rowIndex) {
         int fields = 0;
         for (int index = 0; index < rowIndex; index++) {
-            if (this.rows.get(index).kind() != Kind.TOGGLE) {
+            Kind kind = this.rows.get(index).kind();
+            if (kind != Kind.TOGGLE && kind != Kind.ACTION) {
                 fields++;
             }
         }
@@ -447,6 +481,25 @@ public class MerlinConfigScreen extends VanillaScreen {
             return value >= setting.min() && value <= setting.max();
         } catch (NumberFormatException exception) {
             return false;
+        }
+    }
+
+    /**
+     * Opens the per mod notice switches, one frame after the click that asked for it.
+     *
+     * <p>Deferred for the same reason a tab switch is: replacing the widget list from inside a click leaves the
+     * screen half built while it is still being drawn, and the player sees that frame as a flicker. The pending
+     * values on this tab are collected first, because coming back rebuilds the widgets and anything still only
+     * on screen would be lost.
+     */
+    private void applyPendingNoticeSettings() {
+        if (!this.pendingNoticeSettings) {
+            return;
+        }
+        this.pendingNoticeSettings = false;
+        collect();
+        if (this.minecraft != null) {
+            this.minecraft.setScreenAndShow(new NoticeSettingsScreen(this));
         }
     }
 
@@ -527,6 +580,7 @@ public class MerlinConfigScreen extends VanillaScreen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         applyPendingTab();
+        applyPendingNoticeSettings();
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
         PanelLayout layout = layout();
@@ -542,13 +596,14 @@ public class MerlinConfigScreen extends VanillaScreen {
                     TEXT_WARNING, true);
         }
 
-        int labelWidth = Math.max(40, content - CONTROL_WIDTH - 8);
+        // Same measurement as the controls above: the label may use the row's width, not the panel's.
+        int labelWidth = Math.max(40, this.settingsArea.rowWidth() - CONTROL_WIDTH - 8);
         for (int index = 0; index < this.rows.size(); index++) {
             Setting setting = this.rows.get(index);
             if (!this.settingsArea.rowVisible(index)) {
                 continue;
             }
-            boolean bad = setting.kind() != Kind.TOGGLE
+            boolean bad = setting.kind() != Kind.TOGGLE && setting.kind() != Kind.ACTION
                     && !valid(setting, this.fields.get(fieldIndex(index)).getValue());
             graphics.text(this.font, Component.literal(
                             VanillaUi.clip(this.font, setting.label().getString(), labelWidth)),

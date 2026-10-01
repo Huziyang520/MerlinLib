@@ -65,6 +65,15 @@ public final class ServerConfig {
             # Emergency switch: when true, none of the enchantments defined in config/MerlinLib/*.json
             # are generated. Code api registrations are unaffected.
             disable_generated_enchantments = false
+
+            [notices]
+            # Show the join notices business mods registered through MerlinLib (MerlinApi.notices()). On by
+            # default; turn it off to silence every join notice at once. Takes effect on the next join.
+            enabled = true
+            # Per mod switches, written by "edit each mod's join notices" on the general tab as
+            # "<modid>=true;<modid>=false>". A mod that is not listed uses the default it declared when it
+            # registered. Editing this line by hand works too; the screen is just easier.
+            per_mod = ""
             """;
 
     private boolean restrictToolsToOperators;
@@ -79,6 +88,8 @@ public final class ServerConfig {
     private boolean allowNonTestItemDamage;
     private boolean healthEditorRequiresItem = true;
     private boolean disableGeneratedEnchantments;
+    private boolean noticesEnabled = true;
+    private String noticePerMod = "";
     private List<ContentError> errors = List.of();
 
     public static ServerConfig load() {
@@ -103,6 +114,8 @@ public final class ServerConfig {
         config.allowNonTestItemDamage = file.getBoolean("tools.allow_non_test_item_damage", false);
         config.healthEditorRequiresItem = file.getBoolean("tools.health_editor_requires_item", true);
         config.disableGeneratedEnchantments = file.getBoolean("content.disable_generated_enchantments", false);
+        config.noticesEnabled = file.getBoolean("notices.enabled", true);
+        config.noticePerMod = file.getString("notices.per_mod", "");
         config.errors = file.errors();
         return config;
     }
@@ -216,6 +229,16 @@ public final class ServerConfig {
     /** @return whether the generated enchantment content is switched off. */
     public boolean disableGeneratedEnchantments() {
         return this.disableGeneratedEnchantments;
+    }
+
+    /** @return whether join notices registered through the api are shown at all */
+    public boolean noticesEnabled() {
+        return this.noticesEnabled;
+    }
+
+    /** @return the per mod overrides, as written in the configuration */
+    public String noticePerMod() {
+        return this.noticePerMod;
     }
 
     /** @return problems found while reading the file during the last reload. */

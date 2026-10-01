@@ -109,7 +109,16 @@
   "command.merlinlib.pack.empty": "The generated in-memory pack currently contains no files: check that config/MerlinLib/enchantments.json parses",
   "command.merlinlib.editorhotkey.on": "Item editor hotkey enabled (written to client.toml)",
   "command.merlinlib.editorhotkey.off": "Item editor hotkey disabled (written to client.toml)",
-  "gui.merlinlib.config.hint.particles": "The limit only drops excess particles, so normal play is unaffected, and a hit dealing thousands of damage no longer freezes the client. Turning it off restores vanilla behaviour exactly.",
-  "gui.merlinlib.config.particles_limit": "Particle limit (per 1/20 s)",
+  "gui.merlinlib.config.hint.particles": "The limit applies at both ends: the client draws at most this many per 1/20 second, and the server sends at most this many per call, dropping the rest. It does not create particles only to throw them away - the counting loop itself is cut short as well, so a single hit for hundreds of millions of damage (an integer limit testing weapon) cannot freeze the client. Turning it off restores vanilla behaviour exactly.",
+  "gui.merlinlib.config.particles_limit": "Particle limit (per 1/20 s / per send)",
+  "gui.merlinlib.config.notices": "Join notices in chat",
+  "gui.merlinlib.config.notices_edit": "Edit each mod's join notices",
+  "gui.merlinlib.config.edit": "Edit",
+  "gui.merlinlib.notice.title": "Join notices",
+  "gui.merlinlib.notice.library": "MerlinLib",
+  "gui.merlinlib.notice.library_empty": "(MerlinLib has no notice of its own)",
+  "gui.merlinlib.notice.mods": "Business mods",
+  "gui.merlinlib.notice.empty": "No mod uses MerlinLib's join notice feature",
+  "gui.merlinlib.notice.hint": "Only mods that opted in are listed. The switches are written to the [notices] section of server.toml and apply on the next join.",
   "gui.merlinlib.config.particles": "Limit the number of particles"
 }

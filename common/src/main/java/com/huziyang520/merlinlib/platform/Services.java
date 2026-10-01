@@ -3,6 +3,7 @@ package com.huziyang520.merlinlib.platform;
 import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.platform.services.ILifecycleBridge;
 import com.huziyang520.merlinlib.platform.services.ILootBridge;
+import com.huziyang520.merlinlib.platform.services.IModNameBridge;
 import com.huziyang520.merlinlib.platform.services.IPackBridge;
 import com.huziyang520.merlinlib.platform.services.IPlatformHelper;
 import com.huziyang520.merlinlib.platform.services.IRegistrationBridge;
@@ -45,6 +46,12 @@ public class Services {
      * {@link com.huziyang520.merlinlib.api.MerlinApi#loot()}.
      */
     public static final ILootBridge LOOT = load(ILootBridge.class);
+
+    /**
+     * Loader specific way of naming a mod, used by the join notice settings screen to show
+     * {@code Practical Enchantments} instead of {@code practical_enchantments}.
+     */
+    public static final IModNameBridge MOD_NAMES = load(IModNameBridge.class);
 
     /**
      * Loads the implementation of the requested service for the current environment.

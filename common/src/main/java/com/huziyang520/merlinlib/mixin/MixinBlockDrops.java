@@ -37,6 +37,13 @@ import java.util.List;
  * <p>The overload without a breaker entity is used by pipes, pistons and other machinery. There is no player
  * to deliver the event to there, so that overload is not hooked at all rather than displacing the drops of a
  * machine onto a player who was not involved.
+ *
+ * <h2>Why the injection is cancellable</h2>
+ *
+ * <p>Replacing the returned list means calling {@code setReturnValue}, and Mixin only allows that on a
+ * cancellable injection. Without {@code cancellable = true} the call throws inside the drop path itself, which
+ * does not merely lose the event: it aborts the break, so the player sees a block that refuses to drop
+ * anything, and the exception surfaces as a crash report naming this class. The flag is not a formality.
  */
 @Mixin(Block.class)
 public class MixinBlockDrops {
@@ -53,7 +60,7 @@ public class MixinBlockDrops {
      * @param cir        the injection callback carrying vanilla's drops
      */
     @Inject(method = "getDrops(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/entity/BlockEntity;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/item/ItemInstance;)Ljava/util/List;",
-            at = @At("RETURN"))
+            at = @At("RETURN"), cancellable = true)
     private static void merlinlib$modifyBlockDrops(BlockState state, ServerLevel level, BlockPos pos,
                                                    BlockEntity blockEntity, Entity breaker, ItemInstance tool,
                                                    CallbackInfoReturnable<List<ItemStack>> cir) {
