@@ -296,5 +296,5 @@ MerlinApi.potions().register(Identifier.fromNamespaceAndPath("yourmod", "trance"
 - `com.huziyang520.merlinlib.tools.hud.CombatFeedback`：准星伤害显示与飘字背后的客户端状态（数值由服务端下发）。
 - `com.huziyang520.merlinlib.network.DamageFeedbackPayload`：伤害反馈载荷（`merlinlib:damage_feedback`）。
 
-反例与已知边界（效果/药水不能由配置新增、`EnchantmentHelper` 的伤害修改需要 `ServerLevel` 等）
-记在维护者的决策记录里。
+反例与已知边界：效果与药水不能由配置新增，而 `EnchantmentHelper` 的伤害修改需要 `ServerLevel`，
+所以相关事件只在服务端触发。

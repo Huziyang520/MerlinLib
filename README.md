@@ -16,7 +16,7 @@ MerlinLib is a Minecraft **library mod**: it gives mod authors three registratio
 - Usage manual: [`docs/USAGE.md`](docs/USAGE.md) — every feature and every command, English first, Chinese after
 - Developer guide: [`docs/DEV.md`](docs/DEV.md) — the API, the three registration lines, English and Chinese
 
-**Added recently (features, newest first)**
+**Added recently**
 
 - **Join notices**: a mod registers a chat message shown when a player arrives. Three timings - every join, once per save, first join - colours straight from the component, and a data pack form for packs that prefer files. Players and operators control it from the settings screen: a master switch, then one row per mod, filled from what mods registered at runtime and never from a list kept in the library.
 - **Interface animation**: the library's own screens can pop, slide up, slide in from the side, or fade (the fade is a veil over the finished frame - the interface has no global alpha to fade with). Each place has its own switch, and the animation kind and the slide on a tab switch are two separate settings.
@@ -563,24 +563,6 @@ common/src/main/java/com/huziyang520/merlinlib/
 
 MultiLoader layout: **the logic lives in `common`, the platform differences in `fabric` / `neoforge`**, wired through `META-INF/services`.
 
-### Status
-
-Done and compiling (both jars are produced):
-
-- Project skeleton, metadata, MIT licence, icon wiring
-- Enchantment library: API + validation + runtime data pack injection + `/reload` change report
-- Effect and potion libraries: API + colours and gradients + one-effect variant generation + runtime recolouring and disabling
-- Configuration: `client.toml` / `server.toml` / `enchantments.json` / `effects.json`, generated with comments on first launch, plus a settings screen grouped by module that keeps the file comments
-- Permissions: operator-only switch and per-editor command permission switches, based on the 26.3 permission system
-- Built-in enchantment `merlinlib:unbreakable`
-- Testing toolkit: four weapons, item editor with a scrolling enchantment list, second level picker, delete confirmation, health editor (entities and yourself), command macros with key capture, crosshair damage readout and floating damage numbers
-- Ceilings widened to the integer limit: maximum health, attack damage and enchantment levels (including the 255 wall in the save format)
-
-Planned:
-
-- Textures for the four weapons and the screens (vanilla pixel style, produced with Blockbench)
-- Server to client switch synchronisation
-
 ### Licence
 
 Released under the **MIT licence**, see [LICENSE](LICENSE).
@@ -605,7 +587,7 @@ MerlinLib 是一款 Minecraft **前置库模组**：为模组开发者提供**�
 - 使用手册：[`docs/USAGE.md`](docs/USAGE.md)——全部功能与全部指令一页速查，英文在前、中文在后
 - 开发者文档：[`docs/DEV.md`](docs/DEV.md)——API 与三条注册主线，中英双语
 
-**近期新增（只列功能，不含修复；由新到旧）**
+**近期新增**
 
 - **进服聊天提示**：业务模组注册一条玩家进入世界时显示的聊天消息。三种时机（每次进入 / 每存档一次 / 首次进入），颜色直接来自组件，也可以写成数据包文件。玩家与管理员在设置界面里控制：一个总开关，下面每个"主动适配过本功能"的模组一行——列表只来自运行时注册，库内不存任何模组清单。
 - **界面动画**：库自己的界面可以跳出、上滑、侧滑、淡入淡出（淡入是整屏暗幕渐隐——这套界面没有全局透明度可用）。每个使用位置各有开关，且"动画种类"与"切换类别时滑动"是两个互不影响的设置。
@@ -1149,26 +1131,6 @@ common/src/main/java/com/huziyang520/merlinlib/
 ```
 
 采用 MultiLoader 结构：**业务逻辑在 `common`，平台差异在 `fabric` / `neoforge`**，两者通过 `META-INF/services` 声明 SPI 实现。
-
-### 当前实现状态
-
-已完成并编译通过（双端 jar 均可产出）：
-
-- ✅ 工程骨架、元数据、MIT 协议、图标接线
-- ✅ 附魔库：API + 校验 + 运行期数据包注入 + `/reload` 变更清单
-- ✅ 效果库 / 药水库：API + 颜色与渐变 + 单效果药水变体生成 + 运行期改色与禁用
-- ✅ 配置：`client.toml` / `server.toml` / `enchantments.json` / `effects.json`，首启自动生成带注释的默认文件，
-  并带一个按模块分页、只写改动项且保留注释的设置界面
-- ✅ 权限：OP 限制开关，以及「物品编辑 / 血量编辑器需要命令权限」两个独立开关（基于 26.3 新权限系统）
-- ✅ 内置附魔 `merlinlib:unbreakable`
-- ✅ 测试工具集：四件测试武器、物品编辑界面（可滚动附魔列表）、附魔二级选择、删除确认、血量编辑器（实体与自己）、
-  指令宏（含按键捕获与鼠标键）、准星伤害显示与生物受伤飘字
-- ✅ 上限放宽到 int 上限：最大生命值、攻击伤害、附魔等级（含存档格式里 255 的那道墙）
-
-进行中 / 待完成：
-
-- ⏳ 4 件武器与界面贴图（由美术智能体 + Blockbench 产出，原版像素风）
-- ⏳ 服务端 → 客户端的开关同步
 
 ### 许可证
 
