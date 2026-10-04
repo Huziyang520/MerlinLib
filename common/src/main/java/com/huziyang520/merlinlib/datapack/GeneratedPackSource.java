@@ -28,6 +28,14 @@ public final class GeneratedPackSource implements RepositorySource {
 
     public static final GeneratedPackSource INSTANCE = new GeneratedPackSource();
 
+    /**
+     * The version this pack reports to the game alongside its id.
+     *
+     * <p>Deliberately a fixed string and not the mod's own version: the pair is an identity, and an identity that
+     * changes on every release would stop matching the packs older worlds recorded.
+     */
+    private static final String KNOWN_PACK_VERSION = "1";
+
     private static final Pack.ResourcesSupplier SUPPLIER = new Pack.ResourcesSupplier() {
         @Override
         public PackMetadataResources openMetadata(PackLocationInfo location) {
@@ -54,7 +62,13 @@ public final class GeneratedPackSource implements RepositorySource {
                 Constants.GENERATED_PACK_ID,
                 Component.translatable("pack." + Constants.MOD_ID + ".generated"),
                 PackSource.BUILT_IN,
-                Optional.empty()
+                // The pack has to name itself to the game, and this is not cosmetic: vanilla marks every registry entry
+                // with the lifecycle of the pack that provided it, and a pack it does not recognise counts as an
+                // experimental datapack. That single empty optional is what made every world using this library report
+                // "minecraft:enchantment(Experimental)" and ask for confirmation on every load. Declaring the id keeps
+                // this pack's enchantments stable like vanilla's own.
+                Optional.of(new net.minecraft.server.packs.repository.KnownPack(
+                        Constants.MOD_ID, "generated", KNOWN_PACK_VERSION))
         );
         // The 4 argument constructor is the one vanilla itself provides; the pack is kept out of the
         // selection screens through PackSelectionConfig instead.

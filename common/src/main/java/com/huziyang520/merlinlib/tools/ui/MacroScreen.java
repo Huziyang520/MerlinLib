@@ -139,6 +139,16 @@ public class MacroScreen extends VanillaScreen {
         int editorX = left + listWidth + VanillaUi.GAP * 2;
         int editorWidth = layout.right() - editorX;
 
+        // The bottom of the panel is laid out first, from the panel's own bottom edge. The hint and the two
+        // buttons belong there rather than to wherever a cursor walking down the rows happens to end up: with a
+        // tall editor column the cursor ran past the bottom of the panel, and the hint and the buttons then
+        // overlapped each other outside it. The hint's height is measured because it wraps.
+        int bottom = layout.contentBottom() - VanillaUi.WIDGET_HEIGHT;
+        int hintLines = VanillaUi.wrap(this.font,
+                Component.translatable("gui.merlinlib.macro.hint").getString(),
+                layout.contentWidth()).size();
+        this.hintY = bottom - 6 - hintLines * 10;
+
         layout.gap(12 + 4);
         int bodyTop = layout.cursor();
 
@@ -165,27 +175,28 @@ public class MacroScreen extends VanillaScreen {
 
         this.commandsLabelY = nameY + VanillaUi.WIDGET_HEIGHT + 6;
         int commandsY = this.commandsLabelY + LABEL;
+        // The command area grows only as far as the row above the hint. A fixed height could not be clamped, so
+        // in a small window it reached down into the hint and the buttons - which is what put the character
+        // counter of the box on top of them.
+        int commandsHeight = Math.max(30, Math.min(COMMANDS_HEIGHT,
+                this.hintY - 6 - LABEL - 6 - VanillaUi.WIDGET_HEIGHT - commandsY));
         this.commandsBox = MultiLineEditBox.builder()
                 .setX(editorX)
                 .setY(commandsY)
                 .setShowBackground(true)
                 .setShowDecorations(true)
                 .setPlaceholder(Component.translatable("gui.merlinlib.macro.commands_hint"))
-                .build(this.font, editorWidth, COMMANDS_HEIGHT,
+                .build(this.font, editorWidth, commandsHeight,
                         Component.translatable("gui.merlinlib.macro.commands"));
         this.commandsBox.setCharacterLimit(4096);
         this.commandsBox.setLineLimit(64);
         this.addRenderableWidget(this.commandsBox);
 
-        this.keyLabelY = commandsY + COMMANDS_HEIGHT + 6;
+        this.keyLabelY = commandsY + commandsHeight + 6;
         this.keyButton = this.addRenderableWidget(VanillaUi.button(keyLabel(), button -> this.beginCapture(),
                 editorX, this.keyLabelY + LABEL, KEY_WIDTH));
 
-        layout.cursorTo(Math.max(listButtonsY + VanillaUi.WIDGET_HEIGHT, this.keyButton.getY() + VanillaUi.WIDGET_HEIGHT));
-        this.hintY = layout.cursor() + 6;
-        layout.gap(6 + 10 + 6);
-
-        int bottom = layout.row(VanillaUi.WIDGET_HEIGHT);
+        layout.cursorTo(bottom + VanillaUi.WIDGET_HEIGHT);
         int bottomHalf = layout.sliceWidth(2);
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.macro.apply"),
                 button -> this.commit(), layout.sliceX(0, 2), bottom, bottomHalf));
@@ -197,7 +208,9 @@ public class MacroScreen extends VanillaScreen {
             final int index = slot;
             this.deleteButtons.add(this.addRenderableWidget(VanillaUi.compact(Component.literal("X"),
                     button -> this.deleteMacro(index),
-                    left + listWidth - DELETE_WIDTH - 2, 0)));
+                    // rowWidth, not the whole area: the last 6 px of the list are the vanilla scrollbar, and a
+                    // button placed over it both covered the bar and could not be dragged past.
+                    left + this.list.rowWidth() - DELETE_WIDTH - 4, 0)));
         }
 
         if (this.selected < 0 && !this.macros.isEmpty()) {
@@ -400,6 +413,33 @@ public class MacroScreen extends VanillaScreen {
         return super.keyPressed(event);
     }
 
+    /**
+     * While a combination is being captured, Escape belongs to the capture and not to the screen.
+     *
+     * <p>This is the fix for a real complaint. The button promises "Esc 取消", but Escape reaches the engine's
+     * own "close this screen" path, so the capture never saw the key: pressing Escape closed the whole macro
+     * screen with the half captured combination still in it, and the player read that as "Escape did not
+     * cancel". Both doors are shut here - the key handler cancels the capture, and this makes the screen refuse
+     * to close on Escape while that capture is running.
+     *
+     * @return whether Escape may close this screen
+     */
+    @Override
+    public boolean shouldCloseOnEsc() {
+        return !this.capturing;
+    }
+
+    @Override
+    public void onClose() {
+        if (this.capturing) {
+            // The second door: a close that arrived anyway - from the engine, or from another mod's key
+            // handling - cancels the capture instead of throwing the screen away.
+            cancelCapture();
+            return;
+        }
+        super.onClose();
+    }
+
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         // While capturing, clicking the key button binds the mouse button that was clicked; a click anywhere
@@ -516,7 +556,7 @@ public class MacroScreen extends VanillaScreen {
                     this.list.x() + 4, this.list.y() + 6, VanillaUi.TEXT_HINT, this.list.width() - 8);
         }
 
-        Set<Integer> conflicts = MacroStorage.conflictingKeys();
+        Set<Set<Integer>> clashes = duplicatedCombos();
         int firstRow = this.list.firstRow();
         int nameWidth = this.list.rowWidth() - DELETE_WIDTH - 6;
         for (int slot = 0; slot < visibleRows(); slot++) {
@@ -531,7 +571,7 @@ public class MacroScreen extends VanillaScreen {
             } else if (index == this.hovered) {
                 VanillaUi.rowOutline(graphics, this.list.x(), rowY, this.list.width(), ROW_HEIGHT, false);
             }
-            boolean conflict = macro.keys().stream().anyMatch(conflicts::contains);
+            boolean conflict = clashes.contains(Set.copyOf(macro.keys()));
             // The name and the combination it is bound to, so what a macro does is visible without clicking it.
             String text = macro.name() + "  " + HotkeyRegistry.comboName(macro.combo());
             VanillaUi.text(graphics, this.font, Component.literal(text), this.list.x() + 3, rowY + 6,
@@ -540,26 +580,42 @@ public class MacroScreen extends VanillaScreen {
 
         this.list.render(graphics);
 
-        VanillaUi.text(graphics, this.font, bottomLine(conflicts), left, this.hintY, VanillaUi.TEXT_HINT,
-                layout.contentWidth());
+        // Wrapped, never clipped: this line explains the whole screen, and the room for it is measured when the
+        // panel is laid out.
+        int hintLine = 0;
+        for (String line : VanillaUi.wrap(this.font, bottomLine().getString(), layout.contentWidth())) {
+            VanillaUi.text(graphics, this.font, Component.literal(line), left, this.hintY + hintLine * 10,
+                    VanillaUi.TEXT_HINT, layout.contentWidth());
+            hintLine++;
+        }
     }
 
-    /** The line under the list: the usual hint, or the commands of the hovered clashing combination. */
-    private Component bottomLine(Set<Integer> conflicts) {
-        if (this.hovered >= 0 && this.hovered < this.macros.size()) {
-            MacroStorage.Macro macro = this.macros.get(this.hovered);
-            boolean clash = macro.keys().stream().anyMatch(conflicts::contains);
-            if (clash) {
-                List<String> commands = new ArrayList<>();
-                for (MacroStorage.Macro other : this.macros) {
-                    if (other.combo().intersects(macro.combo())) {
-                        commands.addAll(other.commands());
-                    }
-                }
-                return Component.translatable("gui.merlinlib.macro.conflict_preview",
-                        HotkeyRegistry.comboName(macro.combo()), String.join(" / ", commands));
-            }
+    /**
+     * The combinations that more than one macro uses, down to the exact key set.
+     *
+     * <p>Only an identical combination is a clash. Two macros that merely share a key - both with left control
+     * held, say - are different bindings and can both be used, so marking them was wrong: the shared key is
+     * the whole point of a combination. The clash is a hint on the row (the name turns red) and nothing more;
+     * it never blocks a macro from being saved or fired.
+     *
+     * @return the key sets used by at least two macros
+     */
+    private Set<Set<Integer>> duplicatedCombos() {
+        java.util.Map<Set<Integer>, Integer> counts = new java.util.HashMap<>();
+        for (MacroStorage.Macro macro : this.macros) {
+            counts.merge(Set.copyOf(macro.keys()), 1, Integer::sum);
         }
+        Set<Set<Integer>> duplicated = new java.util.HashSet<>();
+        counts.forEach((combo, count) -> {
+            if (count > 1) {
+                duplicated.add(combo);
+            }
+        });
+        return duplicated;
+    }
+
+    /** @return the line under the list */
+    private Component bottomLine() {
         return Component.translatable("gui.merlinlib.macro.hint");
     }
 }

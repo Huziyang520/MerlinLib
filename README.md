@@ -12,8 +12,17 @@ MerlinLib is a Minecraft **library mod**: it gives mod authors three registratio
 - Sides: **client and server mod - it must be installed on both**
 - Author: Huziyang520 · Licence: **MIT**
 - Repository: <https://github.com/Huziyang520/MerlinLib> · Issues: <https://github.com/Huziyang520/MerlinLib/issues>
-- Version: **0.7.3**
-- Developer guide: [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) (English and Chinese)
+- Version: **0.8.5**
+- Usage manual: [`docs/USAGE.md`](docs/USAGE.md) — every feature and every command, English first, Chinese after
+- Developer guide: [`docs/DEV.md`](docs/DEV.md) — the API, the three registration lines, English and Chinese
+
+**Added recently (features, newest first)**
+
+- **Join notices**: a mod registers a chat message shown when a player arrives. Three timings - every join, once per save, first join - colours straight from the component, and a data pack form for packs that prefer files. Players and operators control it from the settings screen: a master switch, then one row per mod, filled from what mods registered at runtime and never from a list kept in the library.
+- **Interface animation**: the library's own screens can pop, slide up, slide in from the side, or fade (the fade is a veil over the finished frame - the interface has no global alpha to fade with). Each place has its own switch, and the animation kind and the slide on a tab switch are two separate settings.
+- **A particle ceiling that applies on both sides**: one number caps how many particles this client draws per 1/20 second and how many one server send may carry, so a hit dealing hundreds of millions of damage cannot freeze the client.
+- `/merlinlib list` now lists every non-vanilla enchantment in the registry, not only the ones this library manages, so a mod whose enchantments failed to load is visible at a glance.
+- Item editor: the base damage row answers the wheel as well as the enchantment rows do, and a value typed above the ceiling is clamped to the ceiling instead of being thrown away.
 
 > To depend on it, drop the jar into `mods/` and declare the dependency for your loader (see "For downstream mod authors").
 
@@ -330,6 +339,45 @@ random-chance condition. `LootTables` lists the vanilla table names as constants
 instead of a rule that silently never fires. Rules are applied on both loaders while the tables load, and an
 enchantment that does not exist is logged and skipped - a missing entry never stops a table from loading.
 
+#### Mob behaviour hooks
+
+```java
+MerlinApi.ai().register(new AiHook() {
+    @Override
+    public boolean allowsTargeting(Mob mob, LivingEntity target) {
+        return !(target instanceof Player player) || !wearsTheCharm(player, mob);
+    }
+});
+```
+
+- Three questions, all optional: `allowsTargeting` (may the mob take that entity as its target),
+  `wantsToFlee` (should it actively keep away - the library does the steering, throttled to once a second),
+  and `allowsAvoiding` (may the mob's own "run away from this" behaviour apply).
+- Refusing a target covers every reason vanilla asks, including retaliation; a rule that should still let a
+  mob fight back checks `mob.getLastHurtByMob()` itself.
+- Nothing is scanned unless a mod registered a hook, and nothing runs on the client.
+
+#### Interface animation
+
+MerlinLib's own screens pop open instead of appearing at once, and any mod can ask for the same, or for parts of
+it:
+
+```java
+ScreenIntro intro = UiAnimation.intro();          // honours client.toml gui.animation_enabled / _kind
+graphics.pose().translate(intro.offsetX(width), intro.offsetY(height));
+graphics.pose().scale((float) intro.scale(), (float) intro.scale());
+```
+
+- `Easing` is a set of five curves (`LINEAR`, `EASE_OUT_CUBIC`, `EASE_IN_OUT_SINE`, `EASE_OUT_BACK`,
+  `EASE_OUT_ELASTIC`) as plain double functions. They know nothing about Minecraft, so a mod can use them for
+  anything.
+- `ScreenIntro` is one opening animation: `SCALE_POP`, `SLIDE_UP`, `SLIDE_SIDE` or `FADE`, with `scale()`,
+  `offsetX()`, `offsetY()` and `alpha()` for the caller to apply. It is driven by the clock rather than by ticks,
+  so a screen asks for the current value whenever it draws and nothing has to pump it.
+- The library draws nothing for the caller and does not touch another mod's screens. `UiAnimation.intro()` reads
+  MerlinLib's switch; `UiAnimation.intro(int)` takes a mod's own choice; the two classes may be used directly as
+  well. The switch only ever affects MerlinLib's own interface.
+
 #### Registering an enchantment
 
 ```java
@@ -553,8 +601,17 @@ MerlinLib 是一款 Minecraft **前置库模组**：为模组开发者提供**�
 - 部署属性：**客户端 + 服务端模组，两端都必须安装**
 - 作者：Huziyang520 · 许可证：**MIT**
 - 仓库：<https://github.com/Huziyang520/MerlinLib> · 问题反馈：<https://github.com/Huziyang520/MerlinLib/issues>
-- 当前版本：**0.7.3**
-- 开发者文档：[`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md)（中英双语，含三条主线的完整调用链示例）
+- 当前版本：**0.8.5**
+- 使用手册：[`docs/USAGE.md`](docs/USAGE.md)——全部功能与全部指令一页速查，英文在前、中文在后
+- 开发者文档：[`docs/DEV.md`](docs/DEV.md)——API 与三条注册主线，中英双语
+
+**近期新增（只列功能，不含修复；由新到旧）**
+
+- **进服聊天提示**：业务模组注册一条玩家进入世界时显示的聊天消息。三种时机（每次进入 / 每存档一次 / 首次进入），颜色直接来自组件，也可以写成数据包文件。玩家与管理员在设置界面里控制：一个总开关，下面每个"主动适配过本功能"的模组一行——列表只来自运行时注册，库内不存任何模组清单。
+- **界面动画**：库自己的界面可以跳出、上滑、侧滑、淡入淡出（淡入是整屏暗幕渐隐——这套界面没有全局透明度可用）。每个使用位置各有开关，且"动画种类"与"切换类别时滑动"是两个互不影响的设置。
+- **两端同时生效的粒子上限**：一个数值同时限制客户端每 1/20 秒的绘制量与服务端单次发送量，一击打出上亿伤害也不会再卡死客户端。
+- `/merlinlib list` 现在会列出注册表里**所有非原版附魔**（不只本库管理的），哪个模组的附魔没加载成功一眼可见。
+- 物品编辑：基础伤害那一行也支持滚轮（原先只有附魔行支持）；输入的数值超过上限时按上限处理，而不是被丢弃。
 
 > 依赖方式：把本模组放进 `mods/` 即可；开发时按加载器声明前置依赖（见下文「给下游模组作者」）。
 
@@ -859,6 +916,41 @@ MerlinApi.loot().register(LootInjectionBuilder.create()
 每条规则变成一个战利品池，池里是按随机概率判定的附魔书（`asBook`）或指定物品（`asItem`）。
 `LootTables` 把原版表名写成常量，拼错是编译错误，而不是"规则悄悄不触发"。两端都在战利品表加载时应用；
 写错/不存在的附魔只记日志跳过，绝不让一张表加载失败。
+
+#### 生物行为挂钩
+
+```java
+MerlinApi.ai().register(new AiHook() {
+    @Override
+    public boolean allowsTargeting(Mob mob, LivingEntity target) {
+        return !(target instanceof Player player) || !wearsTheCharm(player, mob);
+    }
+});
+```
+
+- 三个可选问题：`allowsTargeting`（能否把该实体当作攻击目标）、`wantsToFlee`（是否应主动远离——**由库负责转向**，
+  每个生物每秒最多一次）、`allowsAvoiding`（它自己的"躲避"行为是否生效）。
+- 否决目标覆盖原版的**所有**提问理由（含被攻击后的还手）；希望"主动惹它照打"的规则自己看
+  `mob.getLastHurtByMob()` 判断。
+- 没有任何模组登记挂钩时，整条路径直接短路；客户端侧完全不跑。
+
+#### 界面动画
+
+MerlinLib 自己的界面是"跳出"而不是直接出现；任何模组都能要到同一套动画，或者只要其中一部分：
+
+```java
+ScreenIntro intro = UiAnimation.intro();          // 读 client.toml 的 gui.animation_enabled / _kind
+graphics.pose().translate(intro.offsetX(width), intro.offsetY(height));
+graphics.pose().scale((float) intro.scale(), (float) intro.scale());
+```
+
+- `Easing` 是五条缓动（`LINEAR` / `EASE_OUT_CUBIC` / `EASE_IN_OUT_SINE` / `EASE_OUT_BACK` / `EASE_OUT_ELASTIC`），
+  纯 double 函数、与 Minecraft 无关，可以拿去用在任何地方。
+- `ScreenIntro` 是一个入场动画：`SCALE_POP` / `SLIDE_UP` / `SLIDE_SIDE` / `FADE`，对外给
+  `scale()` / `offsetX()` / `offsetY()` / `alpha()` 四个量由调用方自己施加。它**按时间推进**而不是按 tick，
+  界面画的时候随时问就行，不需要谁来"泵"它。
+- 库不替调用方画任何东西，也不碰别人的界面：`UiAnimation.intro()` 读的是 MerlinLib 自己的开关，
+  `UiAnimation.intro(int)` 接受业务模组自己的选择，两个类也可以直接用。开关**只影响 MerlinLib 自己的界面**。
 
 #### 注册附魔
 

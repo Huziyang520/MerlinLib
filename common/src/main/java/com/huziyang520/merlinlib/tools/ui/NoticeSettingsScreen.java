@@ -90,6 +90,11 @@ public final class NoticeSettingsScreen extends VanillaScreen {
         return false;
     }
 
+    @Override
+    protected boolean subScreen() {
+        return true;
+    }
+
     // ---------------------------------------------------------------- the list
 
     /**
@@ -234,6 +239,7 @@ public final class NoticeSettingsScreen extends VanillaScreen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         applyPendingExit();
+        beginIntro(graphics);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
         PanelLayout layout = layout();
         int left = layout.left();
@@ -267,9 +273,15 @@ public final class NoticeSettingsScreen extends VanillaScreen {
             this.area.render(graphics);
         }
 
-        graphics.text(this.font, Component.literal(VanillaUi.clip(this.font,
-                Component.translatable(T + "hint").getString(), content)), left, this.hintY,
-                VanillaUi.TEXT_HINT, true);
+        // Wrapped rather than clipped, for the same reason as the settings screen: the hint has to be readable.
+        int hintLine = 0;
+        for (String line : VanillaUi.wrap(this.font, Component.translatable(T + "hint").getString(), content)) {
+            graphics.text(this.font, Component.literal(line), left, this.hintY + hintLine * 10,
+                    VanillaUi.TEXT_HINT, true);
+            hintLine++;
+        }
+        endIntro(graphics);
+        drawIntroVeil(graphics);
     }
 
     // ---------------------------------------------------------------- saving
@@ -300,6 +312,63 @@ public final class NoticeSettingsScreen extends VanillaScreen {
     }
 
     /** Writes the switches the player touched, leaving the untouched ones at their declared defaults. */
+    // The list's scrollbar is the vanilla one and it drags, but only if the mouse events reach it: a screen
+    // that does not forward them leaves a bar that scrolls with the wheel and cannot be grabbed.
+
+    @Override
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        if (this.area != null && this.area.mouseClicked(event)) {
+            layoutRows();
+            return true;
+        }
+        return super.mouseClicked(event, doubleClick);
+    }
+
+    @Override
+    public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent event, double dragX, double dragY) {
+        if (this.area != null && this.area.mouseDragged(event)) {
+            layoutRows();
+            return true;
+        }
+        return super.mouseDragged(event, dragX, dragY);
+    }
+
+    @Override
+    public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
+        if (this.area != null && this.area.mouseReleased(event)) {
+            return true;
+        }
+        return super.mouseReleased(event);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (this.area != null && this.area.mouseScrolled(mouseX, mouseY, scrollY)) {
+            layoutRows();
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    /** Moves the toggle buttons to follow the scroll position and hides the rows beyond the viewport. */
+    private void layoutRows() {
+        if (this.area == null) {
+            return;
+        }
+        int slot = 0;
+        for (int index = 0; index < this.rows.size(); index++) {
+            if (this.rows.get(index).kind() != Kind.TOGGLE) {
+                continue;
+            }
+            Button button = this.buttons.get(slot++);
+            int y = this.area.rowTop(index);
+            boolean visible = this.area.rowVisible(index);
+            button.setY(y);
+            button.visible = visible;
+            button.active = visible;
+        }
+    }
+
     private void writeChanges() {
         if (this.pending.isEmpty()) {
             return;

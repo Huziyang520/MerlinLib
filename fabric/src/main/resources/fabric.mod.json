@@ -8,12 +8,22 @@
         "${mod_author}"
     ],
     "contact": {
-        "homepage": "https://github.com/Huziyang520/MerlinLib",
+        "homepage": "https://www.curseforge.com/minecraft/mc-mods/merlinlib",
         "issues": "https://github.com/Huziyang520/MerlinLib/issues"
     },
     "license": "${license}",
     "icon": "${mod_id}.png",
     "environment": "*",
+    "custom": {
+        "modmenu": {
+            "badges": [
+                "library"
+            ],
+            "links": {
+                "备用反馈地址": "https://issue.mengcai.online/"
+            }
+        }
+    },
     "entrypoints": {
         "main": [
             "com.huziyang520.merlinlib.MerlinLibFabric"

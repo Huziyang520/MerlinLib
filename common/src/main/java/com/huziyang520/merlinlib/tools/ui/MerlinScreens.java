@@ -219,9 +219,6 @@ public final class MerlinScreens {
         if (!mayUseToolsLocally(player)) {
             return false;
         }
-        if (!mayOpenEditorLocally(player, true)) {
-            return false;
-        }
         boolean holdingItem = player.getMainHandItem().getItem() instanceof HealthEditorItem;
         if (target == player && !holdingItem) {
             // Editing yourself is a feature of the item and nothing else, so it needs the item whatever the
@@ -239,6 +236,11 @@ public final class MerlinScreens {
         if (ConfigManager.server().healthEditorRequiresItem() && !holdingItem) {
             Constants.LOG.info("[MerlinLib] the health editor needs the health editor item held "
                     + "(server.toml: tools.health_editor_requires_item = true)");
+            return false;
+        }
+        // Permission is asked last on purpose: a bare-handed sneak right click is not a permission problem, and
+        // reporting it as one both misleads the player and breaks the "refuse silently" rule (spec §7).
+        if (!mayOpenEditorLocally(player, true)) {
             return false;
         }
         minecraft.setScreenAndShow(new HealthEditorScreen(parent, target));

@@ -126,17 +126,38 @@ public final class MerlinCommand {
                 .filter(registry::containsKey)
                 .toList();
 
-        if (present.isEmpty()) {
+        // Everything else in the registry that is not vanilla's, and that MerlinLib does not manage itself.
+        // Another mod's enchantments live in that mod's own data pack, so they never appear in MerlinLib's
+        // snapshot - which made this list read as if MerlinLib were the only mod with any. They are listed by
+        // registry id, so a mod that failed to load is just as obvious as one that did.
+        List<Identifier> others = registry.keySet().stream()
+                .filter(id -> !id.getNamespace().equals("minecraft"))
+                .filter(id -> !present.contains(id))
+                .sorted()
+                .toList();
+
+        if (present.isEmpty() && others.isEmpty()) {
             source.sendSuccess(() -> Component.translatable("command.merlinlib.list.empty", snapshot.enchantments().size()), false);
             return 0;
         }
 
-        source.sendSuccess(() -> Component.translatable("command.merlinlib.list.header", present.size()), false);
-        for (Identifier id : present) {
-            EnchantmentDraft draft = snapshot.enchantments().get(id);
-            source.sendSuccess(() -> Component.literal(" - " + id + " (" + draft.source().displayName() + ")"), false);
+        if (present.isEmpty()) {
+            source.sendSuccess(() -> Component.translatable("command.merlinlib.list.header", 0), false);
+        } else {
+            source.sendSuccess(() -> Component.translatable("command.merlinlib.list.header", present.size()), false);
+            for (Identifier id : present) {
+                EnchantmentDraft draft = snapshot.enchantments().get(id);
+                source.sendSuccess(() -> Component.literal(" - " + id + " (" + draft.source().displayName() + ")"), false);
+            }
         }
-        return present.size();
+
+        if (!others.isEmpty()) {
+            source.sendSuccess(() -> Component.translatable("command.merlinlib.list.others", others.size()), false);
+            for (Identifier id : others) {
+                source.sendSuccess(() -> Component.literal(" - " + id + " (registry)"), false);
+            }
+        }
+        return present.size() + others.size();
     }
 
     private static int info(CommandContext<CommandSourceStack> context) {

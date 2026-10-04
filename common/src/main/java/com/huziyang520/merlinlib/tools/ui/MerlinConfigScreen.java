@@ -121,8 +121,28 @@ public class MerlinConfigScreen extends VanillaScreen {
     private int tab;
     /** The tab a button asked for; applied on the next frame instead of during the click. */
     private int pendingTab = -1;
-    /** Whether the notice switches were asked for; applied on the next frame, like a tab switch. */
-    private boolean pendingNoticeSettings;
+    /** The action row a button asked for, applied on the next frame instead of during the click. */
+    private String pendingAction;
+    /**
+     * The sideways slide of a tab switch, or {@code null} when none is running.
+     *
+     * <p>A tab switch always slides sideways, whatever the configured animation kind is. The kind is the opening
+     * and closing animation; letting it drive this as well made the two settings behave as one, so choosing how
+     * a screen opens silently changed what a tab switch looked like.
+     */
+    private com.huziyang520.merlinlib.ui.anim.ScreenIntro tabSlide;
+    /** The right-aligned X of the row controls, before the tab slide is added. */
+    private int controlX;
+
+    /** @return how far the rows are shifted sideways by the tab switch that is running */
+    private int tabSlideOffset() {
+        if (this.tabSlide == null) {
+            return 0;
+        }
+        return (int) Math.round(this.tabSlide.offsetX(this.width) * this.tabSlideDirection);
+    }
+    /** Which way the last tab switch moved the content: 1 entering from the right, -1 from the left. */
+    private int tabSlideDirection = 1;
     private int titleY;
     private int warningY;
     private int hintY;
@@ -154,6 +174,25 @@ public class MerlinConfigScreen extends VanillaScreen {
 
     private static final String T = "gui.merlinlib.config.";
 
+    /**
+     * How much room the hint lines need, in pixels, for one tab.
+     *
+     * <p>Wrapped at the widest the panel may become rather than at its final width: the panel's width comes
+     * from the content, and the content includes the height these hints occupy, so asking for the final width
+     * here would be a circle. The wider wrap is the worse case, so the space reserved is never too small.
+     *
+     * @param tab the tab index
+     * @return the height the wrapped hints occupy
+     */
+    private int hintHeight(int tab) {
+        int wrapWidth = Math.max(120, this.width - SCREEN_MARGIN);
+        int lines = 0;
+        for (String hint : HINTS[tab]) {
+            lines += VanillaUi.wrap(this.font, Component.translatable(hint).getString(), wrapWidth).size();
+        }
+        return lines * 10;
+    }
+
     private List<Setting> settings(int tab) {
         ServerConfig server = ConfigManager.server();
         ClientConfig client = ConfigManager.client();
@@ -165,7 +204,9 @@ public class MerlinConfigScreen extends VanillaScreen {
                     toggle("content.disable_generated_enchantments", false, T + "generated",
                             server.disableGeneratedEnchantments()),
                     toggle("notices.enabled", false, T + "notices", server.noticesEnabled()),
-                    action("notices.per_mod", T + "notices_edit"));
+                    action("notices.per_mod", T + "notices_edit"),
+                    action("gui.animation", T + "animation_edit"),
+                    action("config.reset", T + "reset"));
             case 1 -> List.of(
                     toggle("editor.hotkey_enabled", true, T + "hotkey", client.editorHotkeyEnabled()),
                     toggle("security.editor_requires_permission", false, T + "editor_permission",
@@ -265,7 +306,7 @@ public class MerlinConfigScreen extends VanillaScreen {
         for (int index = 0; index < TABS.length; index++) {
             natural = Math.max(natural, HEADER + settings(index).size() * ROW
                     + (index == 0 && toolkitOff() ? 12 : 0)
-                    + HINTS[index].length * 10 + 6 + VanillaUi.WIDGET_HEIGHT);
+                    + hintHeight(index) + 6 + VanillaUi.WIDGET_HEIGHT);
         }
         return Math.min(natural, this.height - SCREEN_MARGIN);
     }
@@ -305,7 +346,7 @@ public class MerlinConfigScreen extends VanillaScreen {
 
         // The rows get whatever height is left after the title, the tabs, the hints and the buttons, so the
         // bottom of the screen is never pushed off it.
-        int reservedBottom = HINTS[this.tab].length * 10 + 6 + VanillaUi.WIDGET_HEIGHT;
+        int reservedBottom = hintHeight(this.tab) + 6 + VanillaUi.WIDGET_HEIGHT;
         int available = Math.max(MIN_VISIBLE_ROWS * ROW, layout.contentBottom() - layout.cursor() - reservedBottom);
         int visibleRows = Math.max(MIN_VISIBLE_ROWS, available / ROW);
         int top = layout.row(visibleRows * ROW);
@@ -318,7 +359,7 @@ public class MerlinConfigScreen extends VanillaScreen {
         // Rows live inside the scroll area, so their right edge has to stop short of the scrollbar: sizing the
         // controls from the panel width put them straight under the bar the moment the list had to scroll,
         // which is what hid the macro tab's buttons and fields behind it.
-        int controlX = left + this.settingsArea.rowWidth() - CONTROL_WIDTH;
+        this.controlX = left + this.settingsArea.rowWidth() - CONTROL_WIDTH;
         for (int index = 0; index < this.rows.size(); index++) {
             Setting setting = this.rows.get(index);
             int y = this.settingsArea.rowTop(index);
@@ -335,7 +376,7 @@ public class MerlinConfigScreen extends VanillaScreen {
                 // The button is the whole control of an action row: the settings it opens are saved by the
                 // screen that owns them, so this row records nothing.
                 this.actionButtons.add(this.addRenderableWidget(VanillaUi.button(
-                        Component.translatable(T + "edit"), button -> this.pendingNoticeSettings = true,
+                        Component.translatable(T + "edit"), button -> this.pendingAction = setting.key(),
                         controlX, y, CONTROL_WIDTH)));
             } else {
                 EditBox box = VanillaUi.field(this.font, controlX, y, CONTROL_WIDTH, setting.label(),
@@ -352,7 +393,7 @@ public class MerlinConfigScreen extends VanillaScreen {
         // Anchored to the bottom of the panel, not to the content: with the panel sized for the tallest tab,
         // a shorter tab left the buttons floating in the middle, so they moved every time a tab was clicked.
         int bottom = layout.contentBottom() - VanillaUi.WIDGET_HEIGHT;
-        this.hintY = bottom - 6 - HINTS[this.tab].length * 10;
+        this.hintY = bottom - 6 - hintHeight(this.tab);
         layout.cursorTo(bottom + VanillaUi.WIDGET_HEIGHT);
         int half = layout.sliceWidth(2);
         this.save = this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.config.save"),
@@ -375,19 +416,25 @@ public class MerlinConfigScreen extends VanillaScreen {
             int y = this.settingsArea.rowTop(index);
             this.rowY[index] = y;
             boolean visible = this.settingsArea.rowVisible(index);
+            // The tab switch only slides the rows: the tab row, the title, the hints and the buttons stay put, so
+            // what moves is exactly the part a tab switch replaces.
+            int x = this.controlX + tabSlideOffset();
             if (this.rows.get(index).kind() == Kind.TOGGLE) {
                 Button button = this.toggleButtons.get(toggles++);
                 button.setY(y);
+                button.setX(x);
                 button.visible = visible;
                 button.active = visible;
             } else if (this.rows.get(index).kind() == Kind.ACTION) {
                 Button button = this.actionButtons.get(actions++);
                 button.setY(y);
+                button.setX(x);
                 button.visible = visible;
                 button.active = visible;
             } else {
                 EditBox box = this.fields.get(edits++);
                 box.setY(y);
+                box.setX(x);
                 box.visible = visible;
                 box.active = visible;
             }
@@ -428,8 +475,14 @@ public class MerlinConfigScreen extends VanillaScreen {
         // typed on a tab were only read when Save was pressed, so switching tabs - or saving from another tab
         // - silently dropped them.
         collect();
+        int previous = this.tab;
         this.tab = this.pendingTab;
         this.pendingTab = -1;
+        // The page slides in from the side the player moved towards: the tab row runs left to right, so moving
+        // to a later tab means the new page arrives from the right.
+        this.tabSlideDirection = this.tab >= previous ? 1 : -1;
+        // Its own switch (gui.animation_tab), so the rows can stop sliding while screens still animate.
+        this.tabSlide = com.huziyang520.merlinlib.ui.anim.UiAnimation.tabIntro();
         this.rebuildWidgets();
     }
 
@@ -492,14 +545,35 @@ public class MerlinConfigScreen extends VanillaScreen {
      * values on this tab are collected first, because coming back rebuilds the widgets and anything still only
      * on screen would be lost.
      */
-    private void applyPendingNoticeSettings() {
-        if (!this.pendingNoticeSettings) {
+    private void applyPendingAction() {
+        String action = this.pendingAction;
+        if (action == null) {
             return;
         }
-        this.pendingNoticeSettings = false;
+        this.pendingAction = null;
         collect();
-        if (this.minecraft != null) {
-            this.minecraft.setScreenAndShow(new NoticeSettingsScreen(this));
+        if (this.minecraft == null) {
+            return;
+        }
+        Screen next = switch (action) {
+            case "notices.per_mod" -> new NoticeSettingsScreen(this);
+            case "gui.animation" -> new AnimationSettingsScreen(this);
+            case "config.reset" -> new net.minecraft.client.gui.screens.ConfirmScreen(confirmed -> {
+                if (confirmed) {
+                    ConfigManager.resetToDefaults();
+                    // A brand new screen, not this one: this instance holds the values it was built with, so
+                    // showing it again after a reset would look like the button did nothing at all.
+                    net.minecraft.client.Minecraft.getInstance()
+                            .setScreenAndShow(new MerlinConfigScreen(this.parent));
+                } else {
+                    net.minecraft.client.Minecraft.getInstance().setScreenAndShow(this);
+                }
+            }, Component.translatable(T + "reset.confirm.title"),
+                    Component.translatable(T + "reset.confirm.message"));
+            default -> null;
+        };
+        if (next != null) {
+            this.minecraft.setScreenAndShow(next);
         }
     }
 
@@ -580,7 +654,18 @@ public class MerlinConfigScreen extends VanillaScreen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         applyPendingTab();
-        applyPendingNoticeSettings();
+        applyPendingAction();
+        // The tab slide has to be recomputed on every frame, not once when the tab was switched: writing the
+        // offset into the controls at that moment and never again left them parked off to the right for good,
+        // which is what made the layout look broken after a few tab switches. Dropping the finished slide here
+        // is the same fix seen from the other side - without it the last offset would stay applied for ever.
+        if (this.tabSlide != null && !this.tabSlide.running()) {
+            this.tabSlide = null;
+        }
+        layoutRows();
+        // The opening and closing animation wraps everything this screen draws, widgets included, because the
+        // call below is what draws them.
+        beginIntro(graphics);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
         PanelLayout layout = layout();
@@ -607,7 +692,7 @@ public class MerlinConfigScreen extends VanillaScreen {
                     && !valid(setting, this.fields.get(fieldIndex(index)).getValue());
             graphics.text(this.font, Component.literal(
                             VanillaUi.clip(this.font, setting.label().getString(), labelWidth)),
-                    left, this.rowY[index] + 6, bad ? TEXT_ERROR : TEXT, true);
+                    left + tabSlideOffset(), this.rowY[index] + 6, bad ? TEXT_ERROR : TEXT, true);
             if (bad) {
                 outline(graphics, this.fields.get(fieldIndex(index)));
             }
@@ -615,10 +700,18 @@ public class MerlinConfigScreen extends VanillaScreen {
         this.settingsArea.render(graphics);
 
         String[] hints = HINTS[this.tab];
+        int hintLine = 0;
         for (int index = 0; index < hints.length; index++) {
-            String clipped = VanillaUi.clip(this.font, Component.translatable(hints[index]).getString(), content);
-            graphics.text(this.font, Component.literal(clipped), left, this.hintY + index * 10,
-                    TEXT_HINT, true);
+            // Wrapped, never clipped: a hint cut off mid sentence tells the player nothing, and the room for the
+            // extra lines is already reserved by hintHeight().
+            for (String line : VanillaUi.wrap(this.font, Component.translatable(hints[index]).getString(),
+                    content)) {
+                graphics.text(this.font, Component.literal(line), left, this.hintY + hintLine * 10,
+                        TEXT_HINT, true);
+                hintLine++;
+            }
         }
+        endIntro(graphics);
+        drawIntroVeil(graphics);
     }
 }

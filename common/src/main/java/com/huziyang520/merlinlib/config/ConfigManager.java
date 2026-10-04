@@ -25,6 +25,25 @@ public final class ConfigManager {
      * Reads both files, creating them with their documented defaults when missing, and logs anything
      * that could not be understood.
      */
+    /**
+     * Restores every setting to the mod's defaults.
+     *
+     * <p>Done by deleting the two files and reading them again: the loader recreates a missing file from its
+     * commented template, which is the same thing that happens on a fresh install, so there is no second copy of
+     * the defaults to keep in step with the first.
+     */
+    public static synchronized void resetToDefaults() {
+        for (String name : new String[]{"client.toml", "server.toml"}) {
+            try {
+                java.nio.file.Files.deleteIfExists(ConfigDirectory.root().resolve(name));
+            } catch (java.io.IOException exception) {
+                Constants.LOG.error("[MerlinLib] could not remove {} while restoring defaults", name, exception);
+            }
+        }
+        Constants.LOG.info("[MerlinLib] configuration restored to defaults");
+        reload();
+    }
+
     public static synchronized void reload() {
         client = ClientConfig.load();
         server = ServerConfig.load();

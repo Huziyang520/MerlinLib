@@ -49,9 +49,9 @@ public final class ServerConfig {
             # Off by default: an enchantment that the item cannot normally carry has no effect in game.
             allow_mismatched_enchantments = false
             # When true, the item editor opens for every item, including blocks and other things that are
-            # not weapons, tools or equipment. On by default: the editor is an item editor, and it only ever
-            # offers what the item can really hold unless mismatched enchantments are switched on above.
-            allow_editing_all_items = true
+            # not weapons, tools or equipment. Off by default: the editor is meant for the equipment it can do
+            # something useful with, and opening it on a block or a bucket invites edits that do nothing.
+            allow_editing_all_items = false
             # When true, the base damage of an ordinary weapon can be edited too, not only of a testing weapon.
             # Off by default: ordinary weapons are what vanilla balance and other mods rely on.
             allow_non_test_item_damage = false
@@ -59,7 +59,7 @@ public final class ServerConfig {
             health_editor_requires_item = true
             # File layout version. Written by the mod, read only to bring a file from an older build up to
             # the current defaults. Leave it alone; setting it back only repeats the migration.
-            config_version = 3
+            config_version = 4
 
             [content]
             # Emergency switch: when true, none of the enchantments defined in config/MerlinLib/*.json
@@ -84,7 +84,7 @@ public final class ServerConfig {
     private int maxEnchantmentLevel = Integer.MAX_VALUE;
     private boolean allowLevelsAboveMax = true;
     private boolean allowMismatchedEnchantments;
-    private boolean allowEditingAllItems = true;
+    private boolean allowEditingAllItems = false;
     private boolean allowNonTestItemDamage;
     private boolean healthEditorRequiresItem = true;
     private boolean disableGeneratedEnchantments;
@@ -110,7 +110,7 @@ public final class ServerConfig {
                 Integer.MAX_VALUE);
         config.allowLevelsAboveMax = file.getBoolean("tools.allow_levels_above_max", true);
         config.allowMismatchedEnchantments = file.getBoolean("tools.allow_mismatched_enchantments", false);
-        config.allowEditingAllItems = file.getBoolean("tools.allow_editing_all_items", true);
+        config.allowEditingAllItems = file.getBoolean("tools.allow_editing_all_items", false);
         config.allowNonTestItemDamage = file.getBoolean("tools.allow_non_test_item_damage", false);
         config.healthEditorRequiresItem = file.getBoolean("tools.health_editor_requires_item", true);
         config.disableGeneratedEnchantments = file.getBoolean("content.disable_generated_enchantments", false);
@@ -126,7 +126,7 @@ public final class ServerConfig {
     }
 
     /** The file layout this build writes; see {@link #migrate(TomlFile)}. */
-    private static final int CONFIG_VERSION = 3;
+    private static final int CONFIG_VERSION = 4;
 
     /**
      * Brings a file written by an older build up to the current defaults, once.
@@ -155,8 +155,11 @@ public final class ServerConfig {
         if (file.getInt("tools.max_test_weapon_damage", 100000, 1, Integer.MAX_VALUE) == 100000) {
             overrides.put("tools.max_test_weapon_damage", Integer.toString(Integer.MAX_VALUE));
         }
-        if (!file.getBoolean("tools.allow_editing_all_items", false)) {
-            overrides.put("tools.allow_editing_all_items", "true");
+        // Editing every item was on by default until this build, and the migration before this one wrote it into
+        // every file it touched as true - which is exactly why a file kept ignoring the new default. It is moved
+        // back to the default once, so the switch finally reads "off" the way the template documents it.
+        if (file.getBoolean("tools.allow_editing_all_items", false)) {
+            overrides.put("tools.allow_editing_all_items", "false");
         }
         if (!file.getBoolean("tools.allow_levels_above_max", false)) {
             overrides.put("tools.allow_levels_above_max", "true");

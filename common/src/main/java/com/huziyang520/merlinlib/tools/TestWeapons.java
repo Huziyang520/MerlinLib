@@ -124,7 +124,7 @@ public final class TestWeapons {
         add("test_sword", Kind.SWORD, 7, -2.4D);
         add("test_axe", Kind.AXE, 9, -3.1D);
         add("test_spear", Kind.SPEAR, 5, 1.0D / 0.95D - 4.0D);
-        add("test_trident", Kind.TRIDENT, 8, -2.9D);
+        add("test_trident", Kind.TRIDENT, 9, -2.9D);
     }
 
     private TestWeapons() {

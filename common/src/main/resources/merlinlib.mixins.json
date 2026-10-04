@@ -16,7 +16,11 @@
     "MixinBlockDrops",
     "MixinFoodDataTick",
     "MixinPlayerDestroyBlock",
-    "MixinServerLevelParticles"
+    "MixinServerLevelParticles",
+    "MixinMobAi",
+    "AvoidEntityGoalAccessor",
+    "MixinAvoidEntityGoal",
+    "MixinCatAvoidEntityGoal"
   ],
   "client": [
     "MixinMinecraft",

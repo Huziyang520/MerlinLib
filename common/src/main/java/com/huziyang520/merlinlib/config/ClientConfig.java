@@ -32,8 +32,9 @@ public final class ClientConfig {
             crosshair_damage_ticks = 20
 
             [floating_text]
-            # Show damage numbers flying off a mob when it is hit. On by default.
-            enabled = true
+            # Show damage numbers flying off a mob when it is hit. Off by default: it is a testing aid, so it is
+            # something a player turns on rather than something dropped on them.
+            enabled = false
             # How long a damage number stays visible after a mob is hit, in ticks.
             duration_ticks = 20
             # Base scale of a damage number. Higher means larger text.
@@ -70,11 +71,30 @@ public final class ClientConfig {
             # (rain, explosions, a busy farm) and still keeps a damage number in the thousands from freezing
             # the client. Lower it if a very large hit still stutters.
             limit = 512
+
+            [gui]
+            # Animate MerlinLib's own screens: they pop open and slide into place instead of appearing at once.
+            # On by default. It only affects MerlinLib's interface - another mod may use the same animation
+            # helpers, keep its own setting, or ignore them entirely.
+            animation_enabled = true
+            # Which animation to use: 0 = pop, 1 = slide up, 2 = slide from the side, 3 = fade in and out.
+            animation_kind = 0
+            # The three places the animation is used, each with a switch of its own so one can be turned off
+            # without losing the others. All three are off as a group when animation_enabled is false.
+            animation_screen = true
+            animation_tab = true
+            animation_sub = true
+            # File layout version. Written by the mod, read only to bring a file from an older build up to the
+            # current defaults; do not set it back by hand.
+            config_version = 1
             """;
+
+    /** The file layout this build writes; see the migration in {@link #load()}. */
+    private static final int CONFIG_VERSION = 1;
 
     private boolean crosshairDamage;
     private int crosshairDamageTicks = 20;
-    private boolean floatingTextEnabled = true;
+    private boolean floatingTextEnabled = false;
     private int floatingTextDurationTicks = 20;
     private double floatingTextBaseScale = 1.0D;
     private int floatingTextNormalColor = MerlinColor.WHITE;
@@ -87,15 +107,37 @@ public final class ClientConfig {
     private boolean macrosEnabled = true;
     private boolean particleLimitEnabled = true;
     private int particleLimit = 512;
+    private boolean uiAnimationEnabled = true;
+    private int uiAnimationKind;
+    private boolean animationScreen = true;
+    private boolean animationTab = true;
+    private boolean animationSub = true;
     private List<ContentError> errors = List.of();
 
     public static ClientConfig load() {
         ClientConfig config = new ClientConfig();
         TomlFile file = TomlFile.read(path(), DEFAULTS);
 
+        // A file written by an older build is brought up to the new defaults once. The floating damage numbers
+        // used to be on by default and a file always wins over the template, so without this a file from before
+        // would keep showing them no matter what the default says. Only a switch that still holds the old value
+        // is moved, and the version marker in the file makes it a one-off - switching them back on later is a
+        // hand picked value from that point on and is never touched again.
+        if (file.getInt("gui.config_version", 0, 0, Integer.MAX_VALUE) < CONFIG_VERSION) {
+            java.util.Map<String, String> overrides = new java.util.LinkedHashMap<>();
+            overrides.put("gui.config_version", Integer.toString(CONFIG_VERSION));
+            if (file.getBoolean("floating_text.enabled", true)) {
+                overrides.put("floating_text.enabled", "false");
+            }
+            TomlFile.rewrite(path(), DEFAULTS, overrides);
+            Constants.LOG.info("[MerlinLib] client.toml migrated to layout {}: {}",
+                    CONFIG_VERSION, overrides.keySet());
+            file = TomlFile.read(path(), DEFAULTS);
+        }
+
         config.crosshairDamage = file.getBoolean("hud.crosshair_damage", false);
         config.crosshairDamageTicks = file.getInt("hud.crosshair_damage_ticks", 20, 1, 400);
-        config.floatingTextEnabled = file.getBoolean("floating_text.enabled", true);
+        config.floatingTextEnabled = file.getBoolean("floating_text.enabled", false);
         config.floatingTextDurationTicks = file.getInt("floating_text.duration_ticks", 20, 1, 400);
         config.floatingTextBaseScale = file.getDouble("floating_text.base_scale", 1.0D, 0.1D, 8.0D);
         config.floatingTextNormalColor = file.getColor("floating_text.normal_color", MerlinColor.WHITE);
@@ -108,6 +150,11 @@ public final class ClientConfig {
         config.macrosEnabled = file.getBoolean("macros.enabled", true);
         config.particleLimitEnabled = file.getBoolean("particles.limit_enabled", true);
         config.particleLimit = file.getInt("particles.limit", 512, 1, 1000000);
+        config.uiAnimationEnabled = file.getBoolean("gui.animation_enabled", true);
+        config.uiAnimationKind = file.getInt("gui.animation_kind", 0, 0, 3);
+        config.animationScreen = file.getBoolean("gui.animation_screen", true);
+        config.animationTab = file.getBoolean("gui.animation_tab", true);
+        config.animationSub = file.getBoolean("gui.animation_sub", true);
         config.errors = file.errors();
         return config;
     }
@@ -195,6 +242,31 @@ public final class ClientConfig {
     /** @return how many particles may be drawn per 1/20 second. */
     public int particleLimit() {
         return this.particleLimit;
+    }
+
+    /** @return whether MerlinLib's own screens are animated when they open */
+    public boolean uiAnimationEnabled() {
+        return this.uiAnimationEnabled;
+    }
+
+    /** @return which animation to use; see the template for the meaning of each number */
+    public int uiAnimationKind() {
+        return this.uiAnimationKind;
+    }
+
+    /** @return whether a main screen animates in and out */
+    public boolean animationScreen() {
+        return this.animationScreen;
+    }
+
+    /** @return whether switching a tab slides the rows */
+    public boolean animationTab() {
+        return this.animationTab;
+    }
+
+    /** @return whether a sub screen (notice switches, animation, reset) animates in and out */
+    public boolean animationSub() {
+        return this.animationSub;
     }
 
     /** @return problems found while reading the file during the last reload. */

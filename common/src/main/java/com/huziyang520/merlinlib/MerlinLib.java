@@ -9,6 +9,9 @@ import com.huziyang520.merlinlib.mixin.RangedAttributeAccessor;
 import com.huziyang520.merlinlib.api.MerlinApi;
 import com.huziyang520.merlinlib.loot.LootInjector;
 import com.huziyang520.merlinlib.notice.NoticeManager;
+import com.mojang.serialization.Lifecycle;
+import net.minecraft.world.flag.FeatureFlagSet;
+import net.minecraft.world.flag.FeatureFlags;
 import com.huziyang520.merlinlib.platform.Services;
 import com.huziyang520.merlinlib.util.SmeltingLookup;
 import net.minecraft.core.Holder;
@@ -58,6 +61,40 @@ public class MerlinLib {
         LootInjector.install();
         // Join notices: registered from here, so a business mod may have registered its own before or after.
         NoticeManager.install();
+        // Says which feature flags put a world in the "experimental settings" category. The generated datapack
+        // declares none, so when this line appears the flag came from a data pack the world has selected - and
+        // the log names it, instead of leaving it to be guessed.
+        Services.LIFECYCLE.onServerStarted(server -> {
+            // The screen the player sees ("this world uses experimental settings") is driven by the world's
+            // generation lifecycle, not by the feature flags: WorldOpenFlows.confirmWorldCreation compares the
+            // lifecycle, and that value is built from the registered dimensions and registries of the selected
+            // packs (WorldDimensions.checkStability). Both are reported here, because the two have different
+            // fixes and guessing between them costs a round trip each time.
+            Lifecycle lifecycle = server.getWorldData().worldGenSettingsLifecycle();
+            FeatureFlagSet flags = server.getWorldData().enabledFeatures();
+            if (lifecycle != Lifecycle.stable()) {
+                // Name the registries that are not stable: the lifecycle is the maximum over the dimensions and
+                // over every registry the selected packs provide, and knowing which one is unstable is the whole
+                // difference between fixing this and guessing at it again.
+                StringBuilder unstable = new StringBuilder();
+                server.registryAccess().registries().forEach(entry -> {
+                    Lifecycle registryLifecycle = entry.value().registryLifecycle();
+                    if (registryLifecycle != Lifecycle.stable()) {
+                        unstable.append(entry.key().identifier()).append('(').append(registryLifecycle)
+                                .append(") ");
+                    }
+                });
+                Constants.LOG.warn("[MerlinLib] this save reports world gen lifecycle {}; non-stable registries: "
+                                + "{}", lifecycle, unstable.isEmpty() ? "(none - it is the dimensions)" : unstable);
+            }
+            if (FeatureFlags.isExperimental(flags) || lifecycle != Lifecycle.stable()) {
+                Constants.LOG.warn("[MerlinLib] this save reports world gen lifecycle {} and feature flags "
+                                + "outside vanilla: {}. The lifecycle is what drives the 'experimental settings' "
+                                + "warning; it becomes non-stable when the selected data packs register dimensions "
+                                + "or registry entries that are not vanilla-like.",
+                        lifecycle, FeatureFlags.printMissingFlags(FeatureFlags.VANILLA_SET, flags));
+            }
+        });
         ConfigManager.reload();
         widenAttributeCeilings();
         MerlinApi.lifecycle().onServerStarting(SmeltingLookup::initialize);

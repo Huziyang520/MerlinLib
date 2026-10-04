@@ -1,6 +1,8 @@
 package com.huziyang520.merlinlib.tools.ui.vanilla;
 
 import net.minecraft.client.gui.Font;
+import net.minecraft.network.chat.FormattedText;
+import java.util.ArrayList;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -285,6 +287,30 @@ public final class VanillaUi {
      * @param maxWidth maximum pixel width
      * @return the original text, or a clipped version ending in an ellipsis
      */
+    /**
+     * Breaks a line of text into as many lines as it needs to fit a width.
+     *
+     * <p>Used for the hint lines under a screen: clipping them to one line turned every longer hint into
+     * "...". Splitting is done by the font's own splitter rather than by spaces, so a language without spaces
+     * breaks where it should - and the caller then reserves room for the number of lines it gets back, which
+     * is what keeps the layout measured rather than guessed.
+     *
+     * @param font     the font
+     * @param text     the text to lay out
+     * @param maxWidth the width each line may occupy
+     * @return the lines, at least one
+     */
+    public static List<String> wrap(Font font, String text, int maxWidth) {
+        List<String> lines = new ArrayList<>();
+        for (FormattedText part : font.splitIgnoringLanguage(Component.literal(text), Math.max(24, maxWidth))) {
+            lines.add(part.getString());
+        }
+        if (lines.isEmpty()) {
+            lines.add("");
+        }
+        return lines;
+    }
+
     public static String clip(Font font, String text, int maxWidth) {
         if (maxWidth <= 0) {
             return "";
@@ -433,6 +459,39 @@ public final class VanillaUi {
             return Integer.parseInt(text.trim());
         } catch (NumberFormatException exception) {
             return fallback;
+        }
+    }
+
+    /**
+     * Reads a number that may be larger than the field allows, and brings it inside the range.
+     *
+     * <p>This exists because of a real bug: {@code Integer.parseInt} throws on anything above the integer limit,
+     * and the editor fell back to 1 when it did - so typing one more than the maximum turned a huge damage into
+     * a single point. A number that is merely too large is a request for the largest value allowed, and a
+     * number below the minimum is a request for the smallest; only something that is not a number at all uses
+     * the fallback.
+     *
+     * @param text     the text to read
+     * @param fallback the value to use when the text is not a number
+     * @param min      the smallest value allowed
+     * @param max      the largest value allowed
+     * @return the value, inside the range
+     */
+    public static int parseClamped(String text, int fallback, int min, int max) {
+        String trimmed = text.trim();
+        if (trimmed.isEmpty()) {
+            return clamp(fallback, min, max);
+        }
+        try {
+            return clamp(Integer.parseInt(trimmed), min, max);
+        } catch (NumberFormatException exception) {
+            // Either it is not a number, or it is one the integer type cannot hold; the second case is decided
+            // by its sign, which is all a number too large to read can tell us about itself.
+            try {
+                return new java.math.BigInteger(trimmed).signum() < 0 ? min : max;
+            } catch (NumberFormatException notANumber) {
+                return clamp(fallback, min, max);
+            }
         }
     }
 }

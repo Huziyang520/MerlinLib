@@ -36,8 +36,19 @@ public final class GeneratedPack implements PackResources {
     /** Datapack format of the target version (26.3 = 121 in the official templates). */
     private static final int PACK_FORMAT = 121;
 
-    private static final String PACK_META = "{\"pack\":{\"description\":\"MerlinLib generated content\",\"pack_format\":"
-            + PACK_FORMAT + "}}";
+    /**
+     * Resource format of the same version (26.3 = 97).
+     *
+     * <p>The same pack is asked for its metadata once per pack type, and a pack that answers with the data
+     * format only looks like a pack from the future on the resource side. That is why the generated pack used
+     * to appear in the resource pack list as an incompatible pack, with a format 24 versions ahead of what the
+     * client expects. Declaring the range covers both readings while the pack itself stays data only.
+     */
+    private static final int RESOURCE_FORMAT = 97;
+
+    private static final String PACK_META = "{\"pack\":{\"description\":\"MerlinLib generated content\","
+            + "\"pack_format\":" + PACK_FORMAT
+            + ",\"supported_formats\":[" + RESOURCE_FORMAT + "," + PACK_FORMAT + "]}}";
 
     private final PackLocationInfo location;
     private Map<String, byte[]> files;

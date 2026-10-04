@@ -7,7 +7,7 @@ version = "${version}" #mandatory
 displayName = "${mod_name}" #mandatory
 # displayURL / issueTrackerURL / iconFile MUST stay inside the [[mods]] table, otherwise the mod list
 # shows no homepage / issue button / icon at all.
-displayURL = "https://github.com/Huziyang520/MerlinLib" #optional (displayed in the mod UI)
+displayURL = "https://www.curseforge.com/minecraft/mc-mods/merlinlib" #optional (displayed in the mod UI)
 issueTrackerURL = "https://github.com/Huziyang520/MerlinLib/issues" #optional
 # 26.2+ uses iconFile for the square list icon; logoFile is deprecated and would stretch a 1:1 icon
 # into the wide banner slot on the right hand side.

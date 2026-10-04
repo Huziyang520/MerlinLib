@@ -77,4 +77,12 @@ public final class MerlinApi {
     public static NoticeApi notices() {
         return NoticeApi.INSTANCE;
     }
+
+    /**
+     * @return the mob behaviour api, for content that changes what a mob wants to do about a player -
+     *         disguises, deterrents, taming effects. Safe to call from a mod constructor.
+     */
+    public static AiApi ai() {
+        return AiApi.INSTANCE;
+    }
 }
