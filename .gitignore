@@ -1,0 +1,41 @@
+# eclipse
+bin
+*.launch
+.settings
+.metadata
+.classpath
+.project
+
+# idea
+out
+*.ipr
+*.iws
+*.iml
+.idea/*
+!.idea/scopes
+
+# gradle
+build
+.gradle
+
+# other
+eclipse
+run
+
+# run / build output
+runs
+libs
+classes
+
+# crash / profiling dumps
+hs_err_*.log
+*.hprof
+
+# editor and OS noise
+.vscode/
+.eclipse/
+.DS_Store
+Thumbs.db
+
+# the wrapper jar must stay in the repository
+!gradle/wrapper/gradle-wrapper.jar

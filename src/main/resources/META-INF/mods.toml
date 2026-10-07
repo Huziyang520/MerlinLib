@@ -1,0 +1,39 @@
+# Forge 1.20.1 mod metadata.
+#
+# Differences from the 26.3 neoforge.mods.toml:
+#   * the file is META-INF/mods.toml (neoforge.mods.toml only exists from 1.20.6 onwards)
+#   * the dependency key is `mandatory = true/false`, not `type = "required"`
+#   * the icon field is `logoFile` (`iconFile` / `bannerFile` only exist from 26.2)
+#   * there is no `[[mixins]]` block: Forge 1.20.1's ModFileParser does not know the key at all
+#     (probed: the string "mixins" is absent from ModFileParser/ModInfo). Mixin configurations are
+#     announced through the jar manifest's MixinConfigs attribute instead, see build.gradle.
+#   * displayURL / issueTrackerURL / logoFile must sit inside the [[mods]] sub-table; at the top
+#     level they are silently ignored and the mod list buttons stay dead.
+modLoader="javafml"
+loaderVersion="${forge_loader_version_range}"
+license="${license}"
+
+[[mods]]
+modId="${mod_id}"
+version="${version}"
+displayName="${mod_name}"
+authors="${mod_author}"
+credits="${credits}"
+description="${description}"
+logoFile="${mod_id}.png"
+displayURL="https://www.curseforge.com/minecraft/mc-mods/torcherino-community-edition-remake"
+issueTrackerURL="https://github.com/Huziyang520/MerlinLib/issues"
+
+[[dependencies.${mod_id}]]
+    modId="forge"
+    mandatory=true
+    versionRange="${forge_loader_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="BOTH"
