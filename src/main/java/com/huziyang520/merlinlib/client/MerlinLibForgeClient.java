@@ -87,15 +87,17 @@ public final class MerlinLibForgeClient {
     }
 
     /**
-     * Registers the two key bindings.
+     * Registers the two key bindings with the loader.
      *
-     * <p>On the <b>mod</b> event bus: key mappings are registered while the mod is being set up, not while
-     * a world is running. A handler on the wrong bus would never run and would say nothing about it.
+     * <p>Called by {@link MerlinClientSetup}, which sits on the <b>mod</b> bus where
+     * {@code RegisterKeyMappingsEvent} actually fires. This class is on the game bus and would never see
+     * that event - the mistake that originally left the keys out of the controls screen, and the reason
+     * the call is forwarded rather than subscribed here. The mappings themselves stay in this class
+     * because the tick handler consumes their clicks.
      *
      * @param event the key registration
      */
-    @SubscribeEvent
-    public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
+    static void registerKeyMappings(RegisterKeyMappingsEvent event) {
         event.register(OPEN_EDITOR);
         event.register(OPEN_MACROS);
     }

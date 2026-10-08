@@ -1,7 +1,11 @@
 package com.huziyang520.merlinlib;
 
 import com.huziyang520.merlinlib.command.MerlinCommand;
+import com.huziyang520.merlinlib.network.DamageFeedbackPayload;
+import com.huziyang520.merlinlib.network.ServerSender;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -32,5 +36,32 @@ public final class MerlinGameEvents {
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         MerlinCommand.register(event.getDispatcher(), event.getBuildContext(), event.getCommandSelection());
+    }
+
+    /**
+     * Publishes the resolved damage of a player dealt hit to the attacking client.
+     *
+     * <p>This is the 1.20.1 form of the 26.3 call site ({@code MerlinLibNeoForge#onIncomingDamage},
+     * driven by NeoForge's {@code LivingIncomingDamageEvent}): {@code LivingHurtEvent} is the same
+     * "damage about to be applied, not yet capped by the target's remaining health" moment, which is
+     * the number the overlay is meant to show.
+     *
+     * <p>Without this handler nothing on the server ever constructs a
+     * {@link DamageFeedbackPayload}, so the crosshair number silently never appears - the client cannot
+     * compute the value on its own, because the enchantment pipeline needs a server level. The floating
+     * numbers were unaffected (they are sampled from entity health on the client), which is why only
+     * the crosshair read as broken.
+     *
+     * @param event the incoming damage event
+     */
+    @SubscribeEvent
+    public static void onLivingHurt(LivingHurtEvent event) {
+        if (event.getEntity().level().isClientSide()) {
+            return;
+        }
+        if (event.getSource().getEntity() instanceof ServerPlayer attacker) {
+            ServerSender.sendToPlayer(attacker, new DamageFeedbackPayload(
+                    event.getAmount(), false, event.getEntity().getId()));
+        }
     }
 }

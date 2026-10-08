@@ -88,8 +88,15 @@ public final class VanillaUi {
     public static final int PADDING = 8;
     /** Horizontal gap between two controls on the same row. */
     public static final int GAP = 6;
-    /** Width of the compact - / + / X buttons used inside list rows. */
-    public static final int STEP_BUTTON = 18;
+    /**
+     * Width and height of the compact - / + / X buttons used inside list rows.
+     *
+     * <p>Deliberately smaller than {@link #LIST_ROW_HEIGHT} by four pixels: at the same size the buttons
+     * touched (and at some GUI scales appeared to cut through) the row's outline, which is what the
+     * "the buttons run into the frame" report was about. Sixteen against twenty leaves a two pixel gap
+     * above and below once the row centres them.
+     */
+    public static final int STEP_BUTTON = 16;
     /** Width of the vanilla scrollbar. */
     public static final int SCROLLBAR_WIDTH = 6;
     /** Height of one compact list row. */

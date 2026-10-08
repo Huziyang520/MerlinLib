@@ -3,6 +3,9 @@ package com.huziyang520.merlinlib.tools;
 import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.platform.Services;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -179,8 +182,11 @@ public final class TestWeapons {
             case SWORD -> new SwordItem(Tiers.IRON, (int) modifierDamage, modifierSpeed, properties);
             case AXE -> new AxeItem(Tiers.IRON, modifierDamage, modifierSpeed, properties);
             // TridentItem takes no tier: throwing, riptide and its melee damage are all vanilla's own,
-            // which is precisely what a testing trident should reproduce.
-            case TRIDENT -> new TridentItem(properties.rarity(Rarity.RARE));
+            // which is precisely what a testing trident should reproduce. The subclass exists for one
+            // reason only - the vanilla in-hand look is a hard-coded renderer branch keyed on
+            // Items.TRIDENT, so a custom trident has to supply its own renderer to not fall back to the
+            // flat sprite; see TestTridentItem.
+            case TRIDENT -> new TestTridentItem(properties.rarity(Rarity.RARE));
         };
     }
 
@@ -376,16 +382,27 @@ public final class TestWeapons {
      *
      * <p>Written with {@link ItemStack#addAttributeModifier(Attribute, AttributeModifier,
      * EquipmentSlot)}, which is this version's public door for the vanilla {@code AttributeModifiers}
-     * NBT list. Reaching into that list directly would mean depending on its tag names and on the
-     * {@code UUID}/{@code Name}/{@code Amount}/{@code Operation} layout, none of which is public API -
-     * the 26.3 line's hand written variant was forced by the component system having replaced that
-     * storage, and this line has no such reason.
+     * NBT list.
+     *
+     * <h2>Why the stale entry is removed by hand first</h2>
+     *
+     * <p>1.20.1's {@code addAttributeModifier} only ever <b>appends</b> to that list - its bytecode ends
+     * in {@code ListTag.add} and there is no remover on this version, neither on {@code ItemStack} nor on
+     * Forge's item stack extension. A second edit therefore left two entries with the same UUID, and the
+     * readers - {@code ItemStack#getAttributeModifiers} and {@link #damageModifierAmount} - answer with
+     * the first of them, which is the stale one. The stack's real attribute did change on every write,
+     * but the editor read the old value back, which is the "damage can only be edited once" report.
+     *
+     * <p>The entry is matched by {@code UUID}: it is the key vanilla's own {@code AttributeModifier#save}
+     * writes (together with {@code Name}, {@code Amount} and {@code Operation}) and the only one that
+     * identifies a modifier. The list key is spelled out because 1.20.1 exposes no constant for it.
      *
      * @param stack  the stack to modify
      * @param damage the new damage
      * @return {@code true} when the modifier was written
      */
     private static boolean writeDamage(ItemStack stack, int damage) {
+        removeStaleDamageModifier(stack);
         stack.addAttributeModifier(
                 Attributes.ATTACK_DAMAGE,
                 new AttributeModifier(DAMAGE_MODIFIER, "Weapon modifier", damage - 1.0D,
@@ -393,4 +410,26 @@ public final class TestWeapons {
                 EquipmentSlot.MAINHAND);
         return true;
     }
+
+    /**
+     * Drops every attribute modifier entry that carries the base attack damage UUID.
+     *
+     * @param stack the stack to clean
+     */
+    private static void removeStaleDamageModifier(ItemStack stack) {
+        CompoundTag tag = stack.getTag();
+        if (tag == null || !tag.contains(TAG_ATTRIBUTE_MODIFIERS, Tag.TAG_LIST)) {
+            return;
+        }
+        ListTag modifiers = tag.getList(TAG_ATTRIBUTE_MODIFIERS, Tag.TAG_COMPOUND);
+        modifiers.removeIf(entry -> entry instanceof CompoundTag compound
+                && compound.hasUUID("UUID")
+                && DAMAGE_MODIFIER.equals(compound.getUUID("UUID")));
+        if (modifiers.isEmpty()) {
+            tag.remove(TAG_ATTRIBUTE_MODIFIERS);
+        }
+    }
+
+    /** The NBT list holding a stack's attribute modifiers; 1.20.1 exposes no constant for it. */
+    private static final String TAG_ATTRIBUTE_MODIFIERS = "AttributeModifiers";
 }

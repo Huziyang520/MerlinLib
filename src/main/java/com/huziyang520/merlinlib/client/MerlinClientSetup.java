@@ -2,6 +2,7 @@ package com.huziyang520.merlinlib.client;
 
 import com.huziyang520.merlinlib.Constants;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -43,5 +44,22 @@ public final class MerlinClientSetup {
         // thread is what Forge asks for here, and it removes any question about which thread the file read
         // happens on.
         event.enqueueWork(MerlinLibForgeClient::install);
+    }
+
+    /**
+     * Registers the two key bindings with the loader.
+     *
+     * <p>This handler has to live on the <b>mod</b> bus, which is one of the two reasons this class
+     * exists at all: {@code RegisterKeyMappingsEvent} is a mod bus event, and the handler used to sit in
+     * {@link MerlinLibForgeClient} - a class subscribed to the <b>game</b> bus - where it never ran. The
+     * bindings therefore never reached the controls screen ("the controls screen does not list the mod's
+     * two keys"). It is the same two-buses-two-classes mistake this port already made once, and the
+     * comment on {@link MerlinLibForgeClient} explains the split.
+     *
+     * @param event the key registration
+     */
+    @SubscribeEvent
+    public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
+        MerlinLibForgeClient.registerKeyMappings(event);
     }
 }

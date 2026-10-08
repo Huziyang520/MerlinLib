@@ -66,7 +66,16 @@ public abstract class MixinItemStackUnbreakable {
             // dependency on load order here would be a defect.
             return;
         }
-        if (EnchantmentHelper.getItemEnchantmentLevel(unbreakable, (ItemStack) (Object) this) > 0) {
+        ItemStack stack = (ItemStack) (Object) this;
+        if (EnchantmentHelper.getItemEnchantmentLevel(unbreakable, stack) > 0) {
+            // "First damage is repaired, nothing is spent afterwards" is a repair, not a blanket
+            // refusal. Cancelling alone froze the item at whatever damage it already carried - an item
+            // that was worn when the enchantment arrived stayed worn forever, which is the difference
+            // the report named ("only locks durability"). Clearing the damage and then cancelling
+            // leaves the stack at full: the moment it would be damaged is the moment it is restored.
+            if (stack.isDamaged()) {
+                stack.setDamageValue(0);
+            }
             callbackInfo.cancel();
         }
     }

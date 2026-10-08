@@ -152,8 +152,15 @@ public class HealthEditorScreen extends VanillaScreen {
     /**
      * Parses a health value: whole numbers only, from 0 to the integer limit.
      *
+     * <p>A number above the limit is not a mistake to reject - it is a request for the largest value
+     * allowed, which is exactly what the item editor's damage field already does through
+     * {@link VanillaUi#parseClamped}, and the two screens are meant to behave alike. Rejecting it used
+     * to switch the confirm button off instead, so one digit too many silently disabled the screen;
+     * the value is now brought down to {@link Integer#MAX_VALUE} and the edit can be confirmed.
+     *
      * @param text the field text, possibly {@code null} while the screen is being built
-     * @return the value, or {@code null} when the text is not acceptable
+     * @return the value, clamped to the integer limit; {@code null} only when the text is not a
+     *         non-negative whole number
      */
     private static Integer parseHealth(String text) {
         if (text == null) {
@@ -163,12 +170,8 @@ public class HealthEditorScreen extends VanillaScreen {
         if (!trimmed.matches("\\d{1,10}")) {
             return null;
         }
-        try {
-            long value = Long.parseLong(trimmed);
-            return value >= 0 && value <= Integer.MAX_VALUE ? (int) value : null;
-        } catch (NumberFormatException exception) {
-            return null;
-        }
+        long value = Long.parseLong(trimmed);
+        return value > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) value;
     }
 
     private void send() {

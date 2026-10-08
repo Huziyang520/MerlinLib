@@ -395,7 +395,14 @@ public final class EnchantmentRegistry implements EnchantmentApi {
                 // The melee family.
                 case "enchantable/weapon", "enchantable/melee_weapon" -> stack.is(ItemTags.SWORDS)
                         || stack.is(ItemTags.AXES);
-                case "enchantable/sword", "enchantable/sharp_weapon" -> stack.is(ItemTags.SWORDS);
+                case "enchantable/sword" -> stack.is(ItemTags.SWORDS);
+                // sharp_weapon is the sword-AND-axe family, not the sword-only one. The 1.21.11
+                // definition, read out of that version's client jar, is
+                //   {"values": ["#minecraft:enchantable/melee_weapon", "#minecraft:axes"]},
+                // so falling back to swords alone silently kept axes out of every enchantment declared
+                // with this family - seven of them in PE, "execute" among them, which is exactly the
+                // "execute does not apply to axes" report. Axes are back in.
+                case "enchantable/sharp_weapon" -> stack.is(ItemTags.SWORDS) || stack.is(ItemTags.AXES);
                 case "enchantable/axe" -> stack.is(ItemTags.AXES);
                 case "enchantable/fire_aspect", "enchantable/sweeping" ->
                         item instanceof net.minecraft.world.item.SwordItem;

@@ -168,8 +168,14 @@ public abstract class VanillaScreen extends Screen {
         if (this.closing && (this.exitIntro == null || !this.exitIntro.running())) {
             // The leave animation has finished: hand the screen over. Done here rather than in onClose because
             // the animation needs frames, and this is the method the game calls once per frame.
+            //
+            // The handover does NOT return early, and that is the fix for the "returning to the previous
+            // screen flashes" report: returning here skipped the background, the panel and the content
+            // backdrop for this last frame, so the frame rendered with widgets floating over the raw world -
+            // a bright flash for one frame, immediately before the parent screen appeared. The handover only
+            // swaps which screen is active; the rest of this frame still draws the leaving screen exactly as
+            // the previous frame did.
             Minecraft.getInstance().setScreen(parentScreen());
-            return;
         }
         // The world dimming of a vanilla screen, plus the dirt background when there is no level. On this
         // version the base implementation fills exactly WORLD_DIM (-1072689136), which is the same veil 26.3

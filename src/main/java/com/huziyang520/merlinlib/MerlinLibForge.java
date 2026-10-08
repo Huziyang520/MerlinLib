@@ -15,7 +15,6 @@ import com.huziyang520.merlinlib.util.SmeltingLookup;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
@@ -66,7 +65,7 @@ public class MerlinLibForge {
         // property that a dedicated server never loads the screen class: the supplier below is only
         // resolved when a client opens the mod list, so the client-side screen inside the inner
         // lambda is never touched on a server.
-        ModLoadingContext.get().registerExtensionPoint(
+        FMLJavaModLoadingContext.get().registerExtensionPoint(
                 ConfigScreenHandler.ConfigScreenFactory.class,
                 () -> new ConfigScreenHandler.ConfigScreenFactory(
                         (minecraft, parent) -> new MerlinConfigScreen(parent)));

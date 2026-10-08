@@ -77,6 +77,8 @@ public class EnchantSelectionScreen extends VanillaScreen {
     private static final int ROW_HEIGHT = VanillaUi.LIST_ROW_HEIGHT;
     /** Width of the per row add button. */
     private static final int ADD_WIDTH = 46;
+    /** Height of the per row add button: four pixels shorter than the row, so it cannot touch the frame. */
+    private static final int ADD_HEIGHT = ROW_HEIGHT - 4;
     /** Narrowest content that still lays out sensibly. */
     private static final int MIN_CONTENT_WIDTH = 230;
     /** Height of a label plus the control under it. */
@@ -182,9 +184,14 @@ public class EnchantSelectionScreen extends VanillaScreen {
         this.rowButtons.clear();
         for (int slot = 0; slot < visibleRows(); slot++) {
             final int index = slot;
-            this.rowButtons.add(this.addRenderableWidget(VanillaUi.button(
+            // ADD_HEIGHT rather than the full widget height: a twenty pixel button in a twenty pixel row
+            // touched the row outline above and below (the "buttons run into the frame" report). The row
+            // buttons are centred by layoutRows(), which leaves the two pixel gap on both sides.
+            this.rowButtons.add(this.addRenderableWidget(Button.builder(
                     Component.translatable("gui.merlinlib.select.add"),
-                    button -> pick(index), this.list.x() + this.list.rowWidth() - ADD_WIDTH, 0, ADD_WIDTH)));
+                    button -> pick(index))
+                    .bounds(this.list.x() + this.list.rowWidth() - ADD_WIDTH, 0, ADD_WIDTH, ADD_HEIGHT)
+                    .build()));
         }
         layoutRows();
     }
@@ -198,7 +205,7 @@ public class EnchantSelectionScreen extends VanillaScreen {
         for (int slot = 0; slot < visibleRows(); slot++) {
             boolean visible = firstRow + slot < this.filtered.size();
             Button button = this.rowButtons.get(slot);
-            button.setY(this.list.y() + slot * ROW_HEIGHT);
+            button.setY(this.list.y() + slot * ROW_HEIGHT + (ROW_HEIGHT - ADD_HEIGHT) / 2);
             button.visible = visible;
             button.active = visible;
         }
