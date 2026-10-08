@@ -18,6 +18,8 @@
     "MixinPlayerDestroyBlock",
     "MixinServerLevelParticles",
     "MixinMobAi",
+    "MixinAngers$PiglinAnger",
+    "MixinAngers$BruteAnger",
     "AvoidEntityGoalAccessor",
     "MixinAvoidEntityGoal",
     "MixinCatAvoidEntityGoal"
