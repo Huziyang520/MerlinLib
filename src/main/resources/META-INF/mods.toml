@@ -21,7 +21,7 @@ authors="${mod_author}"
 credits="${credits}"
 description="${description}"
 logoFile="${mod_id}.png"
-displayURL="https://www.curseforge.com/minecraft/mc-mods/torcherino-community-edition-remake"
+displayURL="https://www.curseforge.com/minecraft/mc-mods/merlinlib"
 issueTrackerURL="https://github.com/Huziyang520/MerlinLib/issues"
 
 [[dependencies.${mod_id}]]
