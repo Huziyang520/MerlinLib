@@ -4,13 +4,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
@@ -45,68 +43,52 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * </pre>
  *
  * <p>Against the 26.3 names ({@code extractPlayerHealth} / {@code extractHealthLevel} /
- * {@code extractHearts} / {@code GuiGraphicsExtractor}) that is four independent renames, so the three
+ * {@code extractHearts} / {@code GuiGraphicsExtractor}) that is four independent renames, so the
  * injection points are re-derived from the bytecode below rather than translated by pattern.
  *
- * <h3>Injection 1 - the layout value</h3>
+ * <h2>Why the two hooks are variables, not call sites</h2>
  *
- * <p>{@code javap -p -c net.minecraft.client.gui.Gui} locates the attribute read inside
- * {@code renderPlayerHealth}:
+ * <p>The first 1.20.1 version of this class used a {@code @Redirect} on the
+ * {@code getAttributeValue} call and a {@code @ModifyArg} on the {@code renderHearts} call - the
+ * direct translation of the 26.3 source. On 26.3 that works. On 1.20.1 it was measured not to: a
+ * player with 102 health still drew all fifty-one hearts, which proves the value that reached
+ * {@code renderHearts} was the raw 102 - i.e. the argument hook did not run - while the text hook in
+ * the very same class did run. Both of the dead hooks are <em>call site</em> hookpoints
+ * ({@code @At(INVOKE)}), the live one is not.
+ *
+ * <p>So both hooks now target <b>local variables</b> instead, which needs no member lookup at all:
+ * {@code javap -c -p net.minecraft.client.gui.Gui} shows the layout value and the heart count are the
+ * same slot, read once for the armour row and once to build the call:
  *
  * <pre>
- *      237: aload_2
- *      238: getstatic     #1426   // Field net/minecraft/world/entity/ai/attributes/Attributes.MAX_HEALTH:Lnet/minecraft/world/entity/ai/attributes/Attribute;
- *      241: invokevirtual #1430   // Method net/minecraft/world/entity/player/Player.getAttributeValue:(Lnet/minecraft/world/entity/ai/attributes/Attribute;)D
+ *      241: invokevirtual #1430   // Player.getAttributeValue:(Lnet/minecraft/world/entity/ai/attributes/Attribute;)D
  *      244: d2f
+ *      ...  fstore 13                                   // the row's own copy of the maximum
+ *      514: fload         13                            // ... read back as renderHearts' argument 6
+ *      523: invokevirtual  renderHearts:(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/entity/player/Player;IIIIFIIIZ)V
  * </pre>
  *
- * <p>The redirect target is therefore
- * {@code Lnet/minecraft/world/entity/player/Player;getAttributeValue(Lnet/minecraft/world/entity/ai/attributes/Attribute;)D},
- * and the handler takes an {@link Attribute}, <b>not</b> a {@code Holder<Attribute>} as the 26.3 source
- * does. Both overloads exist on this version -
- * {@code getAttributeValue(Holder)} and {@code getAttributeValue(Attribute)} - and the bytecode above
- * proves the one actually called is the {@code Attribute} form. Redirecting the {@code Holder} form
- * would find no call site and, with {@code require = 1}, abort startup.
+ * <p>Slot 13 is therefore both "how much room the row takes" (the armour, food and air rows are
+ * placed from it) and "how many hearts are drawn", and rewriting it once fixes both. The armour row
+ * adapting is not a separate feature - it follows from the same value, which is why the 26.3 source
+ * needed no armour code either.
  *
- * <p>The 26.3 source names two methods for this redirect ({@code extractPlayerHealth} and
- * {@code extractHealthLevel}) because the two loaders had split the code differently. On 1.20.1 the
- * method is a single vanilla one, {@code renderPlayerHealth}, so the multi-name form collapses to one
- * name. Keeping a name that does not exist would be exactly the mistake {@code require = 1} is there
- * to catch.
+ * <p>The second hook is the belt to that braces: it sits on {@code renderHearts}' own
+ * {@code maxHealth} parameter, the same method whose {@code TAIL} injection demonstrably runs, so the
+ * heart count is held to one even if the layout hook is lost again. It is a no-op whenever the first
+ * hook did its job, because the value it then sees is already {@link #ONE_HEART: two}, which is below
+ * the threshold.
  *
- * <h3>Injection 2 - the heart count</h3>
+ * <h2>What is deliberately not done</h2>
  *
- * <p>The same disassembly shows the one call into {@code renderHearts}:
- *
- * <pre>
- *      514: fload         13
- *      516: iload_3
- *      517: iload         7
- *      519: iload         14
- *      521: iload         4
- *      523: invokevirtual #1454   // Method renderHearts:(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/entity/player/Player;IIIIFIIIZ)V
- * </pre>
- *
- * <p>The argument indices are readable directly off this listing: {@code aload_1} is the
- * {@code GuiGraphics} at index 0 and {@code aload_2} the {@code Player} at index 1, so the float at
- * index 6 is the heart-count value and the two ints at 7 and 8 are the current and old health. Those
- * are the same indices the 26.3 source uses, so the handler body ports unchanged once the descriptor
- * is corrected to the 1.20.1 one.
- *
- * <h3>Injection 3 - the numbers</h3>
- *
- * <p>{@code renderHearts} keeps its tail free for a plain {@code @Inject} at {@code RETURN}, and the
- * text is drawn through {@code GuiGraphics#drawString}, which is the 1.20.1 name for what 26.3 calls
- * {@code text}. The {@code Minecraft#font} field still exists, so the readout needs no accessor.
- *
- * <h3>The armour row</h3>
- *
- * <p>The 26.3 source speaks of the armour row as a separate drawing step. On 1.20.1 the armour row is
- * drawn <b>inline inside {@code renderPlayerHealth}</b>; there is no separate method to hook, and this
- * mixin does not try to hook one. That is not a missing feature: the change this mixin makes is to the
- * heart row and to the layout value that decides where the rows below it sit, so moving the armour row
- * correctly follows from {@code renderHearts} being drawn in one row's worth of space. Nothing else in
- * the armour path needs to know.
+ * <p>{@code @ModifyArgs}, which the 26.3 source uses, is not available here: it makes Mixin
+ * <em>generate a class at runtime</em> ({@code ArgsClassGenerator.CLASS_NAME_BASE} is
+ * {@code "org.spongepowered.asm.synthetic.args.Args$"}), and the Mixin 0.8.5 that Forge 1.20.1
+ * bundles does not do that generation - the game dies with
+ * {@code NoClassDefFoundError: org/spongepowered/asm/synthetic/args/Args$1} and a stack trace that
+ * names no mixin. Replacing the whole {@code renderHearts} call with {@code @Redirect} is not an
+ * option either: it would have to re-invoke a {@code protected} method of the target class, and the
+ * {@code @Shadow} that needs failed to resolve on this Mixin version.
  */
 @Mixin(Gui.class)
 public class MixinHud {
@@ -117,19 +99,26 @@ public class MixinHud {
     /** The value that makes the vanilla loop draw a single heart. */
     private static final float ONE_HEART = 2.0F;
 
-    /** The same, as one row's worth of health, for the layout calculation. */
-    private static final double ONE_ROW_OF_HEALTH = 20.0D;
+    /**
+     * Slot of the row's own copy of the maximum health inside {@code renderPlayerHealth}.
+     *
+     * <p>Written as a named constant because the number itself is meaningless: it is the float local
+     * that the disassembly above shows being stored once after the attribute read and read back for
+     * both the armour row and the {@code renderHearts} call. Vanilla's own compiler output fixes this
+     * slot for 1.20.1.
+     */
+    private static final int LAYOUT_LOCAL = 13;
 
     /**
-     * Index of the {@code maxHealth} argument in the {@code Gui#renderHearts} call.
+     * Slot of the {@code float maxHealth} parameter of {@code renderHearts}.
      *
-     * <p>Zero-based, counted over the call's own argument list:
+     * <p>Argument slots start after {@code this}, so over
      * {@code GuiGraphics 0, Player 1, int xLeft 2, int yLineBase 3, int rowHeight 4, int offset 5,
-     * float maxHealth 6, int current 7, int old 8, int absorption 9, boolean blink 10}. Named rather
-     * than written as a bare {@code 6} so that the thing that matters - which argument this is - is
-     * stated where it is used.
+     * float maxHealth 6, ...} in <em>argument list</em> terms this is argument 6, and it is local slot
+     * 7 - the two numbers differ by one and mixing them up is exactly the kind of mistake that would
+     * silently draw ten hearts instead of one, so both are written down here.
      */
-    private static final int PARAM_MAX_HEALTH = 6;
+    private static final int MAX_HEALTH_ARG = 7;
 
     /** Gap between the heart and the numbers, and the text's vertical nudge. */
     private static final int TEXT_OFFSET_X = 12;
@@ -144,97 +133,38 @@ public class MixinHud {
      * twenty-one and a hundred health with a single row of hearts where vanilla would have drawn two
      * to five. Up to the threshold the real value is passed through untouched.
      *
-     * @param player    the player the row belongs to
-     * @param attribute the attribute being read, always the maximum health
-     * @return the real value, brought down to one vanilla row only when it is large
+     * @param maxHealth the value the row is about to be built from
+     * @return the real value, brought down to one heart only when it is large
      */
-    @Redirect(method = "renderPlayerHealth(Lnet/minecraft/client/gui/GuiGraphics;)V", require = 1,
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/world/entity/player/Player;getAttributeValue(Lnet/minecraft/world/entity/ai/attributes/Attribute;)D"))
-    private double merlinlib$layoutOneRow(Player player, Attribute attribute) {
-        double real = player.getAttributeValue(attribute);
-        return real > COMPACT_THRESHOLD ? ONE_ROW_OF_HEALTH : real;
+    @ModifyVariable(method = "renderPlayerHealth(Lnet/minecraft/client/gui/GuiGraphics;)V",
+            at = @At("STORE"), index = LAYOUT_LOCAL, require = 1)
+    private float merlinlib$oneRowWhenHuge(float maxHealth) {
+        return maxHealth > COMPACT_THRESHOLD ? ONE_HEART : maxHealth;
     }
 
     /**
-     * Reduces the heart count to one once the health is large.
+     * The same rule applied to the heart loop's own argument, as a second line of defence.
      *
-     * <h2>Why this is a {@code @ModifyArg} on call argument 6</h2>
+     * <p>{@code renderHearts} is the one place this class is proven to reach - the numbers below are
+     * drawn from an injection into the same method - so the heart count is pinned here rather than
+     * only at the call site. When the layout hook above has already reduced the value this is a
+     * no-op, because {@code 2.0} is below the threshold.
      *
-     * <p>{@code renderPlayerHealth} calls
-     * {@code renderHearts(graphics, player, xLeft, yLineBase, rowHeight, offset, maxHealth, ...)}.
-     * Argument 6 is that {@code float maxHealth} - the value the loop uses as the heart row's width -
-     * and it is the same value the 26.3 line set through {@code args.set(6, ONE_HEART)}. Replacing it
-     * before the call reaches {@code renderHearts} is therefore equivalent, and the rest of the call
-     * is untouched.
-     *
-     * <p>The player is recovered from the call's own argument 1 rather than from a field, which means
-     * the real maximum can be re-read: the value being passed has already been brought down for the
-     * layout by the {@code getAttributeValue} redirect above, so it can never answer this question.
-     *
-     * <h2>Why not the 26.3 line's {@code @ModifyArgs}, and why not {@code @Redirect} either</h2>
-     *
-     * <p>Both alternatives were tried on this project and both broke the game at startup, so the
-     * reasons are recorded rather than left to be rediscovered:
-     *
-     * <p><b>{@code @ModifyArgs}</b> - which is what 26.3 used - has Mixin <b>generate a class at
-     * runtime</b>: {@code ArgsClassGenerator}'s {@code CLASS_NAME_BASE} is
-     * {@code "org.spongepowered.asm.synthetic.args.Args$"}, so it synthesises {@code Args$1},
-     * {@code Args$2} ... per call site. On the Mixin 0.8.5 that Forge 1.20.1 bundles that generation
-     * does not happen, and the game dies with:
-     * <pre>
-     * java.lang.NoClassDefFoundError: org/spongepowered/asm/synthetic/args/Args$1
-     *     at net.minecraft.client.Minecraft.&lt;init&gt;(Minecraft.java:521)
-     * </pre>
-     * That stack trace never names the offending mixin, and the class it cannot find is supposed to be
-     * generated - it exists in no jar on the machine. It is a genuinely misleading failure.
-     *
-     * <p><b>{@code @Redirect}</b> - replacing the whole call - avoids the generated class, but it then
-     * has to re-invoke {@code renderHearts} to draw anything, and that method is {@code protected} on
-     * {@link Gui}. Reaching it needs an {@code @Shadow}, and the shadow failed to resolve:
-     * <pre>
-     * InvalidMixinException: @Shadow method renderHearts in merlinlib.mixins.json:MixinHud was not
-     * located in the target class net.minecraft.client.gui.Gui. Using refmap merlinlib.refmap.json
-     * </pre>
-     * The target does exist - {@code protected void m_168688_(...)} is present in the runtime jar with
-     * exactly that descriptor, and the refmap maps it correctly - so the failure is in how Mixin 0.8.5
-     * attaches a shadow that the mixin itself introduced. That is not worth fighting when a simpler
-     * injector exists.
-     *
-     * <p>{@code @ModifyArg} needs neither a generated class nor a shadow, which is why it is the one
-     * that works here.
-     *
-     * @param graphics         the draw context, unused beyond context
-     * @param player           the player the row belongs to
-     * @param xLeft            the left edge of the heart row
-     * @param yLineBase        the baseline of the heart row
-     * @param healthRowHeight  the vanilla row spacing
-     * @param heartOffsetIndex the vanilla regeneration heartbeat offset
-     * @param maxHealth        the maximum health the call would use - the value being replaced
-     * @param currentHealth    the health as a whole number
-     * @param oldHealth        the previously displayed health
-     * @param absorption       the absorption amount
-     * @param blink            whether the row is blinking after a change
-     * @return the value to pass as {@code maxHealth}
+     * @param maxHealth the value the loop would use as the row width
+     * @return one heart's worth of health once the value is large
      */
-    @ModifyArg(method = "renderPlayerHealth(Lnet/minecraft/client/gui/GuiGraphics;)V", require = 1,
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/Gui;renderHearts(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/entity/player/Player;IIIIFIIIZ)V"),
-            index = PARAM_MAX_HEALTH)
-    private float merlinlib$oneHeartWhenHuge(GuiGraphics graphics, Player player, int xLeft, int yLineBase,
-                                             int healthRowHeight, int heartOffsetIndex, float maxHealth,
-                                             int currentHealth, int oldHealth, int absorption, boolean blink) {
-        // The player is taken from the call's own argument rather than a field, because the value that
-        // arrives in maxHealth has already been reduced by the getAttributeValue redirect above when
-        // the health is large - so it cannot be used to decide whether the health is large.
-        if (realHealth(player, currentHealth, oldHealth) > COMPACT_THRESHOLD) {
-            return ONE_HEART;
-        }
-        return maxHealth;
+    @ModifyVariable(method = "renderHearts(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/entity/player/Player;IIIIFIIIZ)V",
+            at = @At("HEAD"), argsOnly = true, index = MAX_HEALTH_ARG, require = 1)
+    private float merlinlib$oneHeartWhenHuge(float maxHealth) {
+        return maxHealth > COMPACT_THRESHOLD ? ONE_HEART : maxHealth;
     }
 
     /**
      * Writes the exact numbers next to the single heart.
+     *
+     * <p>{@code renderHearts} keeps its tail free for a plain {@code @Inject} at {@code RETURN}, and
+     * the text is drawn through {@code GuiGraphics#drawString}, which is the 1.20.1 name for what
+     * 26.3 calls {@code text}.
      *
      * @param graphics         the draw context
      * @param player           the player the row belongs to
@@ -261,8 +191,6 @@ public class MixinHud {
         }
         Component text = Component.literal(currentHealth + "/" + Math.round(real));
         int color = absorption > 0 ? 0xFFFFD700 : 0xFFFFFFFF;
-        // drawString is the 1.20.1 name for the 26.3 source's GuiGraphicsExtractor#text. It takes the
-        // same arguments, including the drop shadow flag, so the readout is drawn identically.
         graphics.drawString(Minecraft.getInstance().font, text, xLeft + TEXT_OFFSET_X,
                 yLineBase + TEXT_OFFSET_Y, color, true);
     }
