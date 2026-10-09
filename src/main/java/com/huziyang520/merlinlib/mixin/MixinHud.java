@@ -1,5 +1,7 @@
 package com.huziyang520.merlinlib.mixin;
 
+import com.huziyang520.merlinlib.config.ClientConfig;
+import com.huziyang520.merlinlib.config.ConfigManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
@@ -90,11 +92,33 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Gui.class)
 public class MixinHud {
 
-    /** Health above which the row becomes one heart and the numbers. */
-    private static final float COMPACT_THRESHOLD = 100.0F;
-
     /** The value that makes the vanilla loop draw a single heart. */
     private static final float ONE_HEART = 2.0F;
+
+    /**
+     * Fallback threshold, used only while no client configuration is loaded.
+     *
+     * <p>99 folds from a ceiling of 100 upwards, which is the documented default.
+     */
+    private static final float FALLBACK_COLLAPSE_THRESHOLD = 99.0F;
+
+    /** When the next layout probe may print, in milliseconds; the HUD asks every frame. */
+    private static long probeAt;
+
+    /**
+     * Whether the row should be folded, according to the client's own configuration.
+     *
+     * @param real the health the row was built from
+     * @return true when the row collapses to one heart plus the numbers
+     */
+    private static boolean folding(float real) {
+        ClientConfig config = ConfigManager.client();
+        if (config == null || !config.hudCollapse()) {
+            return false;
+        }
+        float threshold = Math.max(1.0F, config.hudCollapseThreshold());
+        return real > threshold;
+    }
 
     /**
      * Slot of the {@code float maxHealth} parameter of {@code renderHearts}.
@@ -153,8 +177,14 @@ public class MixinHud {
     @Redirect(method = "renderPlayerHealth(Lnet/minecraft/client/gui/GuiGraphics;)V", require = 1,
             at = @At(value = "INVOKE", target = "Ljava/lang/Math;max(FF)F"))
     private float merlinlib$oneRowWhenHuge(float a, float b) {
+        ClientConfig config = ConfigManager.client();
         float real = Math.max(a, b);
-        return real > COMPACT_THRESHOLD ? ONE_HEART : real;
+        if (config == null || !config.hudCollapse() || !config.hudArmourDodge()) {
+            // Not folding at all, or the player asked for vanilla's placement: the layout value is
+            // passed through untouched, so the armour row keeps whatever spot vanilla gives it.
+            return real;
+        }
+        return folding(real) ? ONE_HEART : real;
     }
 
     /**
@@ -171,7 +201,18 @@ public class MixinHud {
     @ModifyVariable(method = "renderHearts(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/entity/player/Player;IIIIFIIIZ)V",
             at = @At("HEAD"), argsOnly = true, index = MAX_HEALTH_ARG, require = 1)
     private float merlinlib$oneHeartWhenHuge(float maxHealth) {
-        return maxHealth > COMPACT_THRESHOLD ? ONE_HEART : maxHealth;
+        // TEMPORARY diagnostic, once a second: this is the only injection point in this class proven
+        // to run on this setup, so it is where the value the rest of the HUD sees can be read.
+        // Remove once the layout hook above is confirmed to be reached.
+        long now = System.currentTimeMillis();
+        if (now - probeAt >= 1000L) {
+            probeAt = now;
+            ClientConfig config = ConfigManager.client();
+            System.out.println("[MerlinLib] hud probe: incoming=" + maxHealth + " folding="
+                    + folding(maxHealth) + " threshold="
+                    + (config == null ? FALLBACK_COLLAPSE_THRESHOLD : config.hudCollapseThreshold()));
+        }
+        return folding(maxHealth) ? ONE_HEART : maxHealth;
     }
 
     /**
@@ -201,7 +242,7 @@ public class MixinHud {
                                          int currentHealth, int oldHealth, int absorption, boolean blink,
                                          CallbackInfo info) {
         float real = realHealth(player, currentHealth, oldHealth);
-        if (real <= COMPACT_THRESHOLD) {
+        if (!folding(real)) {
             return;
         }
         Component text = Component.literal(currentHealth + "/" + Math.round(real));

@@ -270,7 +270,11 @@ public class MerlinConfigScreen extends VanillaScreen {
                     toggle("tools.health_editor_requires_item", false, T + "health_item",
                             server.healthEditorRequiresItem()),
                     toggle("security.health_editor_requires_permission", false, T + "health_permission",
-                            server.healthEditorRequiresPermission()));
+                            server.healthEditorRequiresPermission()),
+                    toggle("hud.collapse_enabled", true, T + "hud_collapse", client.hudCollapse()),
+                    integer("hud.collapse_threshold", true, T + "hud_collapse_threshold",
+                            client.hudCollapseThreshold(), 1, 1000000),
+                    toggle("hud.armour_auto_dodge", true, T + "hud_armour_dodge", client.hudArmourDodge()));
             case 3 -> List.of(
                     toggle("floating_text.enabled", true, T + "floating_text", client.floatingTextEnabled()),
                     integer("floating_text.duration_ticks", true, T + "floating_duration",

@@ -104,7 +104,37 @@ public final class ClientConfig {
     /** The file layout this build writes; see the migration in {@link #load()}. */
     private static final int CONFIG_VERSION = 1;
 
+    /** Whether a very large maximum health is drawn as one heart plus the numbers. */
+    public boolean hudCollapse() {
+        return hudCollapse;
+    }
+
+    /** The maximum health from which the row folds; 99 means a ceiling of 100 or more folds. */
+    public int hudCollapseThreshold() {
+        return hudCollapseThreshold;
+    }
+
+    /** Whether the armour row keeps following the heart rows once the row is folded. */
+    public boolean hudArmourDodge() {
+        return hudArmourDodge;
+    }
+
     private boolean crosshairDamage;
+
+    /** Whether a very large maximum health is drawn as one heart plus the numbers. */
+    private boolean hudCollapse = true;
+
+    /** The maximum health from which the row folds; 99 means a ceiling of 100 or more folds. */
+    private int hudCollapseThreshold = 99;
+
+    /**
+     * Whether the armour row keeps following the heart rows once the row is folded.
+     *
+     * <p>On: the armour row is placed against the folded single row, so it sits right above the one
+     * heart. Off: the layout is left exactly as vanilla computes it from the real maximum health, which
+     * on a very large value means the armour row keeps its old, much higher position.
+     */
+    private boolean hudArmourDodge = true;
     private int crosshairDamageTicks = 20;
     private boolean floatingTextEnabled = false;
     private int floatingTextDurationTicks = 20;
@@ -148,6 +178,9 @@ public final class ClientConfig {
         }
 
         config.crosshairDamage = file.getBoolean("hud.crosshair_damage", false);
+        config.hudCollapse = file.getBoolean("hud.collapse_enabled", true);
+        config.hudCollapseThreshold = file.getInt("hud.collapse_threshold", 99, 1, 1000000);
+        config.hudArmourDodge = file.getBoolean("hud.armour_auto_dodge", true);
         config.crosshairDamageTicks = file.getInt("hud.crosshair_damage_ticks", 20, 1, 400);
         config.floatingTextEnabled = file.getBoolean("floating_text.enabled", false);
         config.floatingTextDurationTicks = file.getInt("floating_text.duration_ticks", 20, 1, 400);
