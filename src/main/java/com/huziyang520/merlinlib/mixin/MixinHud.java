@@ -136,7 +136,15 @@ public class MixinHud {
      * {@code Player.getAttributeValue} and replaced the {@code renderHearts} call argument, both of
      * which are remapped Minecraft members, and both of which were measured on 1.20.1 to apply
      * without error yet never run. The {@code renderHearts} hooks kept working. Targeting a JDK
-     * method removes that whole failure mode.
+     * method removes that whole failure mode - with it, the injection is found and the only thing
+     * left to get right is the handler's own signature.
+     *
+     * <p><b>The handler must not be {@code static}</b>, even though the call it replaces is a static
+     * one. Mixin matches the handler's modifier against the <em>target method</em>, and
+     * {@code renderPlayerHealth} is an instance method; writing {@code static} aborts startup with
+     * {@code InvalidInjectionException: 'static' modifier of handler method does not match target}
+     * from {@code Injector.checkTargetModifiers}. That is a hard failure at class-transform time,
+     * before any of this class's other injections get a chance to run.
      *
      * @param a the maximum health the row was built from
      * @param b the displayed health
@@ -144,7 +152,7 @@ public class MixinHud {
      */
     @Redirect(method = "renderPlayerHealth(Lnet/minecraft/client/gui/GuiGraphics;)V", require = 1,
             at = @At(value = "INVOKE", target = "Ljava/lang/Math;max(FF)F"))
-    private static float merlinlib$oneRowWhenHuge(float a, float b) {
+    private float merlinlib$oneRowWhenHuge(float a, float b) {
         float real = Math.max(a, b);
         return real > COMPACT_THRESHOLD ? ONE_HEART : real;
     }
