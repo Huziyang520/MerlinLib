@@ -102,7 +102,7 @@ public final class ClientConfig {
             + "config_version = 1\n";
 
     /** The file layout this build writes; see the migration in {@link #load()}. */
-    private static final int CONFIG_VERSION = 1;
+    private static final int CONFIG_VERSION = 2;
 
     /** Whether a very large maximum health is drawn as one heart plus the numbers. */
     public boolean hudCollapse() {
@@ -128,11 +128,12 @@ public final class ClientConfig {
     private int hudCollapseThreshold = 99;
 
     /**
-     * Whether the armour row keeps following the heart rows once the row is folded.
+     * Whether the armour bar is moved to sit just above the health bar that is really drawn.
      *
-     * <p>On: the armour row is placed against the folded single row, so it sits right above the one
-     * heart. Off: the layout is left exactly as vanilla computes it from the real maximum health, which
-     * on a very large value means the armour row keeps its old, much higher position.
+     * <p>On: the row the HUD is built from is folded to a single row, so the armour bar ends up right
+     * above the heart that is really drawn instead of keeping the height it would need for every heart
+     * a large maximum health would ask for. Off: nothing is done, and the armour bar stays where vanilla
+     * puts it - which, with a large maximum health, is far above the folded health bar.
      */
     private boolean hudArmourDodge = true;
     private int crosshairDamageTicks = 20;
@@ -168,6 +169,9 @@ public final class ClientConfig {
         if (file.getInt("gui.config_version", 0, 0, Integer.MAX_VALUE) < CONFIG_VERSION) {
             java.util.Map<String, String> overrides = new java.util.LinkedHashMap<>();
             overrides.put("gui.config_version", Integer.toString(CONFIG_VERSION));
+                if (!file.getBoolean("hud.armour_auto_dodge", true)) {
+                    overrides.put("hud.armour_auto_dodge", "true");
+                }
             if (file.getBoolean("floating_text.enabled", true)) {
                 overrides.put("floating_text.enabled", "false");
             }
