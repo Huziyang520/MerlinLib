@@ -1,6 +1,7 @@
 package com.huziyang520.merlinlib.mixin;
 
 import com.huziyang520.merlinlib.Constants;
+import com.huziyang520.merlinlib.client.HudRowPolicy;
 import com.huziyang520.merlinlib.config.ClientConfig;
 import com.huziyang520.merlinlib.config.ConfigManager;
 import net.minecraft.client.Minecraft;
@@ -113,12 +114,7 @@ public class MixinHud {
      * @return true when the row collapses to one heart plus the numbers
      */
     private static boolean folding(float real) {
-        ClientConfig config = ConfigManager.client();
-        if (config == null || !config.hudCollapse()) {
-            return false;
-        }
-        float threshold = Math.max(1.0F, config.hudCollapseThreshold());
-        return real > threshold;
+        return HudRowPolicy.folding(real);
     }
 
     /**
