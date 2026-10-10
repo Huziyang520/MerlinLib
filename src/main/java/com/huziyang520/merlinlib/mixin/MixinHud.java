@@ -1,5 +1,6 @@
 package com.huziyang520.merlinlib.mixin;
 
+import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.config.ClientConfig;
 import com.huziyang520.merlinlib.config.ConfigManager;
 import net.minecraft.client.Minecraft;
@@ -188,7 +189,7 @@ public class MixinHud {
         long now = System.currentTimeMillis();
         if (now - probeAt >= 1000L) {
             probeAt = now;
-            System.out.println("[MerlinLib] layout hook RAN: real=" + real + " fold=" + fold);
+            Constants.LOG.info("[hud] layout hook RAN: real={} fold={}", real, fold);
         }
         return fold ? ONE_HEART : real;
     }
@@ -222,7 +223,7 @@ public class MixinHud {
                 line.append(trace[i].getClassName()).append('#').append(trace[i].getMethodName())
                         .append(" <- ");
             }
-            System.out.println(line);
+            Constants.LOG.info("[hud] probe: {}", line);
         }
         return folding(maxHealth) ? ONE_HEART : maxHealth;
     }
