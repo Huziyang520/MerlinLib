@@ -184,7 +184,13 @@ public class MixinHud {
             // passed through untouched, so the armour row keeps whatever spot vanilla gives it.
             return real;
         }
-        return folding(real) ? ONE_HEART : real;
+        boolean fold = folding(real);
+        long now = System.currentTimeMillis();
+        if (now - probeAt >= 1000L) {
+            probeAt = now;
+            System.out.println("[MerlinLib] layout hook RAN: real=" + real + " fold=" + fold);
+        }
+        return fold ? ONE_HEART : real;
     }
 
     /**
@@ -208,9 +214,15 @@ public class MixinHud {
         if (now - probeAt >= 1000L) {
             probeAt = now;
             ClientConfig config = ConfigManager.client();
-            System.out.println("[MerlinLib] hud probe: incoming=" + maxHealth + " folding="
-                    + folding(maxHealth) + " threshold="
-                    + (config == null ? FALLBACK_COLLAPSE_THRESHOLD : config.hudCollapseThreshold()));
+            StackTraceElement[] trace = new Throwable().getStackTrace();
+            StringBuilder line = new StringBuilder("[MerlinLib] hud probe: incoming=" + maxHealth
+                    + " threshold=" + (config == null ? FALLBACK_COLLAPSE_THRESHOLD
+                    : config.hudCollapseThreshold()) + " caller=");
+            for (int i = 1; i < Math.min(6, trace.length); i++) {
+                line.append(trace[i].getClassName()).append('#').append(trace[i].getMethodName())
+                        .append(" <- ");
+            }
+            System.out.println(line);
         }
         return folding(maxHealth) ? ONE_HEART : maxHealth;
     }
