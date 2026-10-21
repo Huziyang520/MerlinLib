@@ -1,0 +1,38 @@
+# This branch covers 26.1 ~ 26.2 and compiles against 26.1.2:
+# - modLoader / loaderVersion became optional in 26.3 only; the 26.1.2 line still expects them,
+#   and keeping them does no harm on 26.2.
+modLoader = "javafml"
+loaderVersion = "${neoforge_loader_version_range}"
+license = "${license}" # Review your options at https://choosealicense.com/.
+[[mods]] #mandatory
+modId = "${mod_id}" #mandatory
+version = "${version}" #mandatory
+displayName = "${mod_name}" #mandatory
+# displayURL / issueTrackerURL / icon fields MUST stay inside the [[mods]] table, otherwise the mod
+# list shows no homepage / issue button / icon at all.
+displayURL = "https://www.curseforge.com/minecraft/mc-mods/merlinlib" #optional (displayed in the mod UI)
+issueTrackerURL = "https://github.com/Huziyang520/MerlinLib/issues" #optional
+# The icon field moved across versions: 26.1.2 only reads logoFile, 26.2+ reads iconFile (logoFile is
+# deprecated there). One jar has to cover both, so both are declared.
+logoFile = "${mod_id}.png" #optional
+iconFile = "${mod_id}.png" #optional
+credits = "${credits}" #optional
+authors = "${mod_author}" #optional
+description = '''${description}''' #mandatory (Supports multiline text)
+[[mixins]]
+config = "${mod_id}.mixins.json"
+[[mixins]]
+config = "${mod_id}.neoforge.mixins.json"
+[[dependencies.${mod_id}]] #optional
+modId = "neoforge" #mandatory
+type = "required" #mandatory (Can be one of "required", "optional", "incompatible" or "discouraged")
+# Not [26.1.2.94,): that would reject the NeoForge builds of 26.1 / 26.1.1.
+versionRange = "[26.1,26.3)" #mandatory
+ordering = "NONE" # The order that this dependency should load in relation to your mod, required to be either 'BEFORE' or 'AFTER' if the dependency is not mandatory
+side = "BOTH" # Side this dependency is applied on - 'BOTH', 'CLIENT' or 'SERVER'
+[[dependencies.${mod_id}]]
+modId = "minecraft"
+type = "required" #mandatory (Can be one of "required", "optional", "incompatible" or "discouraged")
+versionRange = "${minecraft_version_range}"
+ordering = "NONE"
+side = "BOTH"
