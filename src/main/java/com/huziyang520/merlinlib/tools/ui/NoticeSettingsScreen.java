@@ -263,8 +263,13 @@ public final class NoticeSettingsScreen extends VanillaScreen {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         applyPendingExit();
-        beginIntro(graphics);
+        // The background, the widgets and the content are drawn by the base class: dimming and panel outside
+        // the opening transform, controls and labels inside it.
         super.render(graphics, mouseX, mouseY, partialTick);
+    }
+
+    @Override
+    protected void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         PanelLayout layout = layout();
         int left = layout.left();
         int content = layout.contentWidth();
@@ -305,8 +310,6 @@ public final class NoticeSettingsScreen extends VanillaScreen {
                     VanillaUi.TEXT_HINT, true);
             hintLine++;
         }
-        endIntro(graphics);
-        drawIntroVeil(graphics);
     }
 
     // ---------------------------------------------------------------- saving

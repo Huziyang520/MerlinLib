@@ -129,14 +129,26 @@ public abstract class VanillaScreen extends Screen {
     }
 
     /**
-     * Draws the world dimming, the panel and the content background, then the widgets.
+     * Draws the background, then the widgets and the content under the opening or closing transform.
      *
-     * <p>A subclass overrides this to add its own text and calls {@code super.render(...)} first, which is
-     * the same shape the 26.3 screens used.
+     * <p><b>The order is the flicker fix.</b> The world dimming and the panel belong to the background pass
+     * and are drawn <em>outside</em> the animation's pose; only the widgets and the content the screen paints
+     * itself are transformed. The previous order pushed the animation first and called the background from
+     * inside it, which scaled a full-screen black veil down to 92% around the centre for the first frames of
+     * every opening and closing: the outer band of the window was not covered by the veil at all, so the bright
+     * world showed through a frame-wide border that snapped shut when the animation ended. That border is what
+     * was being reported as a flash, on opening, on closing and on the handover from one screen to the next.
+     * Dimming is now always exactly the window, on every frame.
      *
-     * <p><b>What changed / 1.20.1 note:</b> this method now also performs the background pass. On 1.21 the
-     * game called {@code extractBackground} itself and a screen only had to draw its content; here nothing
-     * draws the dimming or the panel unless the screen asks, so the call is made for every subclass.
+     * <p>A subclass adds its own text and overlays by overriding {@link #renderContent}, which is called inside
+     * the transform and after the widgets. It must not call {@code super.render} for that: this method already
+     * draws the widgets, once.
+     *
+     * <p><b>What changed / 1.20.1 note:</b> this method also performs the background pass, because on this
+     * version nothing draws the dimming or the panel unless the screen asks: every vanilla screen calls
+     * {@code renderBackground(GuiGraphics)} as the first line of its own {@code render} (three fewer parameters
+     * than 26.3's {@code extractBackground}). The 26.3 screens relied on the game calling the background pass
+     * itself, which is why the call lives here rather than in each subclass.
      *
      * @param graphics    the graphics object
      * @param mouseX      the cursor x
@@ -146,7 +158,25 @@ public abstract class VanillaScreen extends Screen {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderBackground(graphics);
+        beginIntro(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
+        renderContent(graphics, mouseX, mouseY, partialTick);
+        endIntro(graphics);
+        drawIntroVeil(graphics);
+    }
+
+    /**
+     * Draws everything this screen adds on top of its widgets, inside the opening or closing transform.
+     *
+     * <p>Called after the widgets so labels and overlays stay above them, and inside the transform so the
+     * content moves with the controls instead of being left behind. The default draws nothing.
+     *
+     * @param graphics    the graphics object
+     * @param mouseX      the cursor x
+     * @param mouseY      the cursor y
+     * @param partialTick the partial tick
+     */
+    protected void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
     }
 
     /**
@@ -315,8 +345,12 @@ public abstract class VanillaScreen extends Screen {
         if (animation == null || !animation.fades() || this.width <= 0 || this.height <= 0) {
             return;
         }
-        int alpha = (int) Math.round(Math.max(0.0D, Math.min(1.0D, animation.veil(this.introProgress())))
-                * 255.0D);
+        // Capped at half opacity on purpose. The veil is the only way to fade the whole frame (see ScreenIntro),
+        // but at full opacity the first frame of a fade is a completely black window that then clears, and a
+        // window that goes black for one frame and comes back is indistinguishable from the flash this method
+        // exists to avoid. Half opacity still reads as a fade in and out, and never blanks the screen.
+        double fade = Math.max(0.0D, Math.min(1.0D, animation.veil(this.introProgress()))) * 0.5D;
+        int alpha = (int) Math.round(fade * 255.0D);
         if (alpha <= 0) {
             return;
         }

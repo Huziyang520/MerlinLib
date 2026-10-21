@@ -191,9 +191,7 @@ public final class AnimationSettingsScreen extends VanillaScreen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        beginIntro(graphics);
-        super.render(graphics, mouseX, mouseY, partialTick);
+    protected void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         PanelLayout layout = layout();
         int left = layout.left();
         int width = area(layout) - CONTROL_WIDTH - 12;
@@ -220,8 +218,6 @@ public final class AnimationSettingsScreen extends VanillaScreen {
                     VanillaUi.TEXT_HINT, true);
             line++;
         }
-        endIntro(graphics);
-        drawIntroVeil(graphics);
     }
 
     private void save() {

@@ -103,6 +103,13 @@ public final class VanillaUi {
     public static final int LIST_ROW_HEIGHT = 20;
     /** Smallest handle the scrollbar keeps, so it stays grabbable. */
     public static final int MIN_HANDLE_HEIGHT = 20;
+    /**
+     * How many pixels the corner of every frame is rounded by.
+     *
+     * <p>Two pixels is what the game's own panels read as at GUI scale 2 and 3; at scale 1 it is one visible
+     * pixel of step, which is still rounder than a square corner and never looks bitten.
+     */
+    public static final int CORNER_RADIUS = 2;
 
     // ------------------------------------------------------------------ colours (copied from vanilla)
 
@@ -169,12 +176,47 @@ public final class VanillaUi {
      * @param height   panel height, at least 4
      */
     public static void panel(GuiGraphics graphics, int x, int y, int width, int height) {
-        graphics.fill(x, y, x + width, y + height, PANEL_OUTLINE);
-        graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, PANEL_BODY);
-        graphics.fill(x + 1, y + 1, x + width - 1, y + 2, PANEL_HIGHLIGHT);
-        graphics.fill(x + 1, y + 1, x + 2, y + height - 1, PANEL_HIGHLIGHT);
-        graphics.fill(x + 1, y + height - 2, x + width - 1, y + height - 1, PANEL_SHADOW);
-        graphics.fill(x + width - 2, y + 1, x + width - 1, y + height - 1, PANEL_SHADOW);
+        // Rounded, like the panels the game itself draws: the four corner pixels of the outer rectangle are
+        // cut, so the frame reads as a modern vanilla panel instead of a hard square. Nothing else changes -
+        // same colours, same one pixel frame, same body.
+        roundedRect(graphics, x, y, width, height, PANEL_OUTLINE);
+        roundedRect(graphics, x + 1, y + 1, width - 2, height - 2, PANEL_BODY);
+        // The white edge runs along the body's top and left, stopping short of the rounded corners.
+        graphics.fill(x + 2, y + 1, x + width - 2, y + 2, PANEL_HIGHLIGHT);
+        graphics.fill(x + 1, y + 2, x + 2, y + height - 2, PANEL_HIGHLIGHT);
+        graphics.fill(x + 2, y + height - 2, x + width - 2, y + height - 1, PANEL_SHADOW);
+        graphics.fill(x + width - 2, y + 2, x + width - 1, y + height - 2, PANEL_SHADOW);
+    }
+
+    /**
+     * Fills a rectangle whose corners are rounded by {@link #CORNER_RADIUS} pixels.
+     *
+     * <p>Three overlapping fills rather than one: a single {@code fill} is always a hard rectangle, and the
+     * interface offers no shape primitive. Painting the middle band, then a band one pixel narrower, then the
+     * widest one produces the stepped corners the game's own rounded panels have, at every GUI scale, without
+     * a texture and without a shader.
+     *
+     * <p>Public because a caller drawing its own frame should get the same corner as the panel around it; the
+     * library never calls it on another mod's behalf.
+     *
+     * @param graphics the graphics object
+     * @param x        left edge
+     * @param y        top edge
+     * @param width    width, at least 4 for the corner to show
+     * @param height   height, at least 4 for the corner to show
+     * @param color    the ARGB colour
+     */
+    public static void roundedRect(GuiGraphics graphics, int x, int y, int width, int height, int color) {
+        if (width <= 0 || height <= 0) {
+            return;
+        }
+        if (width < 2 * CORNER_RADIUS || height < 2 * CORNER_RADIUS) {
+            graphics.fill(x, y, x + width, y + height, color);
+            return;
+        }
+        graphics.fill(x + CORNER_RADIUS, y, x + width - CORNER_RADIUS, y + height, color);
+        graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, color);
+        graphics.fill(x, y + CORNER_RADIUS, x + width, y + height - CORNER_RADIUS, color);
     }
 
     /**
@@ -220,8 +262,12 @@ public final class VanillaUi {
      */
     public static void scroller(GuiGraphics graphics, int x, int y, int height,
                                 int handleTop, int handleHeight) {
-        graphics.fill(x, y, x + SCROLLBAR_WIDTH, y + height, SCROLLER_TRACK);
-        graphics.fill(x, handleTop, x + SCROLLBAR_WIDTH, handleTop + handleHeight, SCROLLER_HANDLE);
+        // Rounded track and handle: the game's own scrollbar has rounded ends, and a square bar inside a
+        // rounded panel was the one control that still looked cut off.
+        roundedRect(graphics, x, y, SCROLLBAR_WIDTH, height, SCROLLER_TRACK);
+        roundedRect(graphics, x + 1, handleTop, SCROLLBAR_WIDTH - 2, handleHeight, SCROLLER_HANDLE);
+        // The one pixel inset leaves the track visible down both sides of the handle, which is what makes the
+        // handle read as a handle rather than as a filled track.
     }
 
     /**
@@ -249,11 +295,8 @@ public final class VanillaUi {
      * @param height   height
      */
     public static void listArea(GuiGraphics graphics, int x, int y, int width, int height) {
-        graphics.fill(x, y, x + width, y + height, LIST_BACKGROUND);
-        graphics.fill(x, y, x + width, y + 1, LIST_OUTLINE);
-        graphics.fill(x, y + height - 1, x + width, y + height, LIST_OUTLINE);
-        graphics.fill(x, y, x + 1, y + height, LIST_OUTLINE);
-        graphics.fill(x + width - 1, y, x + width, y + height, LIST_OUTLINE);
+        roundedRect(graphics, x, y, width, height, LIST_OUTLINE);
+        roundedRect(graphics, x + 1, y + 1, width - 2, height - 2, LIST_BACKGROUND);
     }
 
     /**
@@ -464,7 +507,17 @@ public final class VanillaUi {
      */
     public static EditBox field(Font font, int x, int y, int width, Component label, String value,
                                 int maxLength) {
-        EditBox box = new EditBox(font, x, y, width, WIDGET_HEIGHT, label);
+        // Inset by one pixel on every side, so the frame lands on the caller's rectangle.
+        //
+        // Evidence, not taste: `javap -c net.minecraft.client.gui.components.EditBox` on this version shows
+        // renderWidget() starting with graphics.fill(getX() - 1, getY() - 1, getX() + width + 1,
+        // getY() + height + 1, ...) and then filling the inner rectangle - the widget paints its border one
+        // pixel OUTSIDE its own bounds, while a vanilla Button paints inside them. A field created with the
+        // same bounds as the button next to it was therefore one pixel wider on the left and on the right, and
+        // one pixel taller at the top and bottom, which is exactly the "the number box is a pixel wider than
+        // the buttons" report. With the inset the painted frame is x..x+width by y..y+height, identical to the
+        // button it sits beside.
+        EditBox box = new EditBox(font, x + 1, y + 1, width - 2, WIDGET_HEIGHT - 2, label);
         box.setMaxLength(maxLength);
         box.setValue(value);
         return box;

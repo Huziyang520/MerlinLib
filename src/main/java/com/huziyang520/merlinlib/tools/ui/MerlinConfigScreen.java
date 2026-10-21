@@ -179,7 +179,10 @@ public class MerlinConfigScreen extends VanillaScreen {
         if (this.tabSlide == null) {
             return 0;
         }
-        return (int) Math.round(this.tabSlide.offsetX(this.width) * this.tabSlideDirection);
+        // Measured against the content width, not the window width: the rows live inside the panel, and a slide
+        // sized from the window threw them a quarter of the screen to the right - straight out of the panel and
+        // over the world, which read as the list flickering away and back on every tab click.
+        return (int) Math.round(this.tabSlide.offsetX(layout().contentWidth()) * this.tabSlideDirection);
     }
     /** Which way the last tab switch moved the content: 1 entering from the right, -1 from the left. */
     private int tabSlideDirection = 1;
@@ -759,11 +762,25 @@ public class MerlinConfigScreen extends VanillaScreen {
             this.tabSlide = null;
         }
         layoutRows();
-        // The opening and closing animation wraps everything this screen draws, widgets included, because the
-        // call below is what draws them.
-        beginIntro(graphics);
+        // The background, the widgets and the content are drawn by the base class, in that order: the dimming
+        // and the panel outside the opening animation's transform and the controls and labels inside it. Doing
+        // the background here instead was the flash on opening (see VanillaScreen#render).
         super.render(graphics, mouseX, mouseY, partialTick);
+    }
 
+    /**
+     * Draws the labels and the hints of the settings rows.
+     *
+     * <p>Separate from {@link #render} because the base class owns the order of the three passes and calls
+     * this inside the opening or closing transform, after the widgets.
+     *
+     * @param graphics    the graphics object
+     * @param mouseX      the cursor x
+     * @param mouseY      the cursor y
+     * @param partialTick the partial tick
+     */
+    @Override
+    protected void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         PanelLayout layout = layout();
         int left = layout.left();
         int content = layout.contentWidth();
@@ -809,7 +826,5 @@ public class MerlinConfigScreen extends VanillaScreen {
                 hintLine++;
             }
         }
-        endIntro(graphics);
-        drawIntroVeil(graphics);
     }
 }

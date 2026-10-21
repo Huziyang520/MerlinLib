@@ -821,9 +821,7 @@ public class ItemEditorScreen extends VanillaScreen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        super.render(graphics, mouseX, mouseY, partialTick);
-
+    protected void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         PanelLayout layout = layout();
         int left = layout.left();
         int content = layout.contentWidth();
