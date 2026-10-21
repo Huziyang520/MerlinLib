@@ -275,9 +275,20 @@ public class EnchantSelectionScreen extends VanillaScreen {
         VanillaUi.listArea(graphics, this.list.x(), this.list.y(), this.list.width(), this.list.height());
     }
 
+    /**
+     * Draws the labels, rows and overlays this screen adds on top of its widgets.
+     *
+     * <p>Called by {@link VanillaScreen#extractRenderState} inside the opening or closing transform, after the
+     * widgets: the base class owns the order of the passes, so this screen never draws the dimming or the panel
+     * itself, and it must not call {@code super.extractRenderState} to get its labels drawn.
+     *
+     * @param graphics    the render state extractor
+     * @param mouseX      the cursor x
+     * @param mouseY      the cursor y
+     * @param partialTick the partial tick
+     */
     @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+    protected void renderContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 
         PanelLayout layout = layout();
         int left = layout.left();

@@ -139,7 +139,10 @@ public class MerlinConfigScreen extends VanillaScreen {
         if (this.tabSlide == null) {
             return 0;
         }
-        return (int) Math.round(this.tabSlide.offsetX(this.width) * this.tabSlideDirection);
+        // Measured against the content width, not the window width: the rows live inside the panel, and a slide
+        // sized from the window threw them a quarter of the screen to the right - straight out of the panel and
+        // over the world, which read as the list flickering away and back on every tab click.
+        return (int) Math.round(this.tabSlide.offsetX(layout().contentWidth()) * this.tabSlideDirection);
     }
     /** Which way the last tab switch moved the content: 1 entering from the right, -1 from the left. */
     private int tabSlideDirection = 1;
@@ -651,6 +654,19 @@ public class MerlinConfigScreen extends VanillaScreen {
         graphics.fill(x + width, y, x + width + 1, y + height, TEXT_ERROR);
     }
 
+    /**
+     * Advances the pending tab and action, then draws this frame through the base class.
+     *
+     * <p>The passes are ordered by
+     * {@link VanillaScreen#extractRenderState}: the dimming and the
+     * panel land outside the opening transform, the controls and the labels of {@link #renderContent} inside it.
+     * Drawing the background here instead was the flash on opening.
+     *
+     * @param graphics    the render state extractor
+     * @param mouseX      the cursor x
+     * @param mouseY      the cursor y
+     * @param partialTick the partial tick
+     */
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         applyPendingTab();
@@ -663,11 +679,26 @@ public class MerlinConfigScreen extends VanillaScreen {
             this.tabSlide = null;
         }
         layoutRows();
-        // The opening and closing animation wraps everything this screen draws, widgets included, because the
-        // call below is what draws them.
-        beginIntro(graphics);
+        // The background, the widgets and this screen's content are drawn by the base class, in that order:
+        // the dimming and the panel outside the opening animation's transform, the controls and labels inside
+        // it. The bookkeeping above has to happen before that call, because it may rebuild the widgets.
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+    }
 
+    /**
+     * Draws the labels, rows and overlays this screen adds on top of its widgets.
+     *
+     * <p>Called by {@link VanillaScreen#extractRenderState} inside the opening or closing transform, after the
+     * widgets: the base class owns the order of the passes, so this screen never draws the dimming or the panel
+     * itself, and it must not call {@code super.extractRenderState} to get its labels drawn.
+     *
+     * @param graphics    the render state extractor
+     * @param mouseX      the cursor x
+     * @param mouseY      the cursor y
+     * @param partialTick the partial tick
+     */
+    @Override
+    protected void renderContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         PanelLayout layout = layout();
         int left = layout.left();
         int content = layout.contentWidth();
@@ -711,7 +742,5 @@ public class MerlinConfigScreen extends VanillaScreen {
                 hintLine++;
             }
         }
-        endIntro(graphics);
-        drawIntroVeil(graphics);
     }
 }

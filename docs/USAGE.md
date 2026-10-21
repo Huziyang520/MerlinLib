@@ -6,7 +6,7 @@
 
 # English
 
-MerlinLib is a **library**: by itself it only ships a testing/editing toolkit and a few general capabilities, and the content mods (such as Practical Enchantments) depend on it. This page is the "I installed it, now what" reference.
+MerlinLib is a **library**: by itself it only ships a testing/editing toolkit and a few general capabilities, and the content mods (such as Practical Enchantments) depend on it. This page covers the files, the commands and the settings screen.
 
 ## 1. Quick start
 
@@ -114,7 +114,7 @@ Where to find enchantment registry names:
 
 # 中文
 
-MerlinLib 是一个**前置库**：它自己只提供一套测试/编辑工具与若干通用能力，业务模组（如 Practical Enchantments）依赖它。本文是"装了之后怎么用"的速查；开发接口见 [`DEV.md`](DEV.md)，面向玩家的说明见 [`../README.md`](../README.md)。
+MerlinLib 是一个**前置库**：它自己只提供一套测试/编辑工具与若干通用能力，业务模组（如 Practical Enchantments）依赖它。本文讲配置文件、指令与设置界面；开发接口见 [`DEV.md`](DEV.md)，面向玩家的说明见 [`../README.md`](../README.md)。
 
 ## 1. 一分钟上手
 

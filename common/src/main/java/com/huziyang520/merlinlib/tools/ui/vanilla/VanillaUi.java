@@ -26,7 +26,9 @@ import java.util.List;
  *       white top and left edge, {@code #555555} bottom and right). The only generic panel sprite 26.3
  *       ships, {@code popup/background}, has a <em>dark</em> body ({@code #303030}) - that is the modern
  *       popup look, and using it is what made these screens look nothing like a container screen;</li>
- *   <li><b>scrollbar</b>: the {@code widget/scroller} and {@code widget/scroller_background} sprites;</li>
+ *   <li><b>scrollbar</b>: a recessed black track ({@code #000000}) and a {@code #808080} handle, drawn with
+ *       the same rounded corners as the panel rather than blitted from a sprite, so the bar reads as part of
+ *       the panel and not as a texture dropped into it;</li>
  *   <li><b>list area</b>: opaque black with a one pixel outline, exactly what
  *       {@code AbstractSelectionList#extractSelection} draws ({@code -16777216} fill, {@code -8355712}
  *       outline, white when the list is focused);</li>
@@ -45,18 +47,28 @@ import java.util.List;
  */
 public final class VanillaUi {
 
+    // Every frame this class draws - panel, list area, scrollbar - shares one corner radius, and the rounded
+    // shapes never paint outside the rectangle the caller passed.
+
     // ------------------------------------------------------------------ vanilla sprites
 
     /**
-     * The vanilla dialog panel, nine slice scaled by its own metadata.
+     * The generic panel sprite this version ships.
      *
-     * <p>One sprite draws outline, corners, bevel highlight and body at any rectangle size, which is why
-     * the library never draws a panel with fills.
+     * <p>Kept as public surface for other mods that already reference it, but no longer drawn by
+     * {@link #panel}: its body is dark grey ({@code #303030}) - the modern popup look, not the container look -
+     * and a library screen that is supposed to read as a vanilla container panel draws its own frame instead.
+     * Nothing a resource pack does to this sprite can change a MerlinLib panel.
      */
     public static final Identifier PANEL_SPRITE = Identifier.withDefaultNamespace("popup/background");
-    /** The vanilla list scrollbar handle. */
+    /**
+     * The vanilla list scrollbar handle sprite.
+     *
+     * <p>Retained for compatibility; {@link #scroller} draws the bar with fills instead, so the track and the
+     * handle cannot be restyled out from under the rounded panel around them.
+     */
     public static final Identifier SCROLLER_SPRITE = Identifier.withDefaultNamespace("widget/scroller");
-    /** The vanilla list scrollbar track. */
+    /** The vanilla list scrollbar track sprite. Retained for compatibility; unused by {@link #scroller}. */
     public static final Identifier SCROLLER_TRACK_SPRITE = Identifier.withDefaultNamespace("widget/scroller_background");
     /** The vanilla slot frame, as used by every container screen. */
     public static final Identifier SLOT_SPRITE = Identifier.withDefaultNamespace("container/slot");
@@ -79,6 +91,13 @@ public final class VanillaUi {
     public static final int LIST_ROW_HEIGHT = 20;
     /** Smallest handle the scrollbar keeps, so it stays grabbable. */
     public static final int MIN_HANDLE_HEIGHT = 20;
+    /**
+     * How many pixels the corner of every frame is rounded by.
+     *
+     * <p>Two pixels is what the game's own panels read as at GUI scale 2 and 3; at scale 1 it is one visible
+     * pixel of step, which is still rounder than a square corner and never looks bitten.
+     */
+    public static final int CORNER_RADIUS = 2;
 
     // ------------------------------------------------------------------ colours (copied from vanilla)
 
@@ -108,6 +127,10 @@ public final class VanillaUi {
     public static final int LIST_OUTLINE = 0xFF808080;
     /** The outline of the focused or selected row; {@code -1} in {@code AbstractSelectionList}. */
     public static final int LIST_OUTLINE_FOCUSED = 0xFFFFFFFF;
+    /** The scrollbar track: vanilla's recessed black. */
+    public static final int SCROLLER_TRACK = 0xFF000000;
+    /** The scrollbar handle: the same grey vanilla outlines a list with. */
+    public static final int SCROLLER_HANDLE = 0xFF808080;
 
     private VanillaUi() {
     }
@@ -135,12 +158,45 @@ public final class VanillaUi {
      * @param height   panel height, at least 4
      */
     public static void panel(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
-        graphics.fill(x, y, x + width, y + height, PANEL_OUTLINE);
-        graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, PANEL_BODY);
-        graphics.fill(x + 1, y + 1, x + width - 1, y + 2, PANEL_HIGHLIGHT);
-        graphics.fill(x + 1, y + 1, x + 2, y + height - 1, PANEL_HIGHLIGHT);
-        graphics.fill(x + 1, y + height - 2, x + width - 1, y + height - 1, PANEL_SHADOW);
-        graphics.fill(x + width - 2, y + 1, x + width - 1, y + height - 1, PANEL_SHADOW);
+        // Rounded, like the panels the game itself draws: the corner pixels of the outer rectangle are cut, so
+        // the frame reads as a vanilla panel instead of a hard square. Nothing else changes - same colours, same
+        // one pixel frame, same body.
+        roundedRect(graphics, x, y, width, height, PANEL_OUTLINE);
+        roundedRect(graphics, x + 1, y + 1, width - 2, height - 2, PANEL_BODY);
+        // The white edge runs along the body's top and left, stopping short of the rounded corners.
+        graphics.fill(x + 2, y + 1, x + width - 2, y + 2, PANEL_HIGHLIGHT);
+        graphics.fill(x + 1, y + 2, x + 2, y + height - 2, PANEL_HIGHLIGHT);
+        graphics.fill(x + 2, y + height - 2, x + width - 2, y + height - 1, PANEL_SHADOW);
+        graphics.fill(x + width - 2, y + 2, x + width - 1, y + height - 2, PANEL_SHADOW);
+    }
+
+    /**
+     * Fills a rectangle whose corners are rounded by {@link #CORNER_RADIUS} pixels.
+     *
+     * <p>Three overlapping fills rather than one: a single {@code fill} is always a hard rectangle, and the
+     * interface offers no shape primitive. Painting the middle band, then a band one pixel narrower, then the
+     * widest one produces the stepped corners the game's own rounded panels have, at every GUI scale, without
+     * a texture and without a shader. The extra fills are clipped to the same rectangle, so a rounded shape
+     * never paints outside the bounds the caller asked for.
+     *
+     * @param graphics the render state extractor
+     * @param x        left edge
+     * @param y        top edge
+     * @param width    width, at least 4 for the corner to show
+     * @param height   height, at least 4 for the corner to show
+     * @param color    the ARGB colour
+     */
+    public static void roundedRect(GuiGraphicsExtractor graphics, int x, int y, int width, int height, int color) {
+        if (width <= 0 || height <= 0) {
+            return;
+        }
+        if (width < 2 * CORNER_RADIUS || height < 2 * CORNER_RADIUS) {
+            graphics.fill(x, y, x + width, y + height, color);
+            return;
+        }
+        graphics.fill(x + CORNER_RADIUS, y, x + width - CORNER_RADIUS, y + height, color);
+        graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, color);
+        graphics.fill(x, y + CORNER_RADIUS, x + width, y + height - CORNER_RADIUS, color);
     }
 
     /**
@@ -166,10 +222,12 @@ public final class VanillaUi {
      */
     public static void scroller(GuiGraphicsExtractor graphics, int x, int y, int height,
                                 int handleTop, int handleHeight) {
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SCROLLER_TRACK_SPRITE, x, y,
-                SCROLLBAR_WIDTH, height);
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SCROLLER_SPRITE, x, handleTop,
-                SCROLLBAR_WIDTH, handleHeight);
+        // Rounded track and handle, in the colours the game uses for a list scrollbar rather than the sprite
+        // pair: a square bar inside a rounded panel was the one control that still looked cut off.
+        roundedRect(graphics, x, y, SCROLLBAR_WIDTH, height, SCROLLER_TRACK);
+        // The handle is inset by one pixel on each side, which leaves the recessed track visible down both
+        // sides of it - that gap is what makes it read as a handle rather than as a filled bar.
+        roundedRect(graphics, x + 1, handleTop, SCROLLBAR_WIDTH - 2, handleHeight, SCROLLER_HANDLE);
     }
 
     /**
@@ -197,11 +255,9 @@ public final class VanillaUi {
      * @param height   height
      */
     public static void listArea(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
-        graphics.fill(x, y, x + width, y + height, LIST_BACKGROUND);
-        graphics.fill(x, y, x + width, y + 1, LIST_OUTLINE);
-        graphics.fill(x, y + height - 1, x + width, y + height, LIST_OUTLINE);
-        graphics.fill(x, y, x + 1, y + height, LIST_OUTLINE);
-        graphics.fill(x + width - 1, y, x + width, y + height, LIST_OUTLINE);
+        // Rounded outline plus rounded recess, so the list matches the rounded panel that holds it.
+        roundedRect(graphics, x, y, width, height, LIST_OUTLINE);
+        roundedRect(graphics, x + 1, y + 1, width - 2, height - 2, LIST_BACKGROUND);
     }
 
     /**
@@ -400,7 +456,16 @@ public final class VanillaUi {
      */
     public static EditBox field(Font font, int x, int y, int width, Component label, String value,
                                 int maxLength) {
-        EditBox box = new EditBox(font, x, y, width, WIDGET_HEIGHT, label);
+                                // Inset by one pixel on every side, so the painted frame lands on the caller's rectangle.
+                                //
+                                // Evidence, not taste: the vanilla edit box paints its border one pixel OUTSIDE its own bounds - its
+                                // render pass starts with fill(getX() - 1, getY() - 1, getX() + width + 1, getY() + height + 1, ...)
+                                // and then fills the inner rectangle - while a vanilla Button paints inside its bounds. A field created
+                                // with the same bounds as the button beside it was therefore one pixel wider on the left and on the
+                                // right, and one pixel taller at the top and bottom, which is exactly the "the number box is a pixel
+                                // wider than the buttons" report. With the inset the painted frame is x..x+width by y..y+height,
+                                // identical to the button it sits beside.
+                                EditBox box = new EditBox(font, x + 1, y + 1, width - 2, WIDGET_HEIGHT - 2, label);
         box.setMaxLength(maxLength);
         box.setValue(value);
         return box;

@@ -6,7 +6,7 @@
 
 ## English
 
-This guide is for developers who use MerlinLib from another mod. Every signature is taken from the current source (the `26.3` branch).
+This guide is for developers who use MerlinLib from another mod. Every signature below matches the 26.3 build.
 
 Single entry point:
 
@@ -151,14 +151,14 @@ entry and reported with its location.
 - `com.huziyang520.merlinlib.network.DamageFeedbackPayload`: the damage feedback payload
   (`merlinlib:damage_feedback`).
 
-Counter-examples and known boundaries (effects and potions cannot be added from config, `EnchantmentHelper` damage
-modification needs a `ServerLevel`, and so on) are recorded in the maintainer's decision log.
+Known boundaries: effects and potions cannot be added from config, and `EnchantmentHelper` damage
+modification needs a `ServerLevel`, so those events fire on the server only.
 
 ---
 
 ## 中文
 
-本文面向在其它模组中使用 MerlinLib 的开发者，所有签名均摘自当前源码（26.3 分支）。
+本文面向在其它模组中使用 MerlinLib 的开发者；下列签名与 26.3 版本一致。
 
 统一入口：
 

@@ -236,11 +236,38 @@ public final class NoticeSettingsScreen extends VanillaScreen {
 
     // ---------------------------------------------------------------- drawing
 
+        /**
+     * Defers the exit to the animation, then draws this frame through the base class.
+     *
+     * <p>The passes are ordered by
+     * {@link VanillaScreen#extractRenderState}: the dimming and the
+     * panel outside the opening transform, the controls and the rows of {@link #renderContent} inside it.
+     *
+     * @param graphics    the render state extractor
+     * @param mouseX      the cursor x
+     * @param mouseY      the cursor y
+     * @param partialTick the partial tick
+     */
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         applyPendingExit();
-        beginIntro(graphics);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+    }
+
+    /**
+     * Draws the labels, rows and overlays this screen adds on top of its widgets.
+     *
+     * <p>Called by {@link VanillaScreen#extractRenderState} inside the opening or closing transform, after the
+     * widgets: the base class owns the order of the passes, so this screen never draws the dimming or the panel
+     * itself, and it must not call {@code super.extractRenderState} to get its labels drawn.
+     *
+     * @param graphics    the render state extractor
+     * @param mouseX      the cursor x
+     * @param mouseY      the cursor y
+     * @param partialTick the partial tick
+     */
+    @Override
+    protected void renderContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         PanelLayout layout = layout();
         int left = layout.left();
         int content = layout.contentWidth();
@@ -280,8 +307,6 @@ public final class NoticeSettingsScreen extends VanillaScreen {
                     VanillaUi.TEXT_HINT, true);
             hintLine++;
         }
-        endIntro(graphics);
-        drawIntroVeil(graphics);
     }
 
     // ---------------------------------------------------------------- saving

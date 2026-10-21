@@ -175,10 +175,20 @@ public final class AnimationSettingsScreen extends VanillaScreen {
         return this.firstRow + index * ROW;
     }
 
+    /**
+     * Draws the labels, rows and overlays this screen adds on top of its widgets.
+     *
+     * <p>Called by {@link VanillaScreen#extractRenderState} inside the opening or closing transform, after the
+     * widgets: the base class owns the order of the passes, so this screen never draws the dimming or the panel
+     * itself, and it must not call {@code super.extractRenderState} to get its labels drawn.
+     *
+     * @param graphics    the render state extractor
+     * @param mouseX      the cursor x
+     * @param mouseY      the cursor y
+     * @param partialTick the partial tick
+     */
     @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        beginIntro(graphics);
-        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+    protected void renderContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         PanelLayout layout = layout();
         int left = layout.left();
         int width = area(layout) - CONTROL_WIDTH - 12;
@@ -205,8 +215,6 @@ public final class AnimationSettingsScreen extends VanillaScreen {
                     VanillaUi.TEXT_HINT, true);
             line++;
         }
-        endIntro(graphics);
-        drawIntroVeil(graphics);
     }
 
     private void save() {

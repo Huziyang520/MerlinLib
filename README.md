@@ -16,12 +16,12 @@ MerlinLib is a Minecraft **library mod**: it gives mod authors three registratio
 - Usage manual: [`docs/USAGE.md`](docs/USAGE.md) — every feature and every command, English first, Chinese after
 - Developer guide: [`docs/DEV.md`](docs/DEV.md) — the API, the three registration lines, English and Chinese
 
-**Added recently**
+**Behaviour details**
 
 - **Join notices**: a mod registers a chat message shown when a player arrives. Three timings - every join, once per save, first join - colours straight from the component, and a data pack form for packs that prefer files. Players and operators control it from the settings screen: a master switch, then one row per mod, filled from what mods registered at runtime and never from a list kept in the library.
 - **Interface animation**: the library's own screens can pop, slide up, slide in from the side, or fade (the fade is a veil over the finished frame - the interface has no global alpha to fade with). Each place has its own switch, and the animation kind and the slide on a tab switch are two separate settings.
 - **A particle ceiling that applies on both sides**: one number caps how many particles this client draws per 1/20 second and how many one server send may carry, so a hit dealing hundreds of millions of damage cannot freeze the client.
-- `/merlinlib list` now lists every non-vanilla enchantment in the registry, not only the ones this library manages, so a mod whose enchantments failed to load is visible at a glance.
+- `/merlinlib list` lists every non-vanilla enchantment in the registry, not only the ones this library manages, so a mod whose enchantments failed to load is visible at a glance.
 - Item editor: the base damage row answers the wheel as well as the enchantment rows do, and a value typed above the ceiling is clamped to the ceiling instead of being thrown away.
 
 > To depend on it, drop the jar into `mods/` and declare the dependency for your loader (see "For downstream mod authors").
@@ -34,9 +34,7 @@ MerlinLib is a Minecraft **library mod**: it gives mod authors three registratio
 - [Built-in testing toolkit](#built-in-testing-toolkit)
 - [Limits](#limits)
 - [For downstream mod authors](#for-downstream-mod-authors)
-- [Building](#building)
 - [Project layout](#project-layout)
-- [Status](#status)
 - [Licence](#licence)
 
 ### Quick start
@@ -474,7 +472,7 @@ Commands: `/merlinlib list`, `/merlinlib book <id> [level]`, `/merlinlib pack`, 
 
 ### Limits
 
-MerlinLib is explicit about what can and cannot be added from a configuration file - do not promise more in a modpack:
+MerlinLib is explicit about what can and cannot be added from a configuration file:
 
 | Content | Code API | Add from config | Change parameters from config | Disable from config |
 |---|---|---|---|---|
@@ -527,23 +525,6 @@ public MyMod(IEventBus modBus) {
 }
 ```
 
-### Building
-
-```powershell
-$env:JAVA_HOME="C:\Users\HP\AppData\Roaming\.minecraft\runtime\java-runtime-epsilon"
-cd "d:\浏览器\Mymods\共创附魔\MerlinLib\26.3"
-.\gradlew.bat :fabric:jar :neoforge:jar --console=plain --no-daemon
-```
-
-Output:
-
-```
-fabric/build/libs/merlinlib-0.7.3-fabric-26.3.jar
-neoforge/build/libs/merlinlib-0.7.3-neoforge-26.3.jar
-```
-
-> After changing `gradle.properties` or any metadata, add `--rerun-tasks`, otherwise Gradle reports `UP-TO-DATE` and the jar keeps the old values.
-
 ### Project layout
 
 ```
@@ -587,13 +568,13 @@ MerlinLib 是一款 Minecraft **前置库模组**：为模组开发者提供**�
 - 使用手册：[`docs/USAGE.md`](docs/USAGE.md)——全部功能与全部指令一页速查，英文在前、中文在后
 - 开发者文档：[`docs/DEV.md`](docs/DEV.md)——API 与三条注册主线，中英双语
 
-**近期新增**
+**行为细节**
 
 - **进服聊天提示**：业务模组注册一条玩家进入世界时显示的聊天消息。三种时机（每次进入 / 每存档一次 / 首次进入），颜色直接来自组件，也可以写成数据包文件。玩家与管理员在设置界面里控制：一个总开关，下面每个"主动适配过本功能"的模组一行——列表只来自运行时注册，库内不存任何模组清单。
 - **界面动画**：库自己的界面可以跳出、上滑、侧滑、淡入淡出（淡入是整屏暗幕渐隐——这套界面没有全局透明度可用）。每个使用位置各有开关，且"动画种类"与"切换类别时滑动"是两个互不影响的设置。
 - **两端同时生效的粒子上限**：一个数值同时限制客户端每 1/20 秒的绘制量与服务端单次发送量，一击打出上亿伤害也不会再卡死客户端。
-- `/merlinlib list` 现在会列出注册表里**所有非原版附魔**（不只本库管理的），哪个模组的附魔没加载成功一眼可见。
-- 物品编辑：基础伤害那一行也支持滚轮（原先只有附魔行支持）；输入的数值超过上限时按上限处理，而不是被丢弃。
+- `/merlinlib list` 会列出注册表里**所有非原版附魔**（不只本库管理的），哪个模组的附魔没加载成功一眼可见。
+- 物品编辑：基础伤害那一行也有滚轮支持；输入的数值超过上限时按上限处理，而不是被丢弃。
 
 > 依赖方式：把本模组放进 `mods/` 即可；开发时按加载器声明前置依赖（见下文「给下游模组作者」）。
 
@@ -605,9 +586,7 @@ MerlinLib 是一款 Minecraft **前置库模组**：为模组开发者提供**�
 - [内置测试工具集](#内置测试工具集)
 - [重要边界](#重要边界)
 - [给下游模组作者](#给下游模组作者)
-- [构建](#构建)
 - [工程结构](#工程结构)
-- [当前实现状态](#当前实现状态)
 - [许可证](#许可证)
 
 ### 快速开始
@@ -1043,7 +1022,7 @@ int softer = MerlinColor.mix(MerlinColor.CYAN, MerlinColor.WHITE, 0.25F);
 
 ### 重要边界
 
-MerlinLib 明确区分「能配置新增」与「不能配置新增」，不要在文档或整合包里给出做不到的承诺：
+MerlinLib 明确区分「能配置新增」与「不能配置新增」：
 
 | 内容 | 代码 API 注册 | 配置文件新增 | 配置文件改参数 | 配置文件禁用 |
 |---|---|---|---|---|
@@ -1095,23 +1074,6 @@ public MyMod(IEventBus modBus) {
     MyEffects.register();
 }
 ```
-
-### 构建
-
-```powershell
-$env:JAVA_HOME="C:\Users\HP\AppData\Roaming\.minecraft\runtime\java-runtime-epsilon"
-cd "d:\浏览器\Mymods\共创附魔\MerlinLib\26.3"
-.\gradlew.bat :fabric:jar :neoforge:jar --console=plain --no-daemon
-```
-
-产物：
-
-```
-fabric/build/libs/merlinlib-0.7.3-fabric-26.3.jar
-neoforge/build/libs/merlinlib-0.7.3-neoforge-26.3.jar
-```
-
-> 改了 `gradle.properties` 或元数据后请加 `--rerun-tasks`，否则 Gradle 会判 `UP-TO-DATE`，jar 里仍是旧值。
 
 ### 工程结构
 

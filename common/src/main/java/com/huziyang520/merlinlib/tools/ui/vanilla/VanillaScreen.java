@@ -98,13 +98,63 @@ public abstract class VanillaScreen extends Screen {
         return this.layout;
     }
 
+    /**
+     * Draws the background, then the widgets and the content under the opening or closing transform.
+     *
+     * <p><b>The order is the flicker fix.</b> The world dimming, the panel and the content backdrop belong to
+     * {@link #extractBackground} and are drawn <em>outside</em> the animation's pose; only the widgets and the
+     * content the screen paints itself are transformed. The previous order pushed the animation first and drew
+     * the background from inside it, which scaled a full-screen black veil down to 92% around the centre for
+     * the first frames of every opening and closing: the outer band of the window was not covered by the veil
+     * at all, so the bright world showed through a frame-wide border that snapped shut when the animation
+     * ended. That border is what was being reported as a flash, on opening, on closing and on the handover from
+     * one screen to the next. Dimming is now always exactly the window, on every frame.
+     *
+     * <p>A subclass adds its own text and overlays by overriding {@link #renderContent}, which is called inside
+     * the transform and after the widgets. It must not call {@code super.extractRenderState} for that: this
+     * method already draws the widgets, once.
+     *
+     * @param graphics    the render state extractor
+     * @param mouseX      the cursor x
+     * @param mouseY      the cursor y
+     * @param partialTick the partial tick
+     */
+    @Override
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        beginIntro(graphics);
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+        renderContent(graphics, mouseX, mouseY, partialTick);
+        endIntro(graphics);
+        drawIntroVeil(graphics);
+    }
+
+    /**
+     * Draws everything this screen adds on top of its widgets, inside the opening or closing transform.
+     *
+     * <p>Called after the widgets so labels and overlays stay above them, and inside the transform so the
+     * content moves with the controls instead of being left behind. The default draws nothing.
+     *
+     * @param graphics    the render state extractor
+     * @param mouseX      the cursor x
+     * @param mouseY      the cursor y
+     * @param partialTick the partial tick
+     */
+    protected void renderContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+    }
+
     @Override
     public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         if (this.closing && (this.exitIntro == null || !this.exitIntro.running())) {
             // The leave animation has finished: hand the screen over. Done here rather than in onClose because
             // the animation needs frames, and this is the method the game calls once per frame.
+            //
+            // The handover does NOT return early, and that is the fix for the "returning to the previous screen
+            // flashes" report: returning here skipped the background, the panel and the content backdrop for
+            // this last frame, so the frame rendered with widgets floating over the raw world - a bright flash
+            // for one frame, immediately before the parent screen appeared. The handover only swaps which
+            // screen is active; the rest of this frame still draws the leaving screen exactly as the previous
+            // frame did.
             Minecraft.getInstance().setScreenAndShow(parentScreen());
-            return;
         }
         super.extractBackground(graphics, mouseX, mouseY, partialTick);
         // The world dimming of a vanilla screen, drawn by us: without it the world behind a panel-less screen
@@ -222,9 +272,9 @@ public abstract class VanillaScreen extends Screen {
      * colours and cannot be reached from here, so a veil drawn before them would leave the buttons blazing at
      * full brightness in the middle of a fade.
      *
-     * <p>Called by a screen at the very end of its own {@code extractRenderState}, not from this class: a
-     * subclass draws its own text after it has called {@code super}, so a veil drawn here would sit under that
-     * text and the labels would stay bright while everything else faded.
+     * <p>Called by {@link #extractRenderState} at the very end of the frame, after the content: a veil drawn
+     * before the subclass content would sit under its text, and the labels would stay bright while everything
+     * else faded.
      *
      * @param graphics the render state extractor
      */
@@ -233,8 +283,12 @@ public abstract class VanillaScreen extends Screen {
         if (animation == null || !animation.fades() || this.width <= 0 || this.height <= 0) {
             return;
         }
-        int alpha = (int) Math.round(Math.max(0.0D, Math.min(1.0D, animation.veil(this.introProgress())))
-                * 255.0D);
+        // Capped at half opacity on purpose. The veil is the only way to fade the whole frame (see ScreenIntro),
+        // but at full opacity the first frame of a fade is a completely black window that then clears, and a
+        // window that goes black for one frame and comes back is indistinguishable from the flash this method
+        // exists to avoid. Half opacity still reads as a fade in and out, and never blanks the screen.
+        double fade = Math.max(0.0D, Math.min(1.0D, animation.veil(this.introProgress()))) * 0.5D;
+        int alpha = (int) Math.round(fade * 255.0D);
         if (alpha <= 0) {
             return;
         }
