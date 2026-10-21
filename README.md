@@ -8,7 +8,7 @@
 
 MerlinLib is a Minecraft **library mod**: it gives mod authors three registration lines - **enchantments, effects and potions** - and ships a ready-to-use testing toolkit on top of them.
 
-- Target: **Minecraft 26.3**, implemented natively for both loaders: **NeoForge 26.3** and **Fabric 26.3**
+- Target: **Minecraft 26.1 – 26.2**, implemented natively for both loaders: **NeoForge 26.1+** and **Fabric 26.1+**
 - Sides: **client and server mod - it must be installed on both**
 - Author: Huziyang520 · Licence: **MIT**
 - Repository: <https://github.com/Huziyang520/MerlinLib> · Issues: <https://github.com/Huziyang520/MerlinLib/issues>
@@ -39,7 +39,7 @@ MerlinLib is a Minecraft **library mod**: it gives mod authors three registratio
 
 ### Quick start
 
-1. Put `merlinlib-<version>-neoforge-26.3.jar` or `merlinlib-<version>-fabric-26.3.jar` into `mods/` (both client and server).
+1. Put `merlinlib-<version>-neoforge-26.1-26.2.jar` or `merlinlib-<version>-fabric-26.1-26.2.jar` into `mods/` (both client and server).
 2. Start the game once. MerlinLib creates four files under `config/MerlinLib/`:
 
    | File | Purpose | How it applies |
@@ -480,7 +480,7 @@ MerlinLib is explicit about what can and cannot be added from a configuration fi
 | Effects | yes | no | yes (colour and so on) | yes |
 | Potions | yes | no | yes | yes |
 
-The reason: in 26.3 only enchantments are a **data pack driven dynamic registry**; `MobEffect` and `Potion` are still **code registries** and cannot be created out of thin air at runtime. Forcing that would need a mixin and the compatibility risk is not acceptable, so it is not offered.
+The reason: in 26.1-26.2 only enchantments are a **data pack driven dynamic registry**; `MobEffect` and `Potion` are still **code registries** and cannot be created out of thin air at runtime. Forcing that would need a mixin and the compatibility risk is not acceptable, so it is not offered.
 
 Two more known limits:
 
@@ -560,7 +560,7 @@ Issues: <https://issue.mengcai.online/>
 
 MerlinLib 是一款 Minecraft **前置库模组**：为模组开发者提供**附魔 / 效果 / 药水**三条注册主线，并内置一套开箱即用的测试工具集。
 
-- 目标版本：**Minecraft 26.3**，双加载器原生实现：**NeoForge 26.3** 与 **Fabric 26.3**
+- 目标版本：**Minecraft 26.1 – 26.2**，双加载器原生实现：**NeoForge 26.1+** 与 **Fabric 26.1+**
 - 部署属性：**客户端 + 服务端模组，两端都必须安装**
 - 作者：Huziyang520 · 许可证：**MIT**
 - 仓库：<https://github.com/Huziyang520/MerlinLib> · 问题反馈：<https://github.com/Huziyang520/MerlinLib/issues>
@@ -591,7 +591,7 @@ MerlinLib 是一款 Minecraft **前置库模组**：为模组开发者提供**�
 
 ### 快速开始
 
-1. 把 `merlinlib-<版本>-neoforge-26.3.jar` 或 `merlinlib-<版本>-fabric-26.3.jar` 放进 `mods/`（客户端与服务端都要放）。
+1. 把 `merlinlib-<版本>-neoforge-26.1-26.2.jar` 或 `merlinlib-<版本>-fabric-26.1-26.2.jar` 放进 `mods/`（客户端与服务端都要放）。
 2. 启动一次游戏，MerlinLib 会在 `config/MerlinLib/` 下生成四个文件：
 
   | 文件 | 作用 | 生效方式 |
@@ -1030,7 +1030,7 @@ MerlinLib 明确区分「能配置新增」与「不能配置新增」：
 | 效果 | ✅ | ❌ | ✅ 颜色等 | ✅ |
 | 药水 | ✅ | ❌ | ✅ | ✅ |
 
-原因：26.3 中只有附魔是**数据包驱动的动态注册表**，`MobEffect` 与 `Potion` 仍是**代码注册表**，运行期无法凭空注册。强行改注册表需要 mixin，兼容性风险不可接受，因此不提供。
+原因：26.1-26.2 中只有附魔是**数据包驱动的动态注册表**，`MobEffect` 与 `Potion` 仍是**代码注册表**，运行期无法凭空注册。强行改注册表需要 mixin，兼容性风险不可接受，因此不提供。
 
 另外两条已知限制：
 
