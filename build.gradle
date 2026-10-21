@@ -1,0 +1,103 @@
+// MerlinLib for Minecraft 1.21.1 / NeoForge.
+//
+// Single-module project: one src/ tree holds the loader independent logic plus the NeoForge
+// specific entrypoints, split by package rather than by Gradle module. The 26.3 line's
+// common/ + neoforge/ pair collapses into this one source set.
+//
+// Toolchain: ModDevGradle 2.0.147 + Gradle 8.14.3 + JDK 21. NeoForge 1.21.1 runs on Java 21 and its
+// bundled Mixin 0.8.7 accepts compatibility level JAVA_21.
+//
+// No refmap and no Mixin annotation processor: NeoForge has run on Mojang official names since
+// 1.20.5, so a mixin written against those names needs no translation at build time.
+
+plugins {
+    id 'java'
+    id 'net.neoforged.moddev' version '2.0.147'
+}
+
+// version and group come from gradle.properties (version=0.9.0, group=com.huziyang520.merlinlib).
+
+base {
+    // <mod_id>-<version>-neoforge-<minecraft_version>.jar
+    archivesName = "${mod_id}-${version}-neoforge-${minecraft_version}"
+}
+
+// The version is already part of archivesName, so drop the automatic -<version> suffix.
+tasks.withType(org.gradle.api.tasks.bundling.AbstractArchiveTask).configureEach {
+    archiveVersion.set('')
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(java_version as int)
+
+neoForge {
+    version = project.neo_version
+
+    runs {
+        client {
+            client()
+        }
+        server {
+            server()
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+repositories {
+    // Mirrors are placed before the official sources.
+    maven { name = 'AliyunPublic'; url = 'https://maven.aliyun.com/repository/public' }
+    maven { name = 'AliyunGradlePlugin'; url = 'https://maven.aliyun.com/repository/gradle-plugin' }
+    maven { name = 'NeoForged'; url = 'https://maven.neoforged.net/releases' }
+}
+
+// This block of code expands all declared replace properties in the specified resource targets.
+tasks.named('processResources', ProcessResources).configure {
+    // Without this the expanded files are written in the platform charset (GBK here), which turns
+    // the non-ASCII part of the description into invalid bytes.
+    filteringCharset = 'UTF-8'
+
+    var replaceProperties = [
+            minecraft_version      : minecraft_version, minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version, neo_version_range: neo_version_range,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id, mod_name: mod_name, mod_license: license, mod_version: version,
+            mod_authors            : mod_author, mod_description: mod_description,
+            mod_credits            : credits,
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching(['META-INF/neoforge.mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties + [project: project]
+    }
+}
+
+tasks.named('jar', Jar).configure {
+    manifest {
+        attributes([
+                'Specification-Title'     : mod_name,
+                'Specification-Vendor'    : mod_author,
+                'Specification-Version'   : '1',
+                'Implementation-Title'    : project.name,
+                'Implementation-Version'  : project.version,
+                'Implementation-Vendor'   : mod_author,
+                'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+                'Built-On-Minecraft'      : minecraft_version,
+        ])
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+    // Report every error in one pass: the 100 error default turns a port into a guessing game.
+    options.compilerArgs += ['-Xmaxerrs', '1000']
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.encoding = 'UTF-8'
+    options.addStringOption('Xdoclint:none', '-quiet')
+}

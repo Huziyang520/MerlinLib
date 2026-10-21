@@ -1,0 +1,46 @@
+# NeoForge 1.21.1 mod metadata.
+#
+# Differences from the 26.3 neoforge.mods.toml:
+#   * modLoader / loaderVersion are mandatory on 1.21.1 (26.3 dropped them)
+#   * the icon slot is logoFile (iconFile only exists from 26.2)
+#   * the mixin configurations are announced with [[mixins]] blocks, which ModFileParser reads on
+#     1.21.1 through getMixinConfigs() - no jar manifest attribute is needed
+#
+# The dependency tables use a quoted key ([[dependencies."${mod_id}"]]) only so the unexpanded file
+# is still valid TOML; after expansion it is [[dependencies."merlinlib"]], the same table.
+modLoader = "javafml"
+loaderVersion = "${loader_version_range}"
+license = "${mod_license}"
+
+[[mods]]
+modId = "${mod_id}"
+version = "${mod_version}"
+displayName = "${mod_name}"
+authors = "${mod_authors}"
+credits = "${mod_credits}"
+description = '''${mod_description}'''
+# displayURL / issueTrackerURL / logoFile must stay inside the [[mods]] table, otherwise the mod
+# list shows no homepage / issue button / icon at all.
+logoFile = "${mod_id}.png"
+displayURL = "https://www.curseforge.com/minecraft/mc-mods/merlinlib"
+issueTrackerURL = "https://github.com/Huziyang520/MerlinLib/issues"
+
+[[mixins]]
+config = "${mod_id}.mixins.json"
+
+[[mixins]]
+config = "${mod_id}.neoforge.mixins.json"
+
+[[dependencies."${mod_id}"]]
+modId = "neoforge"
+type = "required"
+versionRange = "${neo_version_range}"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies."${mod_id}"]]
+modId = "minecraft"
+type = "required"
+versionRange = "${minecraft_version_range}"
+ordering = "NONE"
+side = "BOTH"

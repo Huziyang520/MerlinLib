@@ -1,0 +1,19 @@
+pluginManagement {
+    repositories {
+        // Domestic mirrors first, official sources after them.
+        maven { name = 'AliyunGradlePlugin'; url = uri('https://maven.aliyun.com/repository/gradle-plugin') }
+        maven { name = 'AliyunPublic'; url = uri('https://maven.aliyun.com/repository/public') }
+        maven { name = 'TencentPublic'; url = uri('https://mirrors.cloud.tencent.com/nexus/repository/maven-public/') }
+        gradlePluginPortal()
+        mavenCentral()
+        maven {
+            name = 'NeoForged'
+            url = uri('https://maven.neoforged.net/releases')
+        }
+    }
+}
+
+// No toolchains resolver plugin on purpose: the build runs on the JDK given by JAVA_HOME (a Temurin
+// 21 install), so nothing has to be downloaded.
+
+rootProject.name = 'MerlinLib'
