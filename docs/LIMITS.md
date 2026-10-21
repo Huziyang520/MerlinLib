@@ -2,8 +2,7 @@
 
 [English](#english) | [中文](#中文)
 
-> What MerlinLib can and cannot do, so that a modpack description never promises more than the mod
-> delivers. For the file formats see [`USAGE.md`](USAGE.md).
+> What MerlinLib can and cannot do. For the file formats see [`USAGE.md`](USAGE.md).
 
 ---
 

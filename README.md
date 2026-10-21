@@ -52,11 +52,10 @@ the same jar, so a mod that only wants the registration API still installs one f
 | [`docs/TOOLKIT.md`](docs/TOOLKIT.md) | the testing toolkit in detail |
 | [`docs/LIMITS.md`](docs/LIMITS.md) | what a configuration file can and cannot do |
 
-### Recent additions
+### Behaviour details
 
-- **Mob behaviour hooks now cover brain mobs**: a veto answers for the piglin family as well, both when
-  anger is recorded and when an attack target is chosen, so a "do not attack this player" rule works the
-  same for a piglin, a piglin brute and a zombie.
+- **Mob behaviour hooks cover brain mobs**: a veto answers for the piglin family as well, so a "do not
+  attack this player" rule works the same for a piglin, a piglin brute and a zombie.
 - **A very large health bar stays readable**: above one hundred health the row becomes a single heart
   followed by the numbers, instead of one heart per two points.
 - **Join notices**: a mod registers a chat message and the switch, the screen and the per-mod storage
@@ -122,9 +121,9 @@ MerlinLib 是一款 Minecraft **前置库模组**：为模组开发者提供**�
 | [`docs/TOOLKIT.md`](docs/TOOLKIT.md) | 测试工具集详解 |
 | [`docs/LIMITS.md`](docs/LIMITS.md) | 配置文件能做什么、不能做什么 |
 
-### 近期新增
+### 行为细节
 
-- **生物行为挂钩覆盖 Brain 生物**：否决规则对猪灵族同样生效——记录愤怒与选择攻击目标两处都挂钩，
+- **生物行为挂钩覆盖 Brain 生物**：否决规则对猪灵族同样生效，
   所以"别攻击这个玩家"这条规则对猪灵、猪灵蛮兵与僵尸表现一致。
 - **极大的血量条仍然可读**：血量超过一百后血条变成一颗心 + 数值，而不是按"每 2 点一颗心"去画。
 - **进服聊天提示**：业务模组只注册一条消息，开关、界面与逐模组存储都由库负责。
