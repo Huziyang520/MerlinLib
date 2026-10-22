@@ -26,8 +26,12 @@ import java.util.Optional;
  * <p>Files are only ever written when missing, never rewritten wholesale: hand written comments are
  * never lost. Reading problems are collected as {@link ContentError}s and the affected key silently
  * falls back to its default, so one typo cannot stop the game from starting.
+ *
+ * <p>This class is the default {@link ConfigReader}: when the Jupiter config library is installed the
+ * switches are read from its container instead (see {@link JupiterBackend}), and the files described
+ * here are only ever touched once, to import them.
  */
-public final class TomlFile {
+public final class TomlFile implements ConfigReader {
 
     private final Path path;
     private final Map<String, String> values = new LinkedHashMap<>();
@@ -66,9 +70,9 @@ public final class TomlFile {
      * Writes selected values back into an existing file, in place.
      *
      * <p>Only the values named in {@code overrides} are touched: every comment, blank line and order is
-     * kept, so the configuration screen can save a switch without destroying the documentation the file
-     * exists to carry. A key that is not in the file yet is appended, under its section header, which is
-     * what makes a file written by an older version gain new options without being reset.
+     * kept, so a value can be stored without destroying the documentation the file exists to carry. A key
+     * that is not in the file yet is appended, under its section header, which is what makes a file written
+     * by an older version gain new options without being reset.
      *
      * <p>Keys are addressed the same way as when reading: {@code section.key}, or just {@code key} for a
      * value before any section header.
@@ -316,6 +320,19 @@ public final class TomlFile {
 
     public Path path() {
         return this.path;
+    }
+
+    /**
+     * Every value the file holds, keyed by {@code section.name}.
+     *
+     * <p>Added for the one-off import into another backend: reading a file key by key would mean keeping
+     * a second list of the options in step with this one, and a key added later would silently be left
+     * behind. The map is a copy and unmodifiable, so a caller cannot write through it.
+     *
+     * @return the parsed values, in file order
+     */
+    public Map<String, String> values() {
+        return java.util.Collections.unmodifiableMap(new LinkedHashMap<>(this.values));
     }
 
     private void invalid(String key, String expected, String found) {

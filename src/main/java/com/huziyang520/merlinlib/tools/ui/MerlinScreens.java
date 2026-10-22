@@ -3,6 +3,7 @@ package com.huziyang520.merlinlib.tools.ui;
 import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.config.ConfigManager;
 import com.huziyang520.merlinlib.impl.PermissionGate;
+import com.huziyang520.merlinlib.network.OpenToolPayload;
 import com.huziyang520.merlinlib.tools.HealthEditorItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -221,14 +222,66 @@ public final class MerlinScreens {
      * Opens the item editor from the key binding.
      *
      * <p>The binding ships switched off ({@code editor.hotkey_enabled}), so the library can be installed
-     * without claiming a key. It can be switched on from the configuration screen or with
-     * {@code /merlinlib editorhotkey on}.
+     * without claiming a key. It can be switched on with {@code /merlinlib editorhotkey on}, or in the
+     * configuration file (Jupiter's screen, or {@code client.toml} when Jupiter is absent).
      */
     public static void openItemEditorFromHotkey() {
         if (!ConfigManager.client().editorHotkeyEnabled()) {
             return;
         }
         openItemEditor();
+    }
+
+    /**
+     * Opens one of the toolkit screens because the server asked for it.
+     *
+     * <p>Called from the network sink when {@code /merlinlib editor}, {@code /merlinlib health} or
+     * {@code /merlinlib macro} ran. The command has already checked the server's switches and the player's
+     * permission; everything below checks the client's own switches again, because the two sides may
+     * disagree about them and the client is where the screen actually opens.
+     *
+     * @param tool the screen to open, one of {@link OpenToolPayload}'s constants
+     */
+    public static void openFromCommand(int tool) {
+        Minecraft minecraft = Minecraft.getInstance();
+        Player player = minecraft.player;
+        if (player == null) {
+            return;
+        }
+        switch (tool) {
+            case OpenToolPayload.EDITOR -> {
+                if (player.getMainHandItem().isEmpty()) {
+                    // The command is normally typed with both hands free, so silence here would read as
+                    // "the command did nothing". The message is the same one the toolkit uses elsewhere.
+                    player.displayClientMessage(Component.translatable("message.merlinlib.tools.empty_hand"), true);
+                    return;
+                }
+                openItemEditor();
+            }
+            case OpenToolPayload.HEALTH -> openHealthEditorForSelf();
+            case OpenToolPayload.MACRO -> openMacroScreen(null);
+            default -> Constants.LOG.warn("[MerlinLib] the client was asked to open unknown screen {}", tool);
+        }
+    }
+
+    /**
+     * Opens the health editor for the player who asked for it.
+     *
+     * <p>Reached only from {@code /merlinlib health}. The "hold the health editor item" requirement is
+     * deliberately not applied: that requirement exists so that a sneak right click is unambiguous, and a
+     * command is already about as unambiguous as a request gets. The permission switch still applies, on
+     * both sides.
+     */
+    private static void openHealthEditorForSelf() {
+        Minecraft minecraft = Minecraft.getInstance();
+        Player player = minecraft.player;
+        if (player == null || !mayUseToolsLocally(player)) {
+            return;
+        }
+        if (!mayOpenEditorLocally(player, true)) {
+            return;
+        }
+        minecraft.setScreen(new HealthEditorScreen(null, player));
     }
 
     /**
@@ -284,9 +337,9 @@ public final class MerlinScreens {
             // right click into a self edit, which also made the item look pointless.
             //
             // Both refusals are silent towards the player on purpose: the requirement is already stated in the
-            // item's own tooltip and on the config screen, and repeating it in the middle of the screen on
-            // every stray right click is noise. The log lines stay, because "why does nothing happen" is a
-            // question the log can answer and the screen cannot.
+            // item's own tooltip, and repeating it in the middle of the screen on every stray right click is
+            // noise. The log lines stay, because "why does nothing happen" is a question the log can answer
+            // and the screen cannot.
             Constants.LOG.info("[MerlinLib] a self edit was refused: the health editor item must be held to "
                     + "edit yourself");
             return false;

@@ -12,7 +12,7 @@ import java.util.Map;
  * Server side switches. This file is authoritative: the client only ever displays what the server
  * allows, and every toolkit action is validated against these values on the server.
  *
- * <p>Single player note: the integrated server shares this process, so editing the file from the
+ * <p>Single player note: the integrated server shares this process, so a change written by a
  * configuration screen takes effect immediately. On a dedicated server the file must be edited there.
  * The 26.3 line applied it with {@code /reload}; on 1.20.1 the toolkit switches are read at the moment
  * they are used, so they are live as soon as the file is written, while the content files beside it
@@ -69,7 +69,7 @@ public final class ServerConfig {
             + "health_editor_requires_item = true\n"
             + "# File layout version. Written by the mod, read only to bring a file from an older build up to\n"
             + "# the current defaults. Leave it alone; setting it back only repeats the migration.\n"
-            + "config_version = 4\n"
+            + "config_version = 5\n"
             + "\n"
             + "[content]\n"
             + "# Emergency switch: when true, none of the enchantments defined in config/MerlinLib/*.json\n"
@@ -80,9 +80,9 @@ public final class ServerConfig {
             + "# Show the join notices business mods registered through MerlinLib (MerlinApi.notices()). On by\n"
             + "# default; turn it off to silence every join notice at once. Takes effect on the next join.\n"
             + "enabled = true\n"
-            + "# Per mod switches, written by \"edit each mod's join notices\" on the general tab as\n"
-            + "# \"<modid>=true;<modid>=false>\". A mod that is not listed uses the default it declared when it\n"
-            + "# registered. Editing this line by hand works too; the screen is just easier.\n"
+            + "# Per mod switches, written by the join notice switches as \"<modid>=true;<modid>=false>\". A\n"
+            + "# mod that is not listed uses the default it declared when it registered. Editing this line by\n"
+            + "# hand works too; the visual screen is just easier.\n"
             + "per_mod = \"\"\n";
 
     private boolean restrictToolsToOperators;
@@ -103,11 +103,11 @@ public final class ServerConfig {
 
     public static ServerConfig load() {
         ServerConfig config = new ServerConfig();
-        TomlFile file = TomlFile.read(path(), DEFAULTS);
+        ConfigReader file = ConfigManager.read(path(), DEFAULTS);
         if (migrate(file)) {
-            // The values below are read from the file, so the file has to be parsed again after a migration
+            // The values below are read from the file, so it has to be parsed again after a migration
             // rewrote it; otherwise this launch would still see the old numbers.
-            file = TomlFile.read(path(), DEFAULTS);
+            file = ConfigManager.read(path(), DEFAULTS);
         }
 
         config.restrictToolsToOperators = file.getBoolean("security.restrict_tools_to_operators", false);
@@ -134,8 +134,11 @@ public final class ServerConfig {
         return Path.of("config", Constants.CONFIG_DIRECTORY, "server.toml");
     }
 
-    /** The file layout this build writes; see {@link #migrate(TomlFile)}. */
-    private static final int CONFIG_VERSION = 4;
+    /** The file layout this build writes; see {@link #migrate(ConfigReader)}. */
+    private static final int CONFIG_VERSION = 5;
+
+    /** The layout that introduced the current defaults of the toolkit ceilings. */
+    private static final int CEILING_LAYOUT = 4;
 
     /**
      * Brings a file written by an older build up to the current defaults, once.
@@ -147,34 +150,42 @@ public final class ServerConfig {
      *
      * <p>A value is only touched while it still holds the old default: any other number was chosen by hand
      * and is left exactly as it is. The version marker makes this a one-off, so setting a value back to 255
-     * on purpose stays honoured on the next launch.
+     * on purpose stays honoured on the next launch. That is why the moves below are guarded by
+     * {@link #CEILING_LAYOUT} and not by "the file is out of date": the version is raised again whenever
+     * the layout is touched, and a launch that only raises it must not re-apply an old move to a value the
+     * player has since chosen himself.
      *
      * @param file the file the configuration was read from
      * @return {@code true} when the file was rewritten and has to be read again
      */
-    private static boolean migrate(TomlFile file) {
-        if (file.getInt("tools.config_version", 0, 0, Integer.MAX_VALUE) >= CONFIG_VERSION) {
+    private static boolean migrate(ConfigReader file) {
+        int layout = file.getInt("tools.config_version", 0, 0, Integer.MAX_VALUE);
+        if (layout >= CONFIG_VERSION) {
             return false;
         }
         Map<String, String> overrides = new LinkedHashMap<>();
         overrides.put("tools.config_version", Integer.toString(CONFIG_VERSION));
-        if (file.getInt("tools.max_enchantment_level", 255, 1, Integer.MAX_VALUE) == 255) {
-            overrides.put("tools.max_enchantment_level", Integer.toString(Integer.MAX_VALUE));
+        if (layout < CEILING_LAYOUT) {
+            if (file.getInt("tools.max_enchantment_level", 255, 1, Integer.MAX_VALUE) == 255) {
+                overrides.put("tools.max_enchantment_level", Integer.toString(Integer.MAX_VALUE));
+            }
+            if (file.getInt("tools.max_test_weapon_damage", 100000, 1, Integer.MAX_VALUE) == 100000) {
+                overrides.put("tools.max_test_weapon_damage", Integer.toString(Integer.MAX_VALUE));
+            }
+            // Editing every item was on by default until that build, and the migration before it wrote it
+            // into every file it touched as true - which is exactly why a file kept ignoring the new
+            // default. It is moved back to the default once, so the switch finally reads "off" the way the
+            // template documents it.
+            if (file.getBoolean("tools.allow_editing_all_items", false)) {
+                overrides.put("tools.allow_editing_all_items", "false");
+            }
+            if (!file.getBoolean("tools.allow_levels_above_max", false)) {
+                overrides.put("tools.allow_levels_above_max", "true");
+            }
         }
-        if (file.getInt("tools.max_test_weapon_damage", 100000, 1, Integer.MAX_VALUE) == 100000) {
-            overrides.put("tools.max_test_weapon_damage", Integer.toString(Integer.MAX_VALUE));
-        }
-        // Editing every item was on by default until this build, and the migration before this one wrote it into
-        // every file it touched as true - which is exactly why a file kept ignoring the new default. It is moved
-        // back to the default once, so the switch finally reads "off" the way the template documents it.
-        if (file.getBoolean("tools.allow_editing_all_items", false)) {
-            overrides.put("tools.allow_editing_all_items", "false");
-        }
-        if (!file.getBoolean("tools.allow_levels_above_max", false)) {
-            overrides.put("tools.allow_levels_above_max", "true");
-        }
-        TomlFile.rewrite(path(), DEFAULTS, overrides);
-        Constants.LOG.info("[MerlinLib] server.toml migrated to layout {}: {}", CONFIG_VERSION, overrides.keySet());
+        ConfigManager.write(path(), DEFAULTS, overrides);
+        Constants.LOG.info("[MerlinLib] server.toml migrated from layout {} to {}: {}",
+                layout, CONFIG_VERSION, overrides.keySet());
         return true;
     }
 

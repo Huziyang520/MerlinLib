@@ -47,7 +47,7 @@ public final class Services {
     public static final ILootBridge LOOT = ForgeLootBridge.INSTANCE;
 
     /**
-     * Loader specific lookup of a mod's display name, used by the notice settings screen.
+     * Loader specific lookup of a mod's display name, used when a notice has to name its owner.
      */
     public static final IModNameBridge MOD_NAMES = ForgeModNameBridge.INSTANCE;
 

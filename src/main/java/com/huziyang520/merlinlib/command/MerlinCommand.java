@@ -9,6 +9,8 @@ import com.huziyang520.merlinlib.content.EnchantmentDraft;
 import com.huziyang520.merlinlib.impl.ContentManager;
 import com.huziyang520.merlinlib.impl.IdValidator;
 import com.huziyang520.merlinlib.impl.PermissionGate;
+import com.huziyang520.merlinlib.network.OpenToolPayload;
+import com.huziyang520.merlinlib.network.ServerSender;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -42,6 +44,7 @@ import java.util.Optional;
  *     <li>{@code /merlinlib info <id>} - effective source, enabled flag, level and weight</li>
  *     <li>{@code /merlinlib book <id> [level]} - hands out the enchanted book, operator only</li>
  *     <li>{@code /merlinlib content} - whether the files on disk are the ones this process registered</li>
+ *     <li>{@code /merlinlib editor | health | macro} - opens the matching toolkit screen</li>
  * </ul>
  *
  * <h2>Two changes from the 26.3 line</h2>
@@ -71,6 +74,11 @@ public final class MerlinCommand {
      * are the ones the event hands over, and the same three 26.3 got from its own loader hooks, so
      * the signature carried over unchanged.
      *
+     * <p>The three toolkit subcommands ({@code editor}, {@code health}, {@code macro}) are the only way to
+     * open those screens besides the key bindings: the library no longer ships a screen of its own, and a
+     * command is available without one. They validate on this side - toolkit switch, operator switch - and
+     * then ask the player's client to open the screen, because a {@code Screen} exists on the client only.
+     *
      * @param dispatcher   the server command dispatcher
      * @param buildContext registry access of the running server
      * @param selection    which command set is being built, unused
@@ -85,6 +93,12 @@ public final class MerlinCommand {
                 .then(Commands.literal("info")
                         .then(Commands.argument("id", StringArgumentType.string())
                                 .executes(MerlinCommand::info)))
+                .then(Commands.literal("editor")
+                        .executes(context -> openTool(context, OpenToolPayload.EDITOR)))
+                .then(Commands.literal("health")
+                        .executes(context -> openTool(context, OpenToolPayload.HEALTH)))
+                .then(Commands.literal("macro")
+                        .executes(context -> openTool(context, OpenToolPayload.MACRO)))
                 .then(Commands.literal("book")
                         .requires(MerlinCommand::mayManage)
                         .then(Commands.argument("id", StringArgumentType.string())
@@ -97,6 +111,38 @@ public final class MerlinCommand {
                                 .executes(context -> setEditorHotkey(context, true)))
                         .then(Commands.literal("off")
                                 .executes(context -> setEditorHotkey(context, false)))));
+    }
+
+    /**
+     * Asks the caller's client to open one toolkit screen.
+     *
+     * <p>The checks are the server's own: the toolkit master switch, the operator-only switch and the
+     * per-editor permission switch. The client repeats them, because it is the side that opens the screen and
+     * its copy of the switches may differ - so a refusal here is the authoritative one and a refusal there
+     * is the safe one.
+     *
+     * @param context the command context
+     * @param tool    which screen, one of {@link OpenToolPayload}'s constants
+     * @return 1 when the request was sent, 0 when it was refused
+     */
+    private static int openTool(CommandContext<CommandSourceStack> context, int tool) {
+        CommandSourceStack source = context.getSource();
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.translatable("command.merlinlib.player_only"));
+            return 0;
+        }
+        boolean allowed = switch (tool) {
+            case OpenToolPayload.EDITOR -> PermissionGate.canOpenEditor(player);
+            case OpenToolPayload.HEALTH -> PermissionGate.canOpenHealthEditor(player);
+            default -> PermissionGate.canUseTools(player);
+        };
+        if (!allowed) {
+            source.sendFailure(Component.translatable("message.merlinlib.no_permission"));
+            return 0;
+        }
+        ServerSender.sendToPlayer(player, new OpenToolPayload(tool));
+        return 1;
     }
 
     /**

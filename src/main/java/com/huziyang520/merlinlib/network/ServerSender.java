@@ -69,6 +69,7 @@ public final class ServerSender {
     private static final int ID_DAMAGE_FEEDBACK = 0;
     private static final int ID_HEALTH_EDIT = 1;
     private static final int ID_ITEM_EDIT = 2;
+    private static final int ID_OPEN_TOOL = 3;
 
     private static volatile SimpleChannel channel;
 
@@ -116,9 +117,17 @@ public final class ServerSender {
                 ServerSender::onItemEdit,
                 Optional.of(NetworkDirection.PLAY_TO_SERVER));
 
+        // The one clientbound message that is not about damage: the answer to /merlinlib editor / health /
+        // macro, which have to be executed on the server but open a screen on the client.
+        built.registerMessage(ID_OPEN_TOOL, OpenToolPayload.class,
+                OpenToolPayload::write,
+                OpenToolPayload::read,
+                ServerSender::onOpenTool,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+
         channel = built;
         Constants.LOG.info("[MerlinLib] network channel '{}' registered with {} message(s)",
-                CHANNEL_NAME, 3);
+                CHANNEL_NAME, 4);
     }
 
     /**
@@ -173,6 +182,40 @@ public final class ServerSender {
             return;
         }
         local.send(PacketDistributor.PLAYER.with(() -> player), payload);
+    }
+
+    /**
+     * Asks one player's client to open a toolkit screen.
+     *
+     * <p>Clientbound for the same reason as the damage feedback: the decision belongs to the server, the
+     * screen belongs to the client. A missing channel is logged rather than thrown here, because the caller
+     * is a command and a command that throws prints a stack trace into the player's chat.
+     *
+     * @param player  the receiving player
+     * @param payload which screen to open
+     */
+    public static void sendToPlayer(ServerPlayer player, OpenToolPayload payload) {
+        SimpleChannel local = channel;
+        if (local == null || player == null) {
+            Constants.LOG.warn("[MerlinLib] the toolkit request could not be sent: the network channel is absent");
+            return;
+        }
+        local.send(PacketDistributor.PLAYER.with(() -> player), payload);
+    }
+
+    /**
+     * Delivers one screen request to the client sink.
+     *
+     * <p>Runs on the main thread. The sink is {@code null} on a dedicated server, which is what keeps this
+     * handler safe to have registered unconditionally.
+     *
+     * @param payload  the decoded payload
+     * @param supplier the network context
+     */
+    private static void onOpenTool(OpenToolPayload payload, Supplier<NetworkEvent.Context> supplier) {
+        NetworkEvent.Context context = supplier.get();
+        context.enqueueWork(() -> ToolOpenSink.handle(payload));
+        context.setPacketHandled(true);
     }
 
     /**

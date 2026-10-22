@@ -89,6 +89,17 @@ dependencies {
     compileOnly 'com.electronwill.night-config:toml:3.6.4'
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
+    // Jupiter, the optional configuration front end. A local copy of the exact jar the 1.20.1 test
+    // instance runs, never downloaded by the build: the build is offline by rule, and a maven coordinate
+    // would also risk resolving a different version than the one players have. `libs/` is gitignored,
+    // so the jar itself is not committed; without it this dependency line does not resolve and the build
+    // stops, which is the intended behaviour (the library must not be silently compiled against a
+    // different Jupiter).
+    //
+    // compileOnly, like the two above: Jupiter is a soft dependency. Nothing Jupiter provides is bundled,
+    // and every reference to it is behind the class presence check in JupiterBackend.
+    compileOnly files('libs/jupiter-2.3.7-1.20.1-forge.jar')
 }
 
 // ---------------------------------------------------------------------------------------------

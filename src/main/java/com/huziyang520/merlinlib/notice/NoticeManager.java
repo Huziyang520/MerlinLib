@@ -51,8 +51,8 @@ public final class NoticeManager {
     /**
      * The notices registered from code, which both sides can see, because the same mods run on both.
      *
-     * <p>What the settings screen lists on a dedicated server: a client cannot ask that server what its packs
-     * contain, so the switches are named by the mods rather than by the packs, and they still work.
+     * <p>What can be named on a dedicated server: a client cannot ask that server what its packs contain, so
+     * the switches are named by the mods rather than by the packs, and they still work.
      *
      * @return the code notices
      */

@@ -13,7 +13,7 @@ import java.util.List;
  *
  * <p>Every option here is read at the moment it is used, never cached in a field of a screen or of the
  * renderer. That is deliberate: a switch in this file that only takes effect after a restart would be
- * a lie, and this file is offered as a live configuration screen.
+ * a lie, and the values are offered to the player through a configuration screen.
  *
  * <p>The file layout is carried over from the 26.3 line unchanged, including the layout version and
  * its one-off migration: the two lines are the same product on a different Minecraft version and a
@@ -36,6 +36,18 @@ public final class ClientConfig {
             + "# Content definitions (enchantments, effects, potions) live in the .json files next to this one.\n"
             + "# On 1.20.1 those are read when the game starts; the 26.3 line could also re-read them with\n"
             + "# /reload, which is not possible here because enchantments are a plain registry on this version.\n"
+            + "#\n"
+            + "# This file is only read when the Jupiter configuration library is absent. With Jupiter installed\n"
+            + "# the same switches live in its own configuration screen: this file is imported once, then renamed\n"
+            + "# to client.toml.imported.\n"
+            + "\n"
+            + "[general]\n"
+            + "# Join notices in chat. On by default: this is what tells a player that something about the mod\n"
+            + "# changed. Takes effect on the next join.\n"
+            + "notice_enabled = true\n"
+            + "# File layout version. Written by the mod, read only to bring a file from an older build up to the\n"
+            + "# current defaults; do not set it back by hand.\n"
+            + "config_version = 4\n"
             + "\n"
             + "[hud]\n"
             + "# Show the damage of the weapon you just used near the crosshair. Off by default.\n"
@@ -43,6 +55,13 @@ public final class ClientConfig {
             + "crosshair_damage = false\n"
             + "# How long the crosshair damage number stays on screen, in ticks (20 ticks = 1 second).\n"
             + "crosshair_damage_ticks = 20\n"
+            + "# Draw a very large maximum health as one heart plus the numbers. On by default: a mob with a\n"
+            + "# thousand health would otherwise draw five hundred hearts across the whole window.\n"
+            + "collapse_enabled = true\n"
+            + "# The maximum health from which the row folds; 99 means a ceiling of 100 or more folds.\n"
+            + "collapse_threshold = 99\n"
+            + "# Move the armour bar to sit just above the health bar that is really drawn. On by default.\n"
+            + "armour_auto_dodge = true\n"
             + "\n"
             + "[floating_text]\n"
             + "# Show damage numbers flying off a mob when it is hit. Off by default: it is a testing aid, so it is\n"
@@ -58,6 +77,18 @@ public final class ClientConfig {
             + "# Upper bound on simultaneous damage numbers; the oldest one is dropped first.\n"
             + "max_concurrent = 32\n"
             + "\n"
+            + "[particles]\n"
+            + "# Cap how many particles this client draws. Some paths of the game ask for one particle per point\n"
+            + "# of damage, so a single hit with a very large number can freeze the client while it builds them\n"
+            + "# all - the frame never finishes because it is still making particles. When enabled, at most\n"
+            + "# `limit` particles are drawn per 1/20 second; the rest are dropped before they exist. On by\n"
+            + "# default.\n"
+            + "limit_enabled = true\n"
+            + "# How many particles may be drawn per 1/20 second. 512 is far above what normal play produces\n"
+            + "# (rain, explosions, a busy farm) and still keeps a damage number in the thousands from freezing\n"
+            + "# the client. Lower it if a very large hit still stutters.\n"
+            + "limit = 512\n"
+            + "\n"
             + "[editor]\n"
             + "# Allow the editor hotkey to open the item editor. Off by default, so the library can be\n"
             + "# installed without claiming a key. Toggle it in game with /merlinlib editorhotkey on.\n"
@@ -71,41 +102,10 @@ public final class ClientConfig {
             + "\n"
             + "[macros]\n"
             + "# Enable the macro toolkit: the macro screen and running macros from their bound keys.\n"
-            + "enabled = true\n"
-            + "\n"
-            + "[particles]\n"
-            + "# Cap how many particles this client draws. Some paths of the game ask for one particle per point\n"
-            + "# of damage, so a single hit with a very large number can freeze the client while it builds them\n"
-            + "# all - the frame never finishes because it is still making particles. When enabled, at most\n"
-            + "# `limit` particles are drawn per 1/20 second; the rest are dropped before they exist. On by\n"
-            + "# default.\n"
-            + "limit_enabled = true\n"
-            + "# How many particles may be drawn per 1/20 second. 512 is far above what normal play produces\n"
-            + "# (rain, explosions, a busy farm) and still keeps a damage number in the thousands from freezing\n"
-            + "# the client. Lower it if a very large hit still stutters.\n"
-            + "limit = 512\n"
-            + "\n"
-            + "[gui]\n"
-            + "# Animate MerlinLib's own screens: they pop open and slide into place instead of appearing at once.\n"
-            + "# On by default. It only affects MerlinLib's interface - another mod may use the same animation\n"
-            + "# helpers, keep its own setting, or ignore them entirely.\n"
-            + "animation_enabled = true\n"
-            + "# Which animation to use: 0 = pop, 1 = slide up, 2 = slide from the side, 3 = fade in and out.\n"
-            + "animation_kind = 0\n"
-            + "# Where the animation is used, each with a switch of its own so one can be turned off without\n"
-            + "# losing the others. All of them are off as a group when animation_enabled is false.\n"
-            + "# animation_screen: the configuration screens, on by default.\n"
-            + "# animation_sub: the toolkit screens (item editor, enchantment picker, health editor, macros),\n"
-            + "# off by default so editing an item does not animate the whole window.\n"
-            + "animation_screen = true\n"
-            + "animation_tab = true\n"
-            + "animation_sub = false\n"
-            + "# File layout version. Written by the mod, read only to bring a file from an older build up to the\n"
-            + "# current defaults; do not set it back by hand.\n"
-            + "config_version = 3\n";
+            + "enabled = true\n";
 
     /** The file layout this build writes; see the migration in {@link #load()}. */
-    private static final int CONFIG_VERSION = 3;
+    private static final int CONFIG_VERSION = 4;
 
     /** Whether a very large maximum health is drawn as one heart plus the numbers. */
     public boolean hudCollapse() {
@@ -153,41 +153,41 @@ public final class ClientConfig {
     private boolean macrosEnabled = true;
     private boolean particleLimitEnabled = true;
     private int particleLimit = 512;
-    private boolean uiAnimationEnabled = true;
-    private int uiAnimationKind;
-    private boolean animationScreen = true;
-    private boolean animationTab = true;
-    private boolean animationSub = false;
+    /** Whether MerlinLib's own join notices are offered at all. */
+    private boolean noticeEnabled = true;
     private List<ContentError> errors = List.of();
 
     public static ClientConfig load() {
         ClientConfig config = new ClientConfig();
-        TomlFile file = TomlFile.read(path(), DEFAULTS);
+        ConfigReader file = ConfigManager.read(path(), DEFAULTS);
 
         // A file written by an older build is brought up to the new defaults once. The floating damage numbers
         // used to be on by default and a file always wins over the template, so without this a file from before
         // would keep showing them no matter what the default says. Only a switch that still holds the old value
         // is moved, and the version marker in the file makes it a one-off - switching them back on later is a
         // hand picked value from that point on and is never touched again.
-        if (file.getInt("gui.config_version", 0, 0, Integer.MAX_VALUE) < CONFIG_VERSION) {
+        //
+        // Layouts 0 to 3 kept the marker in [gui]; it moved to [general] with layout 4, so the old location is
+        // read as the fallback and a file that was already current is not migrated twice. The [gui] animation
+        // switches themselves are simply not read any more: a file that still carries them keeps them, and
+        // they do nothing.
+        int layout = file.getInt("general.config_version",
+                file.getInt("gui.config_version", 0, 0, Integer.MAX_VALUE), 0, Integer.MAX_VALUE);
+        if (layout < CONFIG_VERSION) {
             java.util.Map<String, String> overrides = new java.util.LinkedHashMap<>();
-            overrides.put("gui.config_version", Integer.toString(CONFIG_VERSION));
-            if (!file.getBoolean("hud.armour_auto_dodge", true)) {
-                overrides.put("hud.armour_auto_dodge", "true");
+            overrides.put("general.config_version", Integer.toString(CONFIG_VERSION));
+            if (layout < 3) {
+                if (!file.getBoolean("hud.armour_auto_dodge", true)) {
+                    overrides.put("hud.armour_auto_dodge", "true");
+                }
+                if (file.getBoolean("floating_text.enabled", true)) {
+                    overrides.put("floating_text.enabled", "false");
+                }
             }
-            if (file.getBoolean("floating_text.enabled", true)) {
-                overrides.put("floating_text.enabled", "false");
-            }
-            // Layout 3 splits the animation into the configuration screens, which stay animated, and the toolkit
-            // screens (item editor, macro, health editor), which no longer are by default. A file that still
-            // holds the old shared default of true is moved once; a value the player picked is left alone.
-            if (file.getBoolean("gui.animation_sub", true)) {
-                overrides.put("gui.animation_sub", "false");
-            }
-            TomlFile.rewrite(path(), DEFAULTS, overrides);
-            Constants.LOG.info("[MerlinLib] client.toml migrated to layout {}: {}",
-                    CONFIG_VERSION, overrides.keySet());
-            file = TomlFile.read(path(), DEFAULTS);
+            ConfigManager.write(path(), DEFAULTS, overrides);
+            Constants.LOG.info("[MerlinLib] client.toml migrated from layout {} to {}: {}",
+                    layout, CONFIG_VERSION, overrides.keySet());
+            file = ConfigManager.read(path(), DEFAULTS);
         }
 
         config.crosshairDamage = file.getBoolean("hud.crosshair_damage", false);
@@ -208,11 +208,7 @@ public final class ClientConfig {
         config.macrosEnabled = file.getBoolean("macros.enabled", true);
         config.particleLimitEnabled = file.getBoolean("particles.limit_enabled", true);
         config.particleLimit = file.getInt("particles.limit", 512, 1, 1000000);
-        config.uiAnimationEnabled = file.getBoolean("gui.animation_enabled", true);
-        config.uiAnimationKind = file.getInt("gui.animation_kind", 0, 0, 3);
-        config.animationScreen = file.getBoolean("gui.animation_screen", true);
-        config.animationTab = file.getBoolean("gui.animation_tab", true);
-        config.animationSub = file.getBoolean("gui.animation_sub", false);
+        config.noticeEnabled = file.getBoolean("general.notice_enabled", true);
         config.errors = file.errors();
         return config;
     }
@@ -302,29 +298,9 @@ public final class ClientConfig {
         return this.particleLimit;
     }
 
-    /** @return whether MerlinLib's own screens are animated when they open */
-    public boolean uiAnimationEnabled() {
-        return this.uiAnimationEnabled;
-    }
-
-    /** @return which animation to use; see the template for the meaning of each number */
-    public int uiAnimationKind() {
-        return this.uiAnimationKind;
-    }
-
-    /** @return whether a main screen animates in and out */
-    public boolean animationScreen() {
-        return this.animationScreen;
-    }
-
-    /** @return whether switching a tab slides the rows */
-    public boolean animationTab() {
-        return this.animationTab;
-    }
-
-    /** @return whether a sub screen (notice switches, animation, reset) animates in and out */
-    public boolean animationSub() {
-        return this.animationSub;
+    /** @return whether MerlinLib offers its own join notices at all */
+    public boolean noticeEnabled() {
+        return this.noticeEnabled;
     }
 
     /** @return problems found while reading the file during the last reload. */

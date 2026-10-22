@@ -3,6 +3,7 @@ package com.huziyang520.merlinlib.client;
 import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.network.DamageFeedbackSink;
 import com.huziyang520.merlinlib.network.ServerSender;
+import com.huziyang520.merlinlib.network.ToolOpenSink;
 import com.huziyang520.merlinlib.tools.HealthEditorItem;
 import com.huziyang520.merlinlib.tools.hud.CombatFeedback;
 import com.huziyang520.merlinlib.tools.macro.MacroStorage;
@@ -185,6 +186,8 @@ public final class MerlinLibForgeClient {
     public static void install() {
         DamageFeedbackSink.setClientSink(payload ->
                 CombatFeedback.instance().onServerDamage(payload.damage(), payload.critical(), payload.targetId()));
+        // /merlinlib editor, health and macro run on the server and end here, on the side that owns screens.
+        ToolOpenSink.setClientSink(MerlinScreens::openFromCommand);
 
         MacroStorage.load();
         HealthEditorItem.setOpener(target -> MerlinScreens.openHealthEditor(null, target));

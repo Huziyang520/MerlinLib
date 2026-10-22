@@ -73,7 +73,7 @@ public final class ScreenIntro {
     }
 
     /**
-     * @param kind the configured choice; any number outside the known ones falls back to the first
+     * @param kind the caller's choice; any number outside the known ones falls back to the first
      * @return the animation for that choice
      */
     public static ScreenIntro of(int kind) {
@@ -86,11 +86,11 @@ public final class ScreenIntro {
     }
 
     /**
-     * A sideways slide, always, whatever the configured kind is.
+     * A sideways slide, always, whatever opening kind the caller uses.
      *
-     * <p>This is what a tab switch uses. The kind setting is the open and close animation and only that: it was
+     * <p>This is what a tab switch uses. The opening kind is the open and close animation and only that: it was
      * a real bug that it also drove the tab switch, because then choosing "slide from the side" for opening a
-     * screen silently changed what a tab switch looked like, and the two settings read as one.
+     * screen silently changed what a tab switch looked like, and the two choices read as one.
      *
      * @return a sideways slide
      */

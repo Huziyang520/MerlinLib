@@ -10,10 +10,8 @@ import com.huziyang520.merlinlib.notice.NoticeManager;
 import com.huziyang520.merlinlib.platform.Services;
 import com.huziyang520.merlinlib.tools.HealthEditorItem;
 import com.huziyang520.merlinlib.tools.TestWeapons;
-import com.huziyang520.merlinlib.tools.ui.MerlinConfigScreen;
 import com.huziyang520.merlinlib.util.SmeltingLookup;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -59,16 +57,10 @@ public class MerlinLibForge {
 
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
 
-        // The Forge mod list only offers a working "Config" button for a mod that registered a
-        // config screen factory; without this line the button is dead. This is 1.20.1's form of the
-        // extension point the 26.3 line registers as IConfigScreenFactory, and it keeps that line's
-        // property that a dedicated server never loads the screen class: the supplier below is only
-        // resolved when a client opens the mod list, so the client-side screen inside the inner
-        // lambda is never touched on a server.
-        FMLJavaModLoadingContext.get().registerExtensionPoint(
-                ConfigScreenHandler.ConfigScreenFactory.class,
-                () -> new ConfigScreenHandler.ConfigScreenFactory(
-                        (minecraft, parent) -> new MerlinConfigScreen(parent)));
+        // The configuration screen is not ours any more. It is Jupiter's when Jupiter is installed, and
+        // otherwise there is none: the switches are edited in config/MerlinLib/client.toml and server.toml,
+        // which are commented and documented for exactly that. Registering no ConfigScreenFactory is what
+        // keeps the mod list from offering a button that opens a screen this mod no longer has.
 
         // Every bridge that needs a loader handle gets one here, before anything can ask it to
         // register. REGISTRATIONS keeps the bus so that a DeferredRegister created later - which is
@@ -93,6 +85,8 @@ public class MerlinLibForge {
         // The configuration has to be read before the content files are, because the server switches
         // decide whether the config file enchantments are registered at all.
         ConfigManager.reload();
+        // After the switches, not before: the notice's own default is the client side one.
+        com.huziyang520.merlinlib.notice.BuiltInNotices.register();
         widenAttributeCeilings();
         MerlinApi.lifecycle().onServerStarting(SmeltingLookup::initialize);
 

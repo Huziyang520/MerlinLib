@@ -7,8 +7,7 @@ import net.minecraftforge.fml.ModList;
  * Forge implementation of {@link IModNameBridge}.
  *
  * <p>{@code ModContainer.getModInfo().getDisplayName()} is the same string Forge shows in its mod
- * list, so the notice settings screen can list "Practical Enchantments" instead of
- * {@code practical_enchantments}.
+ * list, so a join notice can name "Practical Enchantments" instead of {@code practical_enchantments}.
  */
 public final class ForgeModNameBridge implements IModNameBridge {
 
