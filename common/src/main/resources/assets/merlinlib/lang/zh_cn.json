@@ -129,7 +129,7 @@
   "gui.merlinlib.config.reset.confirm.title": "是否确认？",
   "gui.merlinlib.config.reset.confirm.message": "将把 MerlinLib 的客户端与服务端配置全部恢复为默认值（自定义的按键、宏、亮度与动画设置都会丢失）。",
   "gui.merlinlib.anim.title": "配置界面动画",
-  "gui.merlinlib.anim.enabled": "启用界面动画",
+  "gui.merlinlib.anim.enabled": "启用动画",
   "gui.merlinlib.anim.screen": "配置界面 打开 / 关闭动画",
   "gui.merlinlib.anim.tab": "切换类别时滑动",
   "gui.merlinlib.anim.sub": "工具界面 打开 / 关闭动画",
