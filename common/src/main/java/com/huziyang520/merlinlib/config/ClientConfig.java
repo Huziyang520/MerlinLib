@@ -30,6 +30,15 @@ public final class ClientConfig {
             crosshair_damage = false
             # How long the crosshair damage number stays on screen, in ticks (20 ticks = 1 second).
             crosshair_damage_ticks = 20
+            # Fold a very large health bar into one heart plus the current and maximum numbers, instead of one
+            # heart per two points of health. On by default: without it a maximum health in the thousands asks
+            # for thousands of hearts and the frame never finishes.
+            collapse_enabled = true
+            # Health above which the bar folds. 99 keeps a normal player bar untouched.
+            collapse_threshold = 99
+            # Move the armour row up so it sits on the folded health row. Off leaves it where vanilla puts it,
+            # which is where it would be for the unfolded bar.
+            armour_auto_dodge = true
 
             [floating_text]
             # Show damage numbers flying off a mob when it is hit. Off by default: it is a testing aid, so it is
@@ -97,6 +106,9 @@ public final class ClientConfig {
 
     private boolean crosshairDamage;
     private int crosshairDamageTicks = 20;
+    private boolean hudCollapse = true;
+    private int hudCollapseThreshold = 99;
+    private boolean hudArmourDodge = true;
     private boolean floatingTextEnabled = false;
     private int floatingTextDurationTicks = 20;
     private double floatingTextBaseScale = 1.0D;
@@ -146,6 +158,9 @@ public final class ClientConfig {
 
         config.crosshairDamage = file.getBoolean("hud.crosshair_damage", false);
         config.crosshairDamageTicks = file.getInt("hud.crosshair_damage_ticks", 20, 1, 400);
+        config.hudCollapse = file.getBoolean("hud.collapse_enabled", true);
+        config.hudCollapseThreshold = file.getInt("hud.collapse_threshold", 99, 1, 1000000);
+        config.hudArmourDodge = file.getBoolean("hud.armour_auto_dodge", true);
         config.floatingTextEnabled = file.getBoolean("floating_text.enabled", false);
         config.floatingTextDurationTicks = file.getInt("floating_text.duration_ticks", 20, 1, 400);
         config.floatingTextBaseScale = file.getDouble("floating_text.base_scale", 1.0D, 0.1D, 8.0D);
@@ -264,6 +279,21 @@ public final class ClientConfig {
     }
 
     /** @return whether a main screen animates in and out */
+    /** @return whether a very large health bar is drawn as one heart plus the numbers */
+    public boolean hudCollapse() {
+        return this.hudCollapse;
+    }
+
+    /** @return the health above which the bar folds */
+    public int hudCollapseThreshold() {
+        return this.hudCollapseThreshold;
+    }
+
+    /** @return whether the armour row moves up onto the folded health row */
+    public boolean hudArmourDodge() {
+        return this.hudArmourDodge;
+    }
+
     public boolean animationScreen() {
         return this.animationScreen;
     }

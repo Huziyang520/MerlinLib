@@ -201,6 +201,9 @@ public class MerlinConfigScreen extends VanillaScreen {
         ClientConfig client = ConfigManager.client();
         return switch (tab) {
             case 0 -> List.of(
+                    // First row on purpose: the animation switches are what a player opens this screen for most
+                    // often, and the row used to sit at the bottom under every server switch.
+                    action("gui.animation", T + "animation_edit"),
                     toggle("tools.enable_testing_toolkit", false, T + "toolkit", server.testingToolkitEnabled()),
                     toggle("security.restrict_tools_to_operators", false, T + "operators",
                             server.restrictToolsToOperators()),
@@ -208,7 +211,6 @@ public class MerlinConfigScreen extends VanillaScreen {
                             server.disableGeneratedEnchantments()),
                     toggle("notices.enabled", false, T + "notices", server.noticesEnabled()),
                     action("notices.per_mod", T + "notices_edit"),
-                    action("gui.animation", T + "animation_edit"),
                     action("config.reset", T + "reset"));
             case 1 -> List.of(
                     toggle("editor.hotkey_enabled", true, T + "hotkey", client.editorHotkeyEnabled()),
@@ -233,7 +235,11 @@ public class MerlinConfigScreen extends VanillaScreen {
                     toggle("tools.health_editor_requires_item", false, T + "health_item",
                             server.healthEditorRequiresItem()),
                     toggle("security.health_editor_requires_permission", false, T + "health_permission",
-                            server.healthEditorRequiresPermission()));
+                            server.healthEditorRequiresPermission()),
+                    toggle("hud.collapse_enabled", true, T + "hud_collapse", client.hudCollapse()),
+                    integer("hud.collapse_threshold", true, T + "hud_collapse_threshold",
+                            client.hudCollapseThreshold(), 1, 1000000),
+                    toggle("hud.armour_auto_dodge", true, T + "hud_armour_dodge", client.hudArmourDodge()));
             case 3 -> List.of(
                     toggle("floating_text.enabled", true, T + "floating_text", client.floatingTextEnabled()),
                     integer("floating_text.duration_ticks", true, T + "floating_duration",
@@ -566,17 +572,16 @@ public class MerlinConfigScreen extends VanillaScreen {
                     ConfigManager.resetToDefaults();
                     // A brand new screen, not this one: this instance holds the values it was built with, so
                     // showing it again after a reset would look like the button did nothing at all.
-                    net.minecraft.client.Minecraft.getInstance()
-                            .setScreen(new MerlinConfigScreen(this.parent));
+                    MerlinScreens.show(new MerlinConfigScreen(this.parent));
                 } else {
-                    net.minecraft.client.Minecraft.getInstance().setScreen(this);
+                    MerlinScreens.show(this);
                 }
             }, Component.translatable(T + "reset.confirm.title"),
                     Component.translatable(T + "reset.confirm.message"));
             default -> null;
         };
         if (next != null) {
-            this.minecraft.setScreen(next);
+            MerlinScreens.show(next);
         }
     }
 

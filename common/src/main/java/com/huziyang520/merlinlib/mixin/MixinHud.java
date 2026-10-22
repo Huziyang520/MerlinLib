@@ -1,5 +1,7 @@
 package com.huziyang520.merlinlib.mixin;
 
+import com.huziyang520.merlinlib.config.ClientConfig;
+import com.huziyang520.merlinlib.config.ConfigManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.Gui;
@@ -27,7 +29,7 @@ import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
  *
  * <h2>The fix, and why it is not a clamp</h2>
  *
- * <p>Clamping the values would hide what the player set. Instead, above {@link #COMPACT_THRESHOLD} health the
+ * <p>Clamping the values would hide what the player set. Instead, above the configured fold threshold the
  * heart loop is asked for exactly <em>one</em> heart, and the exact numbers are drawn next to it. The heart
  * itself is still vanilla's own sprite and colour, so poison, wither, freezing and absorption stay visible at
  * a glance - which is the point of keeping a heart when the numbers are huge. The attribute, the health
@@ -44,8 +46,8 @@ import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 @Mixin(Gui.class)
 public class MixinHud {
 
-    /** Health above which the row becomes one heart and the numbers. */
-    private static final float COMPACT_THRESHOLD = 100.0F;
+    /** Used when the configuration cannot be read yet, so the row behaves as it always did. */
+    private static final float DEFAULT_THRESHOLD = 99.0F;
 
     /** The value that makes the vanilla loop draw a single heart. */
     private static final float ONE_HEART = 2.0F;
@@ -75,7 +77,18 @@ public class MixinHud {
             target = "Lnet/minecraft/world/entity/player/Player;getAttributeValue(Lnet/minecraft/core/Holder;)D"))
     private double merlinlib$layoutOneRow(Player player, Holder<Attribute> attribute) {
         double real = player.getAttributeValue(attribute);
-        return real > COMPACT_THRESHOLD ? ONE_ROW_OF_HEALTH : real;
+        ClientConfig config = ConfigManager.client();
+        if (!config.hudCollapse()) {
+            return real;
+        }
+        if (!config.hudArmourDodge()) {
+            // The armour row sits below the health rows, so the only way to leave it where vanilla puts it for
+            // an unfolded bar is to leave the row height unfolded as well. The heart count is still folded by
+            // the second hook, so the player sees one heart in the first row and the armour row where it was -
+            // the same trade the 1.20.1 line makes with its row policy.
+            return real;
+        }
+        return real > threshold(config) ? ONE_ROW_OF_HEALTH : real;
     }
 
     /**
@@ -92,7 +105,8 @@ public class MixinHud {
         Player player = args.get(1);
         int currentHealth = args.get(7);
         int oldHealth = args.get(8);
-        if (realHealth(player, currentHealth, oldHealth) > COMPACT_THRESHOLD) {
+        ClientConfig config = ConfigManager.client();
+        if (config.hudCollapse() && realHealth(player, currentHealth, oldHealth) > threshold(config)) {
             args.set(6, ONE_HEART);
         }
     }
@@ -118,14 +132,26 @@ public class MixinHud {
                                          int healthRowHeight, int heartOffsetIndex, float maxHealth,
                                          int currentHealth, int oldHealth, int absorption, boolean blink,
                                          CallbackInfo info) {
+        ClientConfig config = ConfigManager.client();
         float real = realHealth(player, currentHealth, oldHealth);
-        if (real <= COMPACT_THRESHOLD) {
+        if (!config.hudCollapse() || real <= threshold(config)) {
             return;
         }
         Component text = Component.literal(currentHealth + "/" + Math.round(real));
         int color = absorption > 0 ? 0xFFFFD700 : 0xFFFFFFFF;
         graphics.text(Minecraft.getInstance().font, text, xLeft + TEXT_OFFSET_X, yLineBase + TEXT_OFFSET_Y,
                 color, true);
+    }
+
+    /**
+     * The configured fold threshold, as a float for the comparisons above.
+     *
+     * @param config the client configuration
+     * @return the health above which the row folds
+     */
+    private static float threshold(ClientConfig config) {
+        int configured = config.hudCollapseThreshold();
+        return configured > 0 ? (float) configured : DEFAULT_THRESHOLD;
     }
 
     /**

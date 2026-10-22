@@ -60,6 +60,43 @@ public class MerlinLibNeoForgeClient {
                 MerlinScreens.openHealthEditor(null, target));
     }
 
+    /**
+     * Whether the stored bindings were already checked against the old, wrong defaults.
+     *
+     * <p>Done on the first client tick rather than in the constructor: the bindings are created when this class
+     * is loaded, but the values the player has in {@code options.txt} are applied later, when the game builds
+     * its options - so a repair in the constructor would be overwritten.
+     */
+    private static boolean hotkeysRepaired;
+
+    /**
+     * Moves the two bindings off the keys an earlier build of this line saved by mistake.
+     *
+     * <p>That build took its key codes from the 26.3 line, which numbers keys by USB HID usage ids, while
+     * 26.1 and 26.2 still use the GLFW codes. The bindings were therefore created with 80 and 79 - the P and O
+     * keys - and the game wrote that choice into {@code options.txt}. Correcting the default alone does nothing
+     * for a profile that already has {@code key_key.merlinlib.open_editor:key.keyboard.p} in it, which is
+     * exactly the "the two hot keys are still missing" report. Only the two mistaken values are moved; any
+     * other binding the player chose is left alone.
+     */
+    private void repairHotkeyDefaults() {
+        boolean changed = false;
+        if ("key.keyboard.p".equals(OPEN_EDITOR.getKey().getName())) {
+            OPEN_EDITOR.setKey(com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM
+                    .getOrCreate(MerlinUi.KEY_LEFT));
+            changed = true;
+        }
+        if ("key.keyboard.o".equals(OPEN_MACROS.getKey().getName())) {
+            OPEN_MACROS.setKey(com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM
+                    .getOrCreate(MerlinUi.KEY_RIGHT));
+            changed = true;
+        }
+        if (changed) {
+            Constants.LOG.info("[MerlinLib] the two hot keys were moved from the P/O keys to the arrow keys, "
+                    + "the defaults this build ships");
+        }
+    }
+
     private void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
 
         event.register(OPEN_EDITOR);
@@ -93,6 +130,10 @@ public class MerlinLibNeoForgeClient {
 
     private void onClientTick(ClientTickEvent.Post event) {
 
+        if (!hotkeysRepaired) {
+            hotkeysRepaired = true;
+            repairHotkeyDefaults();
+        }
         while (OPEN_EDITOR.consumeClick()) {
             MerlinScreens.openItemEditorFromHotkey();
         }

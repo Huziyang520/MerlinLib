@@ -1,5 +1,6 @@
 package com.huziyang520.merlinlib.tools.ui.vanilla;
 
+import com.huziyang520.merlinlib.tools.ui.MerlinScreens;
 import com.huziyang520.merlinlib.ui.anim.ScreenIntro;
 import com.huziyang520.merlinlib.ui.anim.UiAnimation;
 import net.minecraft.client.Minecraft;
@@ -158,7 +159,7 @@ public abstract class VanillaScreen extends Screen {
             // for one frame, immediately before the parent screen appeared. The handover only swaps which
             // screen is active; the rest of this frame still draws the leaving screen exactly as the previous
             // frame did.
-            Minecraft.getInstance().setScreen(parentScreen());
+            MerlinScreens.show(parentScreen());
         }
         super.extractBackground(graphics, mouseX, mouseY, partialTick);
         // The world dimming of a vanilla screen, drawn by us: without it the world behind a panel-less screen
@@ -219,7 +220,9 @@ public abstract class VanillaScreen extends Screen {
             return;
         }
         this.closing = true;
-        this.exitIntro = UiAnimation.intro();
+        // The same switch that governs how this screen arrived governs how it leaves. Using the main screen
+        // animation here meant a toolkit screen with its animation switched off still animated on the way out.
+        this.exitIntro = subScreen() ? UiAnimation.subIntro() : UiAnimation.screenIntro();
     }
 
     /**

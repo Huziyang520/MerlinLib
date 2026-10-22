@@ -35,6 +35,20 @@ import net.minecraft.world.item.ItemStack;
  */
 public final class MerlinScreens {
 
+    /**
+     * Opens a screen, or closes the current one when {@code screen} is {@code null}.
+     *
+     * <p>Every screen switch in this line goes through here: the method that does it moved between 26.1 and
+     * 26.2 and only exists on one side, see {@link com.huziyang520.merlinlib.client.ScreenSwitcher}.
+     *
+     * @param screen the screen to show, or {@code null} to go back to the world
+     */
+    public static void show(net.minecraft.client.gui.screens.Screen screen) {
+        com.huziyang520.merlinlib.client.ScreenSwitcher.show(
+                net.minecraft.client.Minecraft.getInstance(), screen);
+    }
+
+
     private MerlinScreens() {
     }
 
@@ -160,7 +174,7 @@ public final class MerlinScreens {
         // inside a tick (the item use hook and the entity interaction hook), and on this line a screen set from
         // there is not shown until something forces a frame; queueing the call both guarantees it is shown on
         // the next client tick and avoids the extra render frame that made the dimming flicker.
-        minecraft.execute(() -> minecraft.setScreen(new ItemEditorScreen(null, held)));
+        minecraft.execute(() -> MerlinScreens.show(new ItemEditorScreen(null, held)));
     }
 
     /**
@@ -196,7 +210,7 @@ public final class MerlinScreens {
                     + "(client.toml: macros.enabled = false)");
             return;
         }
-        Minecraft.getInstance().execute(() -> Minecraft.getInstance().setScreen(new MacroScreen(parent)));
+        Minecraft.getInstance().execute(() -> MerlinScreens.show(new MacroScreen(parent)));
     }
 
     /**
@@ -247,7 +261,7 @@ public final class MerlinScreens {
         if (!mayOpenEditorLocally(player, true)) {
             return false;
         }
-        minecraft.execute(() -> minecraft.setScreen(new HealthEditorScreen(parent, target)));
+        minecraft.execute(() -> MerlinScreens.show(new HealthEditorScreen(parent, target)));
         return true;
     }
 }

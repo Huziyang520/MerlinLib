@@ -196,7 +196,7 @@ public class EnchantSelectionScreen extends VanillaScreen {
             return;
         }
         this.onPick.accept(this.filtered.get(index));
-        Minecraft.getInstance().setScreen(this.parent);
+        MerlinScreens.show(this.parent);
     }
 
     /**

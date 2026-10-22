@@ -260,11 +260,11 @@ public class ItemEditorScreen extends VanillaScreen {
 
         int half = layout.sliceWidth(2);
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.editor.add_enchant"),
-                button -> Minecraft.getInstance().setScreen(new EnchantSelectionScreen(this,
+                button -> MerlinScreens.show(new EnchantSelectionScreen(this,
                         this::addEnchantment, this.working)),
                 left, actionY, half));
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.editor.clear_enchant"),
-                button -> Minecraft.getInstance().setScreen(new DeleteEnchantsConfirmScreen(this,
+                button -> MerlinScreens.show(new DeleteEnchantsConfirmScreen(this,
                         this::clearEnchantments)),
                 layout.sliceX(1, 2), actionY, half));
 
@@ -537,7 +537,7 @@ public class ItemEditorScreen extends VanillaScreen {
         // only side that can persist it: a client side change alone is replaced by the next inventory sync.
         player.setItemInHand(InteractionHand.MAIN_HAND, this.working);
         ServerSender.send(new ItemEditPayload(this.working));
-        minecraft.setScreen(this.parent);
+        MerlinScreens.show(this.parent);
     }
 
     // ---------------------------------------------------------------- input
