@@ -88,6 +88,20 @@ public abstract class VanillaScreen extends Screen {
     }
 
     /** @return the content width this screen needs, measured from its translated labels */
+    /**
+     * The width the panel is actually built with.
+     *
+     * <p>{@link #contentWidth()} measures what the screen wants; this caps it, so a screen that measures a long
+     * piece of text does not stretch the panel across the window and leave its labels and controls at opposite
+     * ends. Every layout question a screen asks is answered by the layout object, so the cap is applied once
+     * here rather than in each screen.
+     *
+     * @return the panel width, never more than {@link VanillaUi#MAX_PANEL_WIDTH} or the window allows
+     */
+    protected int panelWidth() {
+        return Math.min(contentWidth(), Math.min(VanillaUi.MAX_PANEL_WIDTH, this.width - VanillaUi.PADDING));
+    }
+
     protected abstract int contentWidth();
 
     /** @return the content height this screen needs */
@@ -116,14 +130,14 @@ public abstract class VanillaScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-        this.layout = PanelLayout.centered(this, contentWidth(), contentHeight());
+        this.layout = PanelLayout.centered(this, panelWidth(), contentHeight());
         this.build(this.layout);
     }
 
     /** @return the layout, built on demand for the rare call before {@code init} */
     protected final PanelLayout layout() {
         if (this.layout == null) {
-            this.layout = PanelLayout.centered(this, contentWidth(), contentHeight());
+            this.layout = PanelLayout.centered(this, panelWidth(), contentHeight());
         }
         return this.layout;
     }

@@ -111,6 +111,23 @@ public final class VanillaUi {
      */
     public static final int CORNER_RADIUS = 2;
 
+    /**
+     * The width of a footer button.
+     *
+     * <p>The pair used to share the whole content width, so on a wide window "save" and "cancel" were several
+     * hundred pixels of button around a two word label. They keep this width now and sit against the right edge
+     * of the panel.
+     */
+    public static final int FOOTER_BUTTON_WIDTH = 120;
+
+    /**
+     * The widest a panel is allowed to get.
+     *
+     * <p>Screens measure their content and the panel grows to fit, but a long hint used to make it span the
+     * window, which pushed every control to the far right and left the labels alone on the other side.
+     */
+    public static final int MAX_PANEL_WIDTH = 480;
+
     // ------------------------------------------------------------------ colours (copied from vanilla)
 
     /** Panel frame: the black line around a container panel. */

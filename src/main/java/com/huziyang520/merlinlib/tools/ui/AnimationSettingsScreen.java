@@ -96,17 +96,15 @@ public final class AnimationSettingsScreen extends VanillaScreen {
         for (String key : rowKeys()) {
             widest = Math.max(widest, this.font.width(Component.translatable(key)) + 12 + CONTROL_WIDTH);
         }
-        for (String line : VanillaUi.wrap(this.font, Component.translatable(T + "hint").getString(),
-                Math.max(120, this.width - 40))) {
-            widest = Math.max(widest, this.font.width(line));
-        }
+        // Not the hint: it is wrapped to the panel width, and letting its unwrapped length decide the width
+        // made the panel span the window and separated every label from its switch.
         return Math.max(280, Math.min(widest + 24, this.width - 40));
     }
 
     @Override
     protected int contentHeight() {
         int hints = VanillaUi.wrap(this.font, Component.translatable(T + "hint").getString(),
-                Math.max(120, this.width - 40)).size() * 10;
+                Math.max(120, panelWidth())).size() * 10;
         return Math.min(12 + 8 + rowKeys().length * ROW + hints + 12 + VanillaUi.WIDGET_HEIGHT,
                 this.height - 40);
     }
@@ -158,11 +156,11 @@ public final class AnimationSettingsScreen extends VanillaScreen {
             button.setMessage(kindLabel(this.kind));
         }, controlX, rowY(4), CONTROL_WIDTH));
         int bottom = layout.contentBottom() - VanillaUi.WIDGET_HEIGHT;
-        int half = layout.sliceWidth(2);
+        int half = layout.footerWidth();
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.config.save"),
-                button -> this.save(), layout.sliceX(0, 2), bottom, half));
+                button -> this.save(), layout.footerX(0), bottom, half));
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.cancel"),
-                button -> this.onClose(), layout.sliceX(1, 2), bottom, half));
+                button -> this.onClose(), layout.footerX(1), bottom, half));
     }
 
     /** @return the row width, the same measurement the controls were placed with */

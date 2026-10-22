@@ -243,11 +243,11 @@ public final class NoticeSettingsScreen extends VanillaScreen {
 
         int bottom = layout.contentBottom() - VanillaUi.WIDGET_HEIGHT;
         this.hintY = bottom - 6 - 10;
-        int half = layout.sliceWidth(2);
+        int half = layout.footerWidth();
         this.save = this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.config.save"),
-                button -> this.exit(true), layout.sliceX(0, 2), bottom, half));
+                button -> this.exit(true), layout.footerX(0), bottom, half));
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.cancel"),
-                button -> this.exit(false), layout.sliceX(1, 2), bottom, half));
+                button -> this.exit(false), layout.footerX(1), bottom, half));
     }
 
     private static Component stateLabel(boolean enabled) {
