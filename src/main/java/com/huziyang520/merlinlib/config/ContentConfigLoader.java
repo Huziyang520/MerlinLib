@@ -378,17 +378,16 @@ public final class ContentConfigLoader {
     /**
      * Creates {@code config/MerlinLib} together with a documented sample file on first launch so the
      * feature is discoverable without reading the source code.
+     *
+     * <p>Only the content files are created here. The switches of the mod are not written into this folder
+     * any more: they are declared in {@link NeoSpecBackend} and the loader writes their own file below
+     * {@code config}, so a sample switch file here would be a second, silent copy of settings that nothing
+     * reads.
      */
     public static void ensureDirectory() {
         Path root = ConfigDirectory.root();
         try {
             Files.createDirectories(root);
-            for (String name : new String[] { TOML_CLIENT, TOML_SERVER }) {
-                Path file = root.resolve(name);
-                if (!Files.exists(file)) {
-                    Files.writeString(file, sampleToml(name), StandardCharsets.UTF_8);
-                }
-            }
             Path sample = root.resolve("enchantments.json");
             if (!Files.exists(sample)) {
                 Files.writeString(sample, SAMPLE_ENCHANTMENTS, StandardCharsets.UTF_8);
@@ -490,50 +489,6 @@ public final class ContentConfigLoader {
             }
             into.put(id, new EffectOverrides.Entry(color, enabled));
         }
-    }
-
-    /** Name of the client side switch file. */
-    public static final String TOML_CLIENT = "client.toml";
-    /** Name of the server side switch file. */
-    public static final String TOML_SERVER = "server.toml";
-
-    private static String sampleToml(String name) {
-        if (TOML_CLIENT.equals(name)) {
-            return """
-                    # MerlinLib client configuration.
-                    # Every option here only affects this client and takes effect immediately after saving.
-                    # Content definitions (enchantments, effects, potions) live in the .json files next to this one
-                    # and are applied on the server side with /reload.
-
-                    [hud]
-                    # Show the nominal damage of the weapon you just used near the crosshair.
-                    damage_display = true
-
-                    [floating_text]
-                    # How long a damage number stays visible, in ticks (20 ticks = 1 second).
-                    duration_ticks = 20
-                    # Base scale of a damage number, in the usual gui scale units.
-                    base_scale = 1.0
-                    # ARGB colours: normal hit and critical hit. 0xFFFFFFFF is opaque white.
-                    normal_color = 0xFFFFFFFF
-                    critical_color = 0xFFFFAA00
-                    """;
-        }
-        return """
-                # MerlinLib server configuration.
-                # This file is authoritative: the client only displays what the server allows.
-
-                # When true, only operators may use the testing toolkit.
-                restrict_tools_to_operators = false
-                # Master switch of the built in testing toolkit (test weapons, editors, macros).
-                enable_testing_toolkit = true
-                # Upper bound for the damage value of the test weapons.
-                max_test_weapon_damage = 100000
-                # Upper bound for enchantment levels set through the editor.
-                max_enchantment_level = 255
-                # Upper bound for the health editor, defaults to the java int limit.
-                max_health_value = 2147483647
-                """;
     }
 
     private static final String SAMPLE_EFFECTS = """

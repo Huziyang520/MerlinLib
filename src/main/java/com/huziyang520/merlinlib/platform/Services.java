@@ -48,8 +48,8 @@ public class Services {
     public static final ILootBridge LOOT = load(ILootBridge.class);
 
     /**
-     * Loader specific way of naming a mod, used by the join notice settings screen to show
-     * {@code Practical Enchantments} instead of {@code practical_enchantments}.
+     * Loader specific way of naming a mod, so a player reads {@code Practical Enchantments} instead of
+     * {@code practical_enchantments} wherever a mod id has to be shown.
      */
     public static final IModNameBridge MOD_NAMES = load(IModNameBridge.class);
 

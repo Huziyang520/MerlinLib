@@ -54,7 +54,7 @@ public final class ParticleDiagnostics {
         if (!firstDropLogged) {
             firstDropLogged = true;
             Constants.LOG.info("[MerlinLib] the particle limit is working: the first {} particle(s) were "
-                    + "dropped at the {} (client.toml: particles.limit_enabled = true)", dropped, source);
+                    + "dropped at the {} (merlinlib-client.toml: particles.limit_enabled = true)", dropped, source);
             lastSummary = System.currentTimeMillis();
             return;
         }

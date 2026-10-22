@@ -2,6 +2,8 @@ package com.huziyang520.merlinlib;
 
 import com.huziyang520.merlinlib.command.MerlinCommand;
 import com.huziyang520.merlinlib.config.ConfigManager;
+import com.huziyang520.merlinlib.config.ConfigScope;
+import com.huziyang520.merlinlib.config.NeoSpecBackend;
 import com.huziyang520.merlinlib.impl.PermissionGate;
 import com.huziyang520.merlinlib.network.DamageFeedbackPayload;
 import com.huziyang520.merlinlib.network.DamageFeedbackSink;
@@ -21,6 +23,8 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import com.huziyang520.merlinlib.tools.HealthCeiling;
@@ -37,6 +41,22 @@ public class MerlinLibNeoForge {
 
     public MerlinLibNeoForge(IEventBus eventBus, ModContainer modContainer) {
 
+        // The switches are declared as loader specifications, which is what makes the mod list show the
+        // "Config" button and the game build the screen from them. The two files are registered here rather
+        // than in a client-only class on purpose: the client one is a CLIENT type, so a dedicated server never
+        // loads it, and registering it unconditionally keeps the command that writes a client switch working
+        // in single player, where the integrated server shares this process.
+        NeoSpecBackend clientSpec = NeoSpecBackend.client();
+        NeoSpecBackend serverSpec = NeoSpecBackend.server();
+        modContainer.registerConfig(ModConfig.Type.CLIENT, clientSpec.spec(), clientSpec.name());
+        modContainer.registerConfig(ModConfig.Type.COMMON, serverSpec.spec(), serverSpec.name());
+        ConfigManager.setBackend(ConfigScope.CLIENT, clientSpec);
+        ConfigManager.setBackend(ConfigScope.SERVER, serverSpec);
+        // The files are read after this constructor returns, so the values are picked up from these events:
+        // without them the mod would run on the declared defaults until the next /reload.
+        eventBus.addListener(this::onConfigLoading);
+        eventBus.addListener(this::onConfigReloading);
+
         eventBus.addListener(this::onBuildCreativeTab);
         eventBus.addListener(this::onRegisterPayloads);
         NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
@@ -44,12 +64,38 @@ public class MerlinLibNeoForge {
         // A death respawn rebuilds the player and copies attribute base values only (restoreFrom calls
         // assignPermanentModifiers solely when restoreAll is true), so the ceiling is carried over here.
         NeoForge.EVENT_BUS.addListener(this::onPlayerClone);
-        // The mods list screen picks up the config button from the CLIENT entrypoint, not from here: a
+        // The mods list screen picks up the configuration screen from the CLIENT entrypoint, not from here: a
         // lambda that implements IConfigScreenFactory names Screen in its signature, so merely creating
         // one makes the dedicated server load a client-only class and NeoForge's RuntimeDistCleaner
         // aborts mod construction with "Attempted to load class net/minecraft/client/gui/screens/Screen
         // for invalid dist DEDICATED_SERVER". See MerlinLibNeoForgeClient.
         MerlinLib.init(eventBus);
+    }
+
+    /**
+     * Picks the values up the first time the loader reads each of the two files.
+     *
+     * <p>This is also the moment the file left behind by a build from before the loader stored the switches is
+     * imported: a value cannot be written into a specification before the loader has attached the file to it.
+     *
+     * @param event the loading event, fired once per file
+     */
+    private void onConfigLoading(ModConfigEvent.Loading event) {
+
+        ConfigManager.onConfigLoaded(event.getConfig());
+    }
+
+    /**
+     * Picks the values up again whenever a file changes on disk.
+     *
+     * <p>The loader watches both files, so a hand edit is applied the moment it is saved, without a restart
+     * and without {@code /reload}.
+     *
+     * @param event the reloading event, fired once per changed file
+     */
+    private void onConfigReloading(ModConfigEvent.Reloading event) {
+
+        ConfigManager.reload();
     }
 
     /**

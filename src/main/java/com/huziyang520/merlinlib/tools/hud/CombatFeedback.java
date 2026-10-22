@@ -40,7 +40,7 @@ import java.util.Map;
  *
  * <h2>Every switch is read where it is used</h2>
  *
- * <p>The two displays and all their parameters come from {@code client.toml} and are read at draw time,
+ * <p>The two displays and all their parameters come from the client configuration file and are read at draw time,
  * not cached in fields. That is what makes the configuration screen honest: switching damage numbers off
  * takes effect on the next frame, without a restart, and switching the crosshair number on takes effect
  * on the next hit.

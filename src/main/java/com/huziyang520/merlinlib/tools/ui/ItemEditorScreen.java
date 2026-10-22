@@ -112,20 +112,6 @@ import java.util.Map;
  */
 public class ItemEditorScreen extends VanillaScreen {
 
-    /**
-     * {@code true}: this is a toolkit screen (item editor, enchantment picker, health editor, macros), so it
-     * follows the toolkit animation switch rather than the configuration screen one. The two are separate on
-     * purpose: the configuration screens animate by default, while editing an item should not make the whole
-     * window jump every time.
-     *
-     * @return {@code true}, this screen is a toolkit screen
-     */
-    @Override
-    protected boolean subScreen() {
-        return true;
-    }
-
-
     /** Enchantment rows visible at once on a window tall enough; the rest is reached by scrolling. */
     private static final int MAX_ROWS = 5;
     /** Fewest enchantment rows a window too short for {@link #MAX_ROWS} still shows. */
@@ -664,7 +650,7 @@ public class ItemEditorScreen extends VanillaScreen {
         if (showsDamageRow() && this.damageBox != null) {
             // The typed value is clamped here as well as in the - / + buttons: typing bypasses the buttons,
             // and a value above the ceiling would be a way around the limit the server advertises. The
-            // ceiling itself is whatever server.toml says, up to the integer limit.
+            // ceiling itself is whatever merlinlib-common.toml says, up to the integer limit.
             int maximum = Math.max(1, ConfigManager.server().maxTestWeaponDamage());
             // Typing 2147483648 used to end up as 1 point of damage, because the ceiling is the integer limit and
             // anything above it failed to parse. One more than the maximum is a request for the maximum.

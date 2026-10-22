@@ -97,7 +97,7 @@ public final class MerlinScreens {
         if (!allowed) {
             String which = health ? "health editor" : "item editor";
             Constants.LOG.info("[MerlinLib] the {} was refused locally: this server requires command permission "
-                    + "for it (server.toml: security.*_requires_permission = true)", which);
+                    + "for it (merlinlib-common.toml: security.*_requires_permission = true)", which);
             player.displayClientMessage(Component.translatable("message.merlinlib.no_permission"), true);
         }
         return allowed;
@@ -118,7 +118,7 @@ public final class MerlinScreens {
         }
         if (!ConfigManager.server().testingToolkitEnabled()) {
             Constants.LOG.info("[MerlinLib] {} was requested but the testing toolkit is switched off "
-                    + "(server.toml: tools.enable_testing_toolkit = false)", "a toolkit screen");
+                    + "(merlinlib-common.toml: tools.enable_testing_toolkit = false)", "a toolkit screen");
             return false;
         }
         return true;
@@ -144,7 +144,7 @@ public final class MerlinScreens {
             return true;
         }
         Constants.LOG.info("[MerlinLib] {} is not a weapon, tool or piece of equipment, so the item editor "
-                + "refused it (server.toml: tools.allow_editing_all_items = false)", stack.getItem());
+                + "refused it (merlinlib-common.toml: tools.allow_editing_all_items = false)", stack.getItem());
         return false;
     }
 
@@ -221,7 +221,7 @@ public final class MerlinScreens {
      * Opens the item editor from the key binding.
      *
      * <p>The binding ships switched off ({@code editor.hotkey_enabled}), so the library can be installed
-     * without claiming a key. It can be switched on from the configuration screen or with
+     * without claiming a key. It can be switched on in the configuration file or with
      * {@code /merlinlib editorhotkey on}.
      */
     public static void openItemEditorFromHotkey() {
@@ -229,6 +229,40 @@ public final class MerlinScreens {
             return;
         }
         openItemEditor();
+    }
+
+    /**
+     * Opens the item editor from the {@code /merlinlib editor} command.
+     *
+     * <p>Deliberately not routed through {@link #openItemEditorFromHotkey()}: that method exists so a library
+     * does not claim a key by itself, while a command is an explicit request by the player. Everything else -
+     * whether the toolkit is on, whether this item may be edited, whether this server wants command permission
+     * - is decided exactly as it is for the hotkey.
+     */
+    public static void openItemEditorFromCommand() {
+        openItemEditor();
+    }
+
+    /**
+     * Opens the health editor from the {@code /merlinlib health} command.
+     *
+     * <p>The target is the entity in the crosshair, because that is the entity the player was pointing at
+     * before opening the chat; with nothing in the crosshair the player's own entity is used, which is the same
+     * thing a sneak right click does. The rules are not relaxed for the command: editing yourself still needs
+     * the health editor item, and the server still checks permission when the edit arrives.
+     */
+    public static void openHealthEditorFromCommand() {
+        Minecraft minecraft = Minecraft.getInstance();
+        Player player = minecraft.player;
+        if (player == null) {
+            return;
+        }
+        LivingEntity target = player;
+        if (minecraft.hitResult instanceof net.minecraft.world.phys.EntityHitResult hit
+                && hit.getEntity() instanceof LivingEntity living) {
+            target = living;
+        }
+        openHealthEditor(null, target);
     }
 
     /**
@@ -247,7 +281,7 @@ public final class MerlinScreens {
         }
         if (!ConfigManager.client().macrosEnabled()) {
             Constants.LOG.info("[MerlinLib] the macro screen was requested but macros are switched off "
-                    + "(client.toml: macros.enabled = false)");
+                    + "(merlinlib-client.toml: macros.enabled = false)");
             return;
         }
         Minecraft.getInstance().setScreen(new MacroScreen(parent));
@@ -284,7 +318,7 @@ public final class MerlinScreens {
             // right click into a self edit, which also made the item look pointless.
             //
             // Both refusals are silent towards the player on purpose: the requirement is already stated in the
-            // item's own tooltip and on the config screen, and repeating it in the middle of the screen on
+            // item's own tooltip and on the configuration screen, and repeating it in the middle of the screen on
             // every stray right click is noise. The log lines stay, because "why does nothing happen" is a
             // question the log can answer and the screen cannot.
             Constants.LOG.info("[MerlinLib] a self edit was refused: the health editor item must be held to "
@@ -293,7 +327,7 @@ public final class MerlinScreens {
         }
         if (ConfigManager.server().healthEditorRequiresItem() && !holdingItem) {
             Constants.LOG.info("[MerlinLib] the health editor needs the health editor item held "
-                    + "(server.toml: tools.health_editor_requires_item = true)");
+                    + "(merlinlib-common.toml: tools.health_editor_requires_item = true)");
             return false;
         }
         // Permission is asked last on purpose: a bare-handed sneak right click is not a permission problem, and

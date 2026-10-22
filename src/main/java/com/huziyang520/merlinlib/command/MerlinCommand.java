@@ -4,6 +4,7 @@ import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.api.EnchantmentInfo;
 import com.huziyang520.merlinlib.api.MerlinApi;
 import com.huziyang520.merlinlib.config.ConfigManager;
+import com.huziyang520.merlinlib.config.ConfigScope;
 import com.huziyang520.merlinlib.config.ContentSnapshot;
 import com.huziyang520.merlinlib.content.EnchantmentDraft;
 import com.huziyang520.merlinlib.datapack.GeneratedPack;
@@ -48,7 +49,14 @@ import java.util.stream.Collectors;
  *     <li>{@code /merlinlib list} - every MerlinLib managed enchantment that is really in the registry</li>
  *     <li>{@code /merlinlib info <id>} - effective source, enabled flag, level and weight</li>
  *     <li>{@code /merlinlib book <id> [level]} - hands out the enchanted book, operator only</li>
+ *     <li>{@code /merlinlib editorhotkey on|off} - switches the item editor hotkey, operator only</li>
  * </ul>
+ *
+ * <p>The three commands that open a toolkit screen - {@code /merlinlib editor}, {@code /merlinlib health} and
+ * {@code /merlinlib macro} - are registered on the client, beside this class in
+ * {@code MerlinLibNeoForgeClient}: a screen can only be opened on the client, so a server command that claims
+ * to open one would have nothing to run. NeoForge merges the two trees under the same name, and an argument
+ * only the server knows still reaches the server.
  */
 public final class MerlinCommand {
 
@@ -90,20 +98,20 @@ public final class MerlinCommand {
     /**
      * Switches the item editor hotkey on or off.
      *
-     * <p>The binding itself always exists, so this only decides whether pressing it opens the editor. It
-     * writes {@code editor.hotkey_enabled} into {@code client.toml} and reloads, which is why the switch
-     * takes effect immediately: the client reads that value when the key is pressed, not at startup.
+     * <p>The binding itself always exists, so this only decides whether pressing it opens the editor. It writes
+     * {@code editor.hotkey_enabled} into the client configuration and reloads, which is why the switch takes
+     * effect immediately: the client reads that value when the key is pressed, not at startup.
      *
-     * <p>On a dedicated server the file that is written is the one next to the server, which belongs to
-     * the machine running the command; a player's own hotkey is their own file and their own configuration
-     * screen.
+     * <p>The same switch is on the configuration screen the mod list opens, so this command is a shortcut for
+     * players who would rather type it than click it.
      *
      * @param context the command context
      * @param enabled the value to write
      * @return 1, the standard success code
      */
     private static int setEditorHotkey(CommandContext<CommandSourceStack> context, boolean enabled) {
-        ConfigManager.saveClient(java.util.Map.of("editor.hotkey_enabled", Boolean.toString(enabled)));
+        ConfigManager.write(ConfigScope.CLIENT,
+                java.util.Map.of("editor.hotkey_enabled", Boolean.toString(enabled)));
         context.getSource().sendSuccess(() -> Component.translatable(enabled
                 ? "command.merlinlib.editorhotkey.on"
                 : "command.merlinlib.editorhotkey.off"), false);

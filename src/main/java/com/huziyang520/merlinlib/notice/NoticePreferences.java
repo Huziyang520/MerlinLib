@@ -6,7 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Per mod switches for join notices, stored in {@code server.toml}.
+ * Per mod switches for join notices, stored in the common configuration file.
  *
  * <h2>Why the server holds them</h2>
  *
@@ -23,7 +23,7 @@ import java.util.Map;
  */
 public final class NoticePreferences {
 
-    /** The {@code server.toml} key holding every override. */
+    /** The key in the common configuration file holding every override. */
     public static final String KEY = "notices.per_mod";
 
     private NoticePreferences() {

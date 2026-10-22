@@ -11,22 +11,26 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
- * Tiny reader for the TOML subset MerlinLib writes: comments, blank lines, {@code [section]} headers
- * and {@code key = value} pairs of booleans, integers, floats and quoted strings.
+ * Tiny reader for the flat TOML file MerlinLib used before the loader stored its switches.
  *
- * <p>Why not a full TOML library: it would have to be bundled into the Fabric jar (NeoForge provides
- * one, Fabric does not), and the only thing MerlinLib needs from TOML is a flat, commented switch
- * file. The supported syntax is a strict subset of TOML, so the files stay readable and editable with
- * any other TOML tooling.
+ * <p>The switches themselves are declared in a {@link NeoSpecBackend} specification now, so the loader owns
+ * their file, writes the comments and repairs whatever no longer matches. This reader survives for one job:
+ * reading a file left behind by an older build so its values can be carried over once - see
+ * {@link NeoSpecBackend#importLegacy()}. It understands the subset the old writer produced: comments, blank
+ * lines, {@code [section]} headers and {@code key = value} pairs of booleans, integers, floats and quoted
+ * strings.
  *
- * <p>Files are only ever written when missing, never rewritten: hand written comments are never lost.
- * Reading problems are collected as {@link ContentError}s and the affected key silently falls back to
- * its default, so one typo cannot stop the game from starting.
+ * <p>It is also an implementation of {@link ConfigReader}, so the reader used for the import and the one used
+ * for the live file answer exactly the same questions - a value read from an old file means the same thing as
+ * a value read from the new one.
+ *
+ * <p>A missing or unreadable file is never fatal: reading problems are collected as {@link ContentError}s and
+ * the affected key falls back to its default.
  */
-public final class TomlFile {
+public final class TomlFile implements ConfigReader {
+
 
     private final Path path;
     private final Map<String, String> values = new LinkedHashMap<>();
@@ -59,121 +63,6 @@ public final class TomlFile {
             file.errors.add(new ContentError(path.getFileName().toString(), "<root>", "-", "a readable file", String.valueOf(exception.getMessage())));
         }
         return file;
-    }
-
-    /**
-     * Writes selected values back into an existing file, in place.
-     *
-     * <p>Only the values named in {@code overrides} are touched: every comment, blank line and order is
-     * kept, so the configuration screen can save a switch without destroying the documentation the file
-     * exists to carry. A key that is not in the file yet is appended, under its section header, which is
-     * what makes a file written by an older version gain new options without being reset.
-     *
-     * <p>Keys are addressed the same way as when reading: {@code section.key}, or just {@code key} for a
-     * value before any section header.
-     *
-     * @param path      the file to update, created from {@code defaults} when missing
-     * @param defaults  the template written when the file does not exist yet
-     * @param overrides the values to replace, keyed by {@code section.key}
-     */
-    public static void rewrite(Path path, String defaults, Map<String, String> overrides) {
-        if (overrides.isEmpty()) {
-            return;
-        }
-        if (!Files.exists(path)) {
-            write(path, defaults);
-        }
-
-        List<String> lines;
-        try {
-            lines = new ArrayList<>(Files.readAllLines(path, StandardCharsets.UTF_8));
-        } catch (IOException exception) {
-            return;
-        }
-
-        Map<String, String> pending = new LinkedHashMap<>(overrides);
-        String section = "";
-        for (int i = 0; i < lines.size(); i++) {
-            String trimmed = lines.get(i).trim();
-            if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
-                section = trimmed.substring(1, trimmed.length() - 1).trim();
-                continue;
-            }
-            if (trimmed.isEmpty() || trimmed.startsWith("#")) {
-                continue;
-            }
-            int equals = trimmed.indexOf('=');
-            if (equals < 0) {
-                continue;
-            }
-            String key = trimmed.substring(0, equals).trim();
-            String full = section.isEmpty() ? key : section + "." + key;
-            if (pending.containsKey(full)) {
-                lines.set(i, key + " = " + pending.remove(full));
-            }
-        }
-
-        for (Map.Entry<String, String> entry : pending.entrySet()) {
-            String key = entry.getKey();
-            int dot = key.lastIndexOf('.');
-            String prefix = dot < 0 ? "" : key.substring(0, dot);
-            String name = dot < 0 ? key : key.substring(dot + 1);
-            insert(lines, prefix, name + " = " + entry.getValue());
-        }
-
-        try {
-            Files.write(path, lines, StandardCharsets.UTF_8);
-        } catch (IOException exception) {
-            // A read only file must not break the screen: the values simply stay as they were on disk.
-            return;
-        }
-    }
-
-    /**
-     * Inserts a line into the section it belongs to, creating the header only when it is missing.
-     *
-     * <p>Appending new keys at the end of the file instead would add a second header for a section that is
-     * already there. This reader copes with that, but a file holding two {@code [tools]} tables is rejected
-     * by strict TOML tools, and a configuration file that other programs refuse to open is a bug of ours.
-     *
-     * @param lines   the file's lines, modified in place
-     * @param section the section name, empty for a key before any header
-     * @param line    the complete {@code key = value} line to insert
-     */
-    private static void insert(List<String> lines, String section, String line) {
-        if (section.isEmpty()) {
-            lines.add(0, line);
-            return;
-        }
-        String header = "[" + section + "]";
-        int headerIndex = -1;
-        for (int index = 0; index < lines.size(); index++) {
-            if (lines.get(index).trim().equals(header)) {
-                headerIndex = index;
-                break;
-            }
-        }
-        if (headerIndex < 0) {
-            if (!lines.isEmpty() && !lines.get(lines.size() - 1).isBlank()) {
-                lines.add("");
-            }
-            lines.add(header);
-            lines.add(line);
-            return;
-        }
-        // Walk to the end of the section: past comments and blank lines, stopping at the next header.
-        int insertAt = headerIndex + 1;
-        for (int index = headerIndex + 1; index < lines.size(); index++) {
-            String trimmed = lines.get(index).trim();
-            if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
-                break;
-            }
-            if (trimmed.isEmpty() || trimmed.startsWith("#")) {
-                continue;
-            }
-            insertAt = index + 1;
-        }
-        lines.add(insertAt, line);
     }
 
     private static void write(Path path, String content) {
@@ -229,10 +118,6 @@ public final class TomlFile {
             return value.substring(1, value.length() - 1);
         }
         return value;
-    }
-
-    private Optional<String> raw(String key) {
-        return Optional.ofNullable(this.values.get(key));
     }
 
     public boolean getBoolean(String key, boolean fallback) {
