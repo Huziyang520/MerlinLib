@@ -456,16 +456,16 @@ public final class VanillaUi {
      */
     public static EditBox field(Font font, int x, int y, int width, Component label, String value,
                                 int maxLength) {
-                                // Inset by one pixel on every side, so the painted frame lands on the caller's rectangle.
-                                //
-                                // Evidence, not taste: the vanilla edit box paints its border one pixel OUTSIDE its own bounds - its
-                                // render pass starts with fill(getX() - 1, getY() - 1, getX() + width + 1, getY() + height + 1, ...)
-                                // and then fills the inner rectangle - while a vanilla Button paints inside its bounds. A field created
-                                // with the same bounds as the button beside it was therefore one pixel wider on the left and on the
-                                // right, and one pixel taller at the top and bottom, which is exactly the "the number box is a pixel
-                                // wider than the buttons" report. With the inset the painted frame is x..x+width by y..y+height,
-                                // identical to the button it sits beside.
-                                EditBox box = new EditBox(font, x + 1, y + 1, width - 2, WIDGET_HEIGHT - 2, label);
+        // Full size, unlike the 1.20.1 line: on this line the frame is a nine slice sprite drawn INSIDE the
+        // widget.
+        //
+        // Evidence: `javap -c net.minecraft.client.gui.components.EditBox` shows the render pass calling
+        // blitSprite(SPRITES.get(active, focused), getX(), getY(), getWidth(), getHeight()) - the frame
+        // occupies exactly the widget rectangle, the same rectangle a vanilla Button paints its sprite into.
+        // 1.20.1 had no sprite here and filled a rectangle one pixel larger than the widget, which is why
+        // that line insets the box and this one does not. Insetting here made the field one pixel smaller
+        // than the buttons beside it on every side - the vertical misalignment reported against this line.
+        EditBox box = new EditBox(font, x, y, width, WIDGET_HEIGHT, label);
         box.setMaxLength(maxLength);
         box.setValue(value);
         return box;

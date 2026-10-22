@@ -19,6 +19,20 @@ import java.util.List;
  */
 public class DeleteEnchantsConfirmScreen extends VanillaScreen {
 
+    /**
+     * {@code true}: this is a toolkit screen (item editor, enchantment picker, health editor, macros), so it
+     * follows the toolkit animation switch rather than the configuration screen one. The two are separate on
+     * purpose: the configuration screens animate by default, while editing an item should not make the whole
+     * window jump every time.
+     *
+     * @return {@code true}, this screen is a toolkit screen
+     */
+    @Override
+    protected boolean subScreen() {
+        return true;
+    }
+
+
     private static final int BUTTON_WIDTH = 90;
     private static final int MIN_CONTENT_WIDTH = 200;
 

@@ -122,6 +122,10 @@ public abstract class VanillaScreen extends Screen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         beginIntro(graphics);
+        // Inside the transform on purpose: the recessed list areas belong to the content and have to move with
+        // the rows they sit behind. Drawn with the background they stayed pinned while the rows slid, which is
+        // what made an empty list look detached from its own frame while a screen opened.
+        drawContentBackground(graphics);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
         renderContent(graphics, mouseX, mouseY, partialTick);
         endIntro(graphics);
@@ -169,7 +173,6 @@ public abstract class VanillaScreen extends Screen {
         if (drawsPanel() && this.width > 0 && this.height > 0) {
             layout().draw(graphics);
         }
-        drawContentBackground(graphics);
     }
 
     /**

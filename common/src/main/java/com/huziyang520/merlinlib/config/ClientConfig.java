@@ -79,18 +79,21 @@ public final class ClientConfig {
             animation_enabled = true
             # Which animation to use: 0 = pop, 1 = slide up, 2 = slide from the side, 3 = fade in and out.
             animation_kind = 0
-            # The three places the animation is used, each with a switch of its own so one can be turned off
-            # without losing the others. All three are off as a group when animation_enabled is false.
+            # Where the animation is used, each with a switch of its own so one can be turned off without
+            # losing the others. All of them are off as a group when animation_enabled is false.
+            # animation_screen: the configuration screens, on by default.
+            # animation_sub: the toolkit screens (item editor, enchantment picker, health editor, macros),
+            # off by default so editing an item does not animate the whole window.
             animation_screen = true
             animation_tab = true
-            animation_sub = true
+            animation_sub = false
             # File layout version. Written by the mod, read only to bring a file from an older build up to the
             # current defaults; do not set it back by hand.
-            config_version = 1
+            config_version = 2
             """;
 
     /** The file layout this build writes; see the migration in {@link #load()}. */
-    private static final int CONFIG_VERSION = 1;
+    private static final int CONFIG_VERSION = 2;
 
     private boolean crosshairDamage;
     private int crosshairDamageTicks = 20;
@@ -111,7 +114,7 @@ public final class ClientConfig {
     private int uiAnimationKind;
     private boolean animationScreen = true;
     private boolean animationTab = true;
-    private boolean animationSub = true;
+    private boolean animationSub = false;
     private List<ContentError> errors = List.of();
 
     public static ClientConfig load() {
@@ -128,6 +131,12 @@ public final class ClientConfig {
             overrides.put("gui.config_version", Integer.toString(CONFIG_VERSION));
             if (file.getBoolean("floating_text.enabled", true)) {
                 overrides.put("floating_text.enabled", "false");
+            }
+            // Layout 2 splits the animation into the configuration screens, which stay animated, and the toolkit
+            // screens (item editor, macro, health editor), which no longer are by default. A file that still
+            // holds the old shared default of true is moved once; a value the player picked is left alone.
+            if (file.getBoolean("gui.animation_sub", true)) {
+                overrides.put("gui.animation_sub", "false");
             }
             TomlFile.rewrite(path(), DEFAULTS, overrides);
             Constants.LOG.info("[MerlinLib] client.toml migrated to layout {}: {}",
@@ -154,7 +163,7 @@ public final class ClientConfig {
         config.uiAnimationKind = file.getInt("gui.animation_kind", 0, 0, 3);
         config.animationScreen = file.getBoolean("gui.animation_screen", true);
         config.animationTab = file.getBoolean("gui.animation_tab", true);
-        config.animationSub = file.getBoolean("gui.animation_sub", true);
+        config.animationSub = file.getBoolean("gui.animation_sub", false);
         config.errors = file.errors();
         return config;
     }

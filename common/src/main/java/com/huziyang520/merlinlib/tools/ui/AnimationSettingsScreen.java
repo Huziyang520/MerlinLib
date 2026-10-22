@@ -63,10 +63,6 @@ public final class AnimationSettingsScreen extends VanillaScreen {
         return false;
     }
 
-    @Override
-    protected boolean subScreen() {
-        return true;
-    }
 
     /**
      * The labels of the rows, in order.
