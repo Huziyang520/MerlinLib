@@ -321,7 +321,7 @@ public class ItemEditorScreen extends VanillaScreen {
         this.list = new ScrollArea(left, listTop, content, listHeight, LIST_ROW);
         this.list.setContentHeight(this.rows.size() * LIST_ROW);
 
-        int half = layout.sliceWidth(2);
+        int half = layout.footerWidth();
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.editor.add_enchant"),
                 button -> Minecraft.getInstance().setScreen(new EnchantSelectionScreen(this,
                         this::addEnchantment, this.working)),
@@ -329,12 +329,12 @@ public class ItemEditorScreen extends VanillaScreen {
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.editor.clear_enchant"),
                 button -> Minecraft.getInstance().setScreen(new DeleteEnchantsConfirmScreen(this,
                         this::clearEnchantments)),
-                layout.sliceX(1, 2), actionY, half));
+                layout.footerX(1), actionY, half));
 
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.done"), button -> this.save(),
                 left, bottom, half));
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.cancel"), button -> this.onClose(),
-                layout.sliceX(1, 2), bottom, half));
+                layout.footerX(1), bottom, half));
 
         buildRowControls();
         layoutRows();

@@ -128,7 +128,7 @@
   "gui.merlinlib.config.reset.confirm.title": "Are you sure?",
   "gui.merlinlib.config.reset.confirm.message": "Every MerlinLib setting, client and server, goes back to its default (custom keys, macros, brightness and animation settings are lost).",
   "gui.merlinlib.anim.title": "Interface animation",
-  "gui.merlinlib.anim.enabled": "Animate the interface",
+  "gui.merlinlib.anim.enabled": "Enable animations",
   "gui.merlinlib.anim.screen": "Configuration screens: opening / closing",
   "gui.merlinlib.anim.tab": "Slide on tab switch",
   "gui.merlinlib.anim.sub": "Toolkit screens: opening / closing",
