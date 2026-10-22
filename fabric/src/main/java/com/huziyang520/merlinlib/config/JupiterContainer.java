@@ -63,6 +63,10 @@ public final class JupiterContainer extends FileConfigContainer {
                 group.addEntry(entry(option, ClientOptions.valueOf(option, values)));
             }
         }
+        // One tab holding the way into the join notice page: the per mod switches are not values Jupiter can
+        // list, because the set of mods is only known at runtime.
+        ConfigGroup notices = createTab("notices", Component.translatable("config.merlinlib.notices"));
+        notices.addEntry(JupiterNoticesButton.create());
     }
 
     /**

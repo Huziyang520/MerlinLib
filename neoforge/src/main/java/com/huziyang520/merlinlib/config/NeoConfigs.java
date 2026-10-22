@@ -190,9 +190,6 @@ public final class NeoConfigs {
 
         spec.push("notices")
                 .bool("enabled", true, "Show the join notices business mods registered through MerlinLib.")
-                .text("per_mod", "",
-                        "Per mod switches as \"<modid>=true;<modid>=false>\". A mod that is not listed uses the "
-                                + "default it declared.")
                 .pop();
     }
 }

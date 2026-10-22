@@ -1,6 +1,7 @@
 package com.huziyang520.merlinlib;
 
 import com.huziyang520.merlinlib.config.ConfigManager;
+import com.huziyang520.merlinlib.config.NoticeSettings;
 import com.huziyang520.merlinlib.content.BuiltInContent;
 import com.huziyang520.merlinlib.impl.ContentManager;
 import com.huziyang520.merlinlib.tools.HealthEditorItem;
@@ -64,6 +65,11 @@ public class MerlinLib {
         LootInjector.install();
         // Join notices: registered from here, so a business mod may have registered its own before or after.
         NoticeManager.install();
+        // Reads the per mod notice switches, and imports the old notices.per_mod string the first time it
+        // runs. This happens while the mod is still being constructed on purpose: NeoForge rewrites
+        // server.toml from its own spec right after the construction phase, and the old key is no longer
+        // declared there, so a read that waited until after the load would find nothing to import.
+        NoticeSettings.init();
         // Says which feature flags put a world in the "experimental settings" category. The generated datapack
         // declares none, so when this line appears the flag came from a data pack the world has selected - and
         // the log names it, instead of leaving it to be guessed.
@@ -114,8 +120,8 @@ public class MerlinLib {
      * <p>Sent once per save and per player, and switched off by {@code general.notice_enabled} in
      * {@code client.toml}: the switch is read here, right after the configuration has been read, so turning
      * it off takes effect on the next launch. Registered as a notice rather than as a plain chat message so
-     * that the server's notice switches - the global one and the per mod one in {@code server.toml} - apply
-     * to it exactly like they apply to a business mod's notice.
+     * that the server's notice switches - the global one in {@code server.toml} and the per mod one in
+     * {@code notices.toml} - apply to it exactly like they apply to a business mod's notice.
      */
     private static void registerOwnNotices() {
         if (!ConfigManager.client().noticeEnabled()) {

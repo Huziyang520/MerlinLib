@@ -215,6 +215,20 @@ public final class MerlinScreens {
     }
 
     /**
+     * Opens the join notice switches.
+     *
+     * <p>A page of MerlinLib's own rather than a platform configuration screen: the switches are per mod and
+     * the mods are only known at runtime, which is something the configuration screens of both loaders
+     * cannot express. Every entry point - {@code /merlinlib notices} and the button in the Cloth / Jupiter
+     * screen - goes through here, so all of them show the same page.
+     *
+     * @param parent the screen to return to, or {@code null} to resume the game
+     */
+    public static void openNoticesScreen(Screen parent) {
+        Minecraft.getInstance().setScreenAndShow(new NoticesScreen(parent));
+    }
+
+    /**
      * Opens the health editor for one entity, when it is allowed.
      *
      * <p>Whether the health editor item has to be held is answered here, from the main hand, rather than

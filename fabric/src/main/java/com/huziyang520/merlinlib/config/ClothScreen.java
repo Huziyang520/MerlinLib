@@ -1,10 +1,13 @@
 package com.huziyang520.merlinlib.config;
 
 import com.huziyang520.merlinlib.util.MerlinColor;
+import com.huziyang520.merlinlib.tools.ui.MerlinScreens;
+import com.huziyang520.merlinlib.tools.ui.vanilla.VanillaUi;
 import me.shedaniel.clothconfig2.api.AbstractConfigListEntry;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -50,6 +53,16 @@ public final class ClothScreen {
                 category.addEntry(entry(entries, option, ClientOptions.valueOf(option, current), pending));
             }
         }
+
+        // The per mod join notice switches cannot be listed here: which mods registered a notice is only
+        // known at runtime, so that page is MerlinLib's own screen and this tab is the way into it.
+        ConfigCategory notices = builder.getOrCreateCategory(
+                Component.translatable("config.merlinlib.notices"));
+        notices.addEntry(new ClothNoticeButtonEntry(Component.translatable("config.merlinlib.notices"),
+                Button.builder(Component.translatable("gui.merlinlib.notices.open"),
+                                button -> MerlinScreens.openNoticesScreen(parent))
+                        .bounds(0, 0, 150, VanillaUi.WIDGET_HEIGHT)
+                        .build()));
 
         builder.setSavingRunnable(() -> {
             if (pending.isEmpty()) {

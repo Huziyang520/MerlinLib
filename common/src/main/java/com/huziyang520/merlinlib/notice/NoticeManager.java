@@ -2,6 +2,7 @@ package com.huziyang520.merlinlib.notice;
 
 import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.config.ConfigManager;
+import com.huziyang520.merlinlib.config.NoticeSettings;
 import com.huziyang520.merlinlib.config.ServerConfig;
 import com.huziyang520.merlinlib.platform.Services;
 import net.minecraft.network.chat.Component;
@@ -75,7 +76,7 @@ public final class NoticeManager {
         }
         int sent = 0;
         for (NoticeEntry entry : all(server)) {
-            if (!NoticePreferences.isEnabled(config, entry)) {
+            if (!NoticeSettings.isEnabled(entry.owner(), entry.enabledByDefault())) {
                 continue;
             }
             if (!shouldSend(level, player, entry)) {

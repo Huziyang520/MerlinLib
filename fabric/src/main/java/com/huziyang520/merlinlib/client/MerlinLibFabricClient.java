@@ -115,6 +115,11 @@ public class MerlinLibFabricClient implements ClientModInitializer {
                                     context.getSource().sendError(
                                             Component.translatable("message.merlinlib.config.needs_screen"));
                                     return 0;
+                                }))
+                        .then(ClientCommands.literal("notices")
+                                .executes(context -> {
+                                    MerlinScreens.openNoticesScreen(null);
+                                    return 1;
                                 }))));
 
         // Sneak using an entity opens the health editor for it.
