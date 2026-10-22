@@ -113,10 +113,6 @@ public final class NoticeSettingsScreen extends VanillaScreen {
         return false;
     }
 
-    @Override
-    protected boolean subScreen() {
-        return true;
-    }
 
     // ---------------------------------------------------------------- the list
 

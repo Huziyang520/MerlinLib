@@ -92,17 +92,20 @@ public final class ClientConfig {
             + "animation_enabled = true\n"
             + "# Which animation to use: 0 = pop, 1 = slide up, 2 = slide from the side, 3 = fade in and out.\n"
             + "animation_kind = 0\n"
-            + "# The three places the animation is used, each with a switch of its own so one can be turned off\n"
-            + "# without losing the others. All three are off as a group when animation_enabled is false.\n"
+            + "# Where the animation is used, each with a switch of its own so one can be turned off without\n"
+            + "# losing the others. All of them are off as a group when animation_enabled is false.\n"
+            + "# animation_screen: the configuration screens, on by default.\n"
+            + "# animation_sub: the toolkit screens (item editor, enchantment picker, health editor, macros),\n"
+            + "# off by default so editing an item does not animate the whole window.\n"
             + "animation_screen = true\n"
             + "animation_tab = true\n"
-            + "animation_sub = true\n"
+            + "animation_sub = false\n"
             + "# File layout version. Written by the mod, read only to bring a file from an older build up to the\n"
             + "# current defaults; do not set it back by hand.\n"
-            + "config_version = 1\n";
+            + "config_version = 3\n";
 
     /** The file layout this build writes; see the migration in {@link #load()}. */
-    private static final int CONFIG_VERSION = 2;
+    private static final int CONFIG_VERSION = 3;
 
     /** Whether a very large maximum health is drawn as one heart plus the numbers. */
     public boolean hudCollapse() {
@@ -154,7 +157,7 @@ public final class ClientConfig {
     private int uiAnimationKind;
     private boolean animationScreen = true;
     private boolean animationTab = true;
-    private boolean animationSub = true;
+    private boolean animationSub = false;
     private List<ContentError> errors = List.of();
 
     public static ClientConfig load() {
@@ -169,11 +172,17 @@ public final class ClientConfig {
         if (file.getInt("gui.config_version", 0, 0, Integer.MAX_VALUE) < CONFIG_VERSION) {
             java.util.Map<String, String> overrides = new java.util.LinkedHashMap<>();
             overrides.put("gui.config_version", Integer.toString(CONFIG_VERSION));
-                if (!file.getBoolean("hud.armour_auto_dodge", true)) {
-                    overrides.put("hud.armour_auto_dodge", "true");
-                }
+            if (!file.getBoolean("hud.armour_auto_dodge", true)) {
+                overrides.put("hud.armour_auto_dodge", "true");
+            }
             if (file.getBoolean("floating_text.enabled", true)) {
                 overrides.put("floating_text.enabled", "false");
+            }
+            // Layout 3 splits the animation into the configuration screens, which stay animated, and the toolkit
+            // screens (item editor, macro, health editor), which no longer are by default. A file that still
+            // holds the old shared default of true is moved once; a value the player picked is left alone.
+            if (file.getBoolean("gui.animation_sub", true)) {
+                overrides.put("gui.animation_sub", "false");
             }
             TomlFile.rewrite(path(), DEFAULTS, overrides);
             Constants.LOG.info("[MerlinLib] client.toml migrated to layout {}: {}",
@@ -203,7 +212,7 @@ public final class ClientConfig {
         config.uiAnimationKind = file.getInt("gui.animation_kind", 0, 0, 3);
         config.animationScreen = file.getBoolean("gui.animation_screen", true);
         config.animationTab = file.getBoolean("gui.animation_tab", true);
-        config.animationSub = file.getBoolean("gui.animation_sub", true);
+        config.animationSub = file.getBoolean("gui.animation_sub", false);
         config.errors = file.errors();
         return config;
     }
