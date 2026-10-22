@@ -34,7 +34,6 @@ import java.util.List;
 public class DeleteEnchantsConfirmScreen extends VanillaScreen {
 
 
-    private static final int BUTTON_WIDTH = 90;
     private static final int MIN_CONTENT_WIDTH = 200;
 
     private final Screen parent;
@@ -58,8 +57,10 @@ public class DeleteEnchantsConfirmScreen extends VanillaScreen {
     @Override
     protected int contentWidth() {
         List<Component> labels = List.of(this.title, Component.translatable("gui.merlinlib.confirm.warning"));
-        return Math.max(MIN_CONTENT_WIDTH,
-                VanillaUi.labelWidth(this.font, labels) + VanillaUi.PADDING + BUTTON_WIDTH * 2 + VanillaUi.GAP);
+        // The two buttons share the content width in equal halves, so there is no separate "two buttons plus a
+        // gap" term any more: the panel only has to be wide enough for the warning above them and for two
+        // usable halves.
+        return Math.max(MIN_CONTENT_WIDTH, VanillaUi.labelWidth(this.font, labels));
     }
 
     @Override
@@ -71,13 +72,15 @@ public class DeleteEnchantsConfirmScreen extends VanillaScreen {
     protected void build(PanelLayout layout) {
         layout.gap(12 + 4 + 12 + 10);
         int y = layout.row(VanillaUi.WIDGET_HEIGHT);
+        // Equal halves, flush with both edges of the content: the same treatment every screen's footer gets.
+        int wide = layout.sliceWidth(2);
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.confirm.delete"),
                 button -> {
                     this.onConfirm.run();
                     this.onClose();
-                }, layout.left(), y, BUTTON_WIDTH));
+                }, layout.left(), y, wide));
         Button cancel = this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.cancel"),
-                button -> this.onClose(), layout.right() - BUTTON_WIDTH, y, BUTTON_WIDTH));
+                button -> this.onClose(), layout.sliceX(1, 2), y, wide));
         this.setInitialFocus(cancel);
     }
 

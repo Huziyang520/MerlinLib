@@ -105,7 +105,7 @@ public final class ClientConfig {
             + "enabled = true\n";
 
     /** The file layout this build writes; see the migration in {@link #load()}. */
-    private static final int CONFIG_VERSION = 4;
+    static final int CONFIG_VERSION = 4;
 
     /** Whether a very large maximum health is drawn as one heart plus the numbers. */
     public boolean hudCollapse() {

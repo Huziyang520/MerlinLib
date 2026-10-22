@@ -135,7 +135,7 @@ public final class ServerConfig {
     }
 
     /** The file layout this build writes; see {@link #migrate(ConfigReader)}. */
-    private static final int CONFIG_VERSION = 5;
+    static final int CONFIG_VERSION = 5;
 
     /** The layout that introduced the current defaults of the toolkit ceilings. */
     private static final int CEILING_LAYOUT = 4;

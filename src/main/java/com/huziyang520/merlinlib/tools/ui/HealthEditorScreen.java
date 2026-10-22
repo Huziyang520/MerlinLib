@@ -131,11 +131,12 @@ public class HealthEditorScreen extends VanillaScreen {
         layout.gap(10 + 10 + 10);
 
         int bottom = layout.row(VanillaUi.WIDGET_HEIGHT);
-        int half = layout.footerWidth();
+        // Full width halves, flush with both edges: same size, same height, symmetric about the centre.
+        int wide = layout.sliceWidth(2);
         this.confirm = this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.health.confirm"),
-                button -> this.send(), left, bottom, half));
+                button -> this.send(), left, bottom, wide));
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.cancel"), button -> this.onClose(),
-                layout.footerX(1), bottom, half));
+                layout.sliceX(1, 2), bottom, wide));
 
         validate();
     }

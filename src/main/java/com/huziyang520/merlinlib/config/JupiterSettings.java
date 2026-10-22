@@ -5,12 +5,15 @@ import com.huziyang520.merlinlib.content.ContentError;
 import com.huziyang520.merlinlib.util.MerlinColor;
 import com.iafenvoy.jupiter.ConfigManager;
 import com.iafenvoy.jupiter.config.ConfigGroup;
+import com.iafenvoy.jupiter.config.container.AbstractConfigContainer;
 import com.iafenvoy.jupiter.config.container.FileConfigContainer;
 import com.iafenvoy.jupiter.config.entry.BooleanEntry;
 import com.iafenvoy.jupiter.config.entry.DoubleEntry;
 import com.iafenvoy.jupiter.config.entry.IntegerEntry;
 import com.iafenvoy.jupiter.config.entry.StringEntry;
 import com.iafenvoy.jupiter.config.interfaces.ConfigEntry;
+import com.iafenvoy.jupiter.render.screen.ConfigContainerScreen;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
@@ -54,12 +57,6 @@ final class JupiterSettings implements ConfigBackend, ConfigReader {
      */
     private static final String FILE = "config/MerlinLib/settings.jcfg";
 
-    /** The layout version this build writes; see the migration in {@link ClientConfig#load()}. */
-    private static final int CLIENT_LAYOUT = 4;
-
-    /** The layout version {@link ServerConfig} writes. */
-    private static final int SERVER_LAYOUT = 5;
-
     /** What kind of value an entry holds, for the string based {@link #write} path. */
     private enum Kind {
         BOOLEAN, INTEGER, DOUBLE, TEXT
@@ -84,6 +81,9 @@ final class JupiterSettings implements ConfigBackend, ConfigReader {
      */
     static ConfigBackend open() {
         JupiterSettings settings = new JupiterSettings();
+        // Kept statically as well, so the mod list's Config button can open this very container's screen
+        // without rebuilding it (which would re-register it with Jupiter).
+        OUR_CONTAINER = settings.container;
         ConfigManager.getInstance().registerConfigHandler(settings.container);
         return settings;
     }
@@ -254,125 +254,91 @@ final class JupiterSettings implements ConfigBackend, ConfigReader {
         return this.container.createTab(id, Component.translatable("merlinlib.config.tab." + id));
     }
 
-    private static Component label(String key) {
-        return Component.translatable("merlinlib.config." + key);
-    }
-
-    private void add(ConfigGroup tab, ConfigEntry<?> entry) {
+    private void add(ConfigGroup tab, ConfigEntry<?> entry, OptionSpec.Kind kind) {
         tab.addEntry(entry);
         this.entries.put(entry.getKey(), entry);
-        this.kinds.put(entry.getKey(), kindOf(entry));
+        this.kinds.put(entry.getKey(), kindOf(kind));
     }
 
-    private static Kind kindOf(ConfigEntry<?> entry) {
-        if (entry instanceof BooleanEntry) {
-            return Kind.BOOLEAN;
-        }
-        if (entry instanceof IntegerEntry) {
-            return Kind.INTEGER;
-        }
-        if (entry instanceof DoubleEntry) {
-            return Kind.DOUBLE;
-        }
-        return Kind.TEXT;
+    private static Kind kindOf(OptionSpec.Kind kind) {
+        return switch (kind) {
+            case BOOLEAN -> Kind.BOOLEAN;
+            case INTEGER -> Kind.INTEGER;
+            case DOUBLE -> Kind.DOUBLE;
+            case TEXT -> Kind.TEXT;
+        };
     }
 
     /**
-     * Declares every option, in the order the toml templates document them.
+     * Declares every option, in the order {@link OptionSpec} lists them.
      *
-     * <p>Kept beside the templates in {@link ClientConfig} and {@link ServerConfig} by hand: those two are
-     * the documented reference a player reads, this is what a Jupiter screen shows, and the reader used
-     * depends on which one is installed.
+     * <p>The list itself lives in {@link OptionSpec}, shared with the Cloth screen and with the read/write
+     * path. This method only turns a spec into the Jupiter entry type its kind calls for; it holds no key,
+     * default or range of its own, which is what keeps the two screens covering exactly the same switches.
      */
     private void buildTabs() {
-        ConfigGroup general = tab("general");
-        add(general, IntegerEntry.builder(label("general.config_version"), CLIENT_LAYOUT)
-                .key("general.config_version").visible(false).build());
-        add(general, BooleanEntry.builder(label("general.notice_enabled"), true)
-                .key("general.notice_enabled").build());
-
-        ConfigGroup hud = tab("hud");
-        add(hud, BooleanEntry.builder(label("hud.crosshair_damage"), false)
-                .key("hud.crosshair_damage").build());
-        add(hud, IntegerEntry.builder(label("hud.crosshair_damage_ticks"), 20).range(1, 400)
-                .key("hud.crosshair_damage_ticks").build());
-        add(hud, BooleanEntry.builder(label("hud.collapse_enabled"), true)
-                .key("hud.collapse_enabled").build());
-        add(hud, IntegerEntry.builder(label("hud.collapse_threshold"), 99).range(1, 1000000)
-                .key("hud.collapse_threshold").build());
-        add(hud, BooleanEntry.builder(label("hud.armour_auto_dodge"), true)
-                .key("hud.armour_auto_dodge").build());
-
-        ConfigGroup floating = tab("floating_text");
-        add(floating, BooleanEntry.builder(label("floating_text.enabled"), false)
-                .key("floating_text.enabled").build());
-        add(floating, IntegerEntry.builder(label("floating_text.duration_ticks"), 20).range(1, 400)
-                .key("floating_text.duration_ticks").build());
-        add(floating, DoubleEntry.builder(label("floating_text.base_scale"), 1.0D).range(0.1D, 8.0D)
-                .key("floating_text.base_scale").build());
-        add(floating, StringEntry.builder(label("floating_text.normal_color"), "0xFFFFFFFF")
-                .key("floating_text.normal_color").build());
-        add(floating, StringEntry.builder(label("floating_text.critical_color"), "0xFFFFAA00")
-                .key("floating_text.critical_color").build());
-        add(floating, IntegerEntry.builder(label("floating_text.max_concurrent"), 32).range(1, 512)
-                .key("floating_text.max_concurrent").build());
-
-        ConfigGroup particles = tab("particles");
-        add(particles, BooleanEntry.builder(label("particles.limit_enabled"), true)
-                .key("particles.limit_enabled").build());
-        add(particles, IntegerEntry.builder(label("particles.limit"), 512).range(1, 1000000)
-                .key("particles.limit").build());
-
-        ConfigGroup editor = tab("editor");
-        add(editor, BooleanEntry.builder(label("editor.hotkey_enabled"), false)
-                .key("editor.hotkey_enabled").build());
-        add(editor, IntegerEntry.builder(label("editor.shift_step"), 10).range(1, 100000)
-                .key("editor.shift_step").build());
-        add(editor, IntegerEntry.builder(label("editor.scroll_step"), 1).range(1, 1000)
-                .key("editor.scroll_step").build());
-        add(editor, IntegerEntry.builder(label("editor.scroll_step_fast"), 10).range(1, 100000)
-                .key("editor.scroll_step_fast").build());
-
-        ConfigGroup macros = tab("macros");
-        add(macros, BooleanEntry.builder(label("macros.enabled"), true)
-                .key("macros.enabled").build());
-
-        ConfigGroup security = tab("security");
-        add(security, BooleanEntry.builder(label("security.restrict_tools_to_operators"), false)
-                .key("security.restrict_tools_to_operators").build());
-        add(security, BooleanEntry.builder(label("security.editor_requires_permission"), true)
-                .key("security.editor_requires_permission").build());
-        add(security, BooleanEntry.builder(label("security.health_editor_requires_permission"), true)
-                .key("security.health_editor_requires_permission").build());
-
-        ConfigGroup tools = tab("tools");
-        add(tools, BooleanEntry.builder(label("tools.enable_testing_toolkit"), true)
-                .key("tools.enable_testing_toolkit").build());
-        add(tools, IntegerEntry.builder(label("tools.max_test_weapon_damage"), Integer.MAX_VALUE).range(1, Integer.MAX_VALUE)
-                .key("tools.max_test_weapon_damage").build());
-        add(tools, IntegerEntry.builder(label("tools.max_enchantment_level"), Integer.MAX_VALUE).range(1, Integer.MAX_VALUE)
-                .key("tools.max_enchantment_level").build());
-        add(tools, BooleanEntry.builder(label("tools.allow_levels_above_max"), true)
-                .key("tools.allow_levels_above_max").build());
-        add(tools, BooleanEntry.builder(label("tools.allow_mismatched_enchantments"), false)
-                .key("tools.allow_mismatched_enchantments").build());
-        add(tools, BooleanEntry.builder(label("tools.allow_editing_all_items"), false)
-                .key("tools.allow_editing_all_items").build());
-        add(tools, BooleanEntry.builder(label("tools.allow_non_test_item_damage"), false)
-                .key("tools.allow_non_test_item_damage").build());
-        add(tools, BooleanEntry.builder(label("tools.health_editor_requires_item"), true)
-                .key("tools.health_editor_requires_item").build());
-        add(tools, IntegerEntry.builder(label("tools.config_version"), SERVER_LAYOUT)
-                .key("tools.config_version").visible(false).build());
-
-        ConfigGroup content = tab("content");
-        add(content, BooleanEntry.builder(label("content.disable_generated_enchantments"), false)
-                .key("content.disable_generated_enchantments").build());
-
-        ConfigGroup notices = tab("notices");
-        add(notices, BooleanEntry.builder(label("notices.enabled"), true)
-                .key("notices.enabled").build());
-        add(notices, StringEntry.builder(label("notices.per_mod"), "")
-                .key("notices.per_mod").build());
+        Map<String, ConfigGroup> tabs = new LinkedHashMap<>();
+        for (OptionSpec.Section section : OptionSpec.sections()) {
+            tabs.put(section.id(), tab(section.id()));
+        }
+        for (OptionSpec spec : OptionSpec.all()) {
+            ConfigGroup tab = tabs.get(spec.section());
+            if (tab == null) {
+                continue;
+            }
+            add(tab, entryFor(spec), spec.kind());
+        }
     }
+
+    /**
+     * @param spec the switch
+     * @return the Jupiter entry holding it
+     */
+    private static ConfigEntry<?> entryFor(OptionSpec spec) {
+        Component label = Component.translatable(spec.langKey());
+        switch (spec.kind()) {
+            case BOOLEAN:
+                return BooleanEntry.builder(label, spec.booleanDefault())
+                        .key(spec.key()).visible(!spec.hidden()).build();
+            case INTEGER: {
+                IntegerEntry.Builder builder = IntegerEntry.builder(label, spec.intDefault())
+                        .range((int) spec.min(), (int) spec.max())
+                        .key(spec.key());
+                if (spec.hidden()) {
+                    builder.visible(false);
+                }
+                return builder.build();
+            }
+            case DOUBLE:
+                return DoubleEntry.builder(label, spec.doubleDefault())
+                        .range(spec.min(), spec.max())
+                        .key(spec.key()).build();
+            default:
+                return StringEntry.builder(label, spec.textDefault())
+                        .key(spec.key()).build();
+        }
+    }
+
+    /**
+     * Opens Jupiter's own screen for this container.
+     *
+     * <p>Used when Cloth Config is absent: the mod list's Config button then shows the same switches in
+     * Jupiter's {@code ConfigContainerScreen}. Only reachable through the {@code Class.forName} guard in
+     * {@link JupiterBackend}, which is why it may name Jupiter types at all.
+     *
+     * @param parent the mod list screen, restored when the player closes this one
+     * @return the screen
+     */
+    static Screen screen(Screen parent) {
+        // A container only exists once Jupiter accepted the registration. Without one there is no screen, and
+        // handing Jupiter's screen a null container would fail later, inside its own render pass.
+        if (OUR_CONTAINER == null) {
+            return null;
+        }
+        return new ConfigContainerScreen(parent, OUR_CONTAINER, false);
+    }
+
+    /** The single container, kept so a screen can be opened without rebuilding it. */
+    private static AbstractConfigContainer OUR_CONTAINER;
+
 }

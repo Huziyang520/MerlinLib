@@ -37,3 +37,22 @@ issueTrackerURL="https://github.com/Huziyang520/MerlinLib/issues"
     versionRange="${minecraft_version_range}"
     ordering="NONE"
     side="BOTH"
+
+[[dependencies.${mod_id}]]
+    # Optional: with it installed the mods list draws the configuration screen with Jupiter; without it the
+    # switches stay in the toml files and the commands still read and write them.
+    modId="jupiter"
+    mandatory=false
+    versionRange="[2.3.7,)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies.${mod_id}]]
+    # Optional, and preferred when present: the same switches in a Cloth Config screen. The modId is
+    # "cloth_config", not "cloth-config" - read off the jar's own META-INF/mods.toml; a wrong spelling here
+    # would make Forge report a missing dependency that is in fact installed.
+    modId="cloth_config"
+    mandatory=false
+    versionRange="[11.0.0,)"
+    ordering="NONE"
+    side="CLIENT"

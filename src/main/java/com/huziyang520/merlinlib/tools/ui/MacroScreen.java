@@ -257,11 +257,14 @@ public class MacroScreen extends VanillaScreen {
                 editorX, this.keyLabelY + LABEL, KEY_WIDTH));
 
         layout.cursorTo(bottom + VanillaUi.WIDGET_HEIGHT);
-        int bottomHalf = layout.footerWidth();
+        // Full width halves, flush with both edges of the content, so Apply and Done are the same size and
+        // symmetric about the panel's centre.
+        int footerWide = layout.sliceWidth(2);
+        int footerRight = layout.sliceX(1, 2);
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.macro.apply"),
-                button -> this.commit(), layout.footerX(0), bottom, bottomHalf));
+                button -> this.commit(), layout.left(), bottom, footerWide));
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.done"),
-                button -> this.finish(), layout.footerX(1), bottom, bottomHalf));
+                button -> this.finish(), footerRight, bottom, footerWide));
 
         this.deleteButtons.clear();
         for (int slot = 0; slot < visibleRows(); slot++) {

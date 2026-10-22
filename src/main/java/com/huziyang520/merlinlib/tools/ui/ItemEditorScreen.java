@@ -302,27 +302,31 @@ public class ItemEditorScreen extends VanillaScreen {
         // which the screen answers to directly anyway, and it cost a row of height on every layout. The buttons
         // stay anchored to the panel's own bottom edge and the list takes the room above them.
         int bottom = layout.contentBottom() - VanillaUi.WIDGET_HEIGHT;
-        int actionY = bottom - 6 - VanillaUi.WIDGET_HEIGHT;
+        int actionY = bottom - VanillaUi.GAP - VanillaUi.WIDGET_HEIGHT;
         int listTop = layout.cursor();
-        int listHeight = Math.max(LIST_ROW, Math.min(visibleRows() * LIST_ROW, actionY - 6 - listTop));
+        int listHeight = Math.max(LIST_ROW, Math.min(visibleRows() * LIST_ROW, actionY - VanillaUi.GAP - listTop));
 
         this.list = new ScrollArea(left, listTop, content, listHeight, LIST_ROW);
         this.list.setContentHeight(this.rows.size() * LIST_ROW);
 
-        int half = layout.footerWidth();
+        // Two rows of two full width buttons: the left column starts at the content's left edge and the right
+        // column at the second half, so both rows are the same size and symmetric about the panel's centre.
+        // A capped 120 px pair against the right edge left half the panel empty between them.
+        int wide = layout.sliceWidth(2);
+        int rightColumn = layout.sliceX(1, 2);
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.editor.add_enchant"),
                 button -> Minecraft.getInstance().setScreen(new EnchantSelectionScreen(this,
                         this::addEnchantment, this.working)),
-                left, actionY, half));
+                left, actionY, wide));
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.editor.clear_enchant"),
                 button -> Minecraft.getInstance().setScreen(new DeleteEnchantsConfirmScreen(this,
                         this::clearEnchantments)),
-                layout.footerX(1), actionY, half));
+                rightColumn, actionY, wide));
 
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.done"), button -> this.save(),
-                left, bottom, half));
+                left, bottom, wide));
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.cancel"), button -> this.onClose(),
-                layout.footerX(1), bottom, half));
+                rightColumn, bottom, wide));
 
         buildRowControls();
         layoutRows();

@@ -100,6 +100,18 @@ dependencies {
     // compileOnly, like the two above: Jupiter is a soft dependency. Nothing Jupiter provides is bundled,
     // and every reference to it is behind the class presence check in JupiterBackend.
     compileOnly files('libs/jupiter-2.3.7-1.20.1-forge.jar')
+
+    // Cloth Config, the other optional configuration front end. A local copy of the exact 11.1.136 jar the 1.20.1
+    // instance runs - `libs/` is gitignored, like the Jupiter jar above, so the build is still offline and the jar
+    // itself is not committed. It is compileOnly for the same reason Jupiter is: the screen is only built when
+    // the library is installed, and nothing of it may be bundled - a jar carrying me/shedaniel classes would be
+    // a second copy of Cloth on the class path.
+    //
+    // A maven coordinate (me.shedaniel.cloth:cloth-config-forge:11.1.136) was tried first, since the jar is in
+    // the machine's Gradle cache, and `--offline` rejects it: the cached module has no descriptor Gradle can use
+    // offline ("No cached version ... available for offline mode"). The file dependency is what keeps the build
+    // reproducible without network.
+    compileOnly files('libs/cloth-config-forge-11.1.136.jar')
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -57,10 +57,14 @@ public class MerlinLibForge {
 
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
 
-        // The configuration screen is not ours any more. It is Jupiter's when Jupiter is installed, and
-        // otherwise there is none: the switches are edited in config/MerlinLib/client.toml and server.toml,
-        // which are commented and documented for exactly that. Registering no ConfigScreenFactory is what
-        // keeps the mod list from offering a button that opens a screen this mod no longer has.
+        // The mod list's Config button. Forge draws it only for a mod that registered a
+        // ConfigScreenHandler.ConfigScreenFactory, so the extension point is registered here, on the client
+        // only, and only when there is a screen to show: Cloth Config's when Cloth is installed, Jupiter's
+        // own otherwise (see MerlinConfigEntry). With neither installed the button is absent and the
+        // switches are edited in config/MerlinLib/client.toml and server.toml, which are commented for it.
+        if (net.minecraftforge.fml.loading.FMLEnvironment.dist.isClient()) {
+            com.huziyang520.merlinlib.client.MerlinConfigEntry.register();
+        }
 
         // Every bridge that needs a loader handle gets one here, before anything can ask it to
         // register. REGISTRATIONS keeps the bus so that a DeferredRegister created later - which is
