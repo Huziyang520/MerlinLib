@@ -32,6 +32,14 @@ public record OpenToolPayload(int tool) {
     public static final int MACRO = 2;
 
     /**
+     * The join notice switches.
+     *
+     * <p>Not a toolkit screen: it edits a configuration file and touches no item, so it is here for the same
+     * reason the other three are - a {@code Screen} exists on the client, and the command runs on the server.
+     */
+    public static final int NOTICES = 3;
+
+    /**
      * Writes this payload into a buffer.
      *
      * @param payload the payload to encode

@@ -260,6 +260,7 @@ public final class MerlinScreens {
             }
             case OpenToolPayload.HEALTH -> openHealthEditorForSelf();
             case OpenToolPayload.MACRO -> openMacroScreen(null);
+            case OpenToolPayload.NOTICES -> openNoticesScreen(null);
             default -> Constants.LOG.warn("[MerlinLib] the client was asked to open unknown screen {}", tool);
         }
     }
@@ -304,6 +305,24 @@ public final class MerlinScreens {
             return;
         }
         Minecraft.getInstance().setScreen(new MacroScreen(parent));
+    }
+
+    /**
+     * Opens the join notice switches.
+     *
+     * <p>Two entry points want this screen: {@code /merlinlib notices}, and the description row both
+     * configuration front ends carry in their notices category. The toolkit master switch is deliberately not
+     * consulted - this page edits a configuration file and touches no item - while the command that asks for
+     * it has already been through {@code PermissionGate} on the server.
+     *
+     * @param parent the screen to return to, or {@code null} to resume the game
+     */
+    public static void openNoticesScreen(Screen parent) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null) {
+            return;
+        }
+        minecraft.setScreen(new NoticesScreen(parent));
     }
 
     /**

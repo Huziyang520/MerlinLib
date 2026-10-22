@@ -80,10 +80,9 @@ public final class ServerConfig {
             + "# Show the join notices business mods registered through MerlinLib (MerlinApi.notices()). On by\n"
             + "# default; turn it off to silence every join notice at once. Takes effect on the next join.\n"
             + "enabled = true\n"
-            + "# Per mod switches, written by the join notice switches as \"<modid>=true;<modid>=false>\". A\n"
-            + "# mod that is not listed uses the default it declared when it registered. Editing this line by\n"
-            + "# hand works too; the visual screen is just easier.\n"
-            + "per_mod = \"\"\n";
+            + "# The per mod switches are not here any more: they live in config/MerlinLib/notices.toml, one\n"
+            + "# \"modid = true\" line per mod, written by /merlinlib notices. A \"per_mod\" line left by an\n"
+            + "# older build is read once and moved into that file; it is not read afterwards.\n";
 
     private boolean restrictToolsToOperators;
     private boolean editorRequiresPermission = true;
@@ -98,7 +97,14 @@ public final class ServerConfig {
     private boolean healthEditorRequiresItem = true;
     private boolean disableGeneratedEnchantments;
     private boolean noticesEnabled = true;
-    private String noticePerMod = "";
+    /**
+     * The switches an older build kept as {@code notices.per_mod}.
+     *
+     * <p>Read for one reason only: to move them into {@code config/MerlinLib/notices.toml} on the first
+     * launch after the move. Nothing else looks at it, and no screen offers it, because it is exactly the raw
+     * string players should never have had to type.
+     */
+    private String legacyNoticePerMod = "";
     private List<ContentError> errors = List.of();
 
     public static ServerConfig load() {
@@ -124,7 +130,8 @@ public final class ServerConfig {
         config.healthEditorRequiresItem = file.getBoolean("tools.health_editor_requires_item", true);
         config.disableGeneratedEnchantments = file.getBoolean("content.disable_generated_enchantments", false);
         config.noticesEnabled = file.getBoolean("notices.enabled", true);
-        config.noticePerMod = file.getString("notices.per_mod", "");
+        // The old per mod string, read once so it can be moved into notices.toml. See NoticeSettings.
+        config.legacyNoticePerMod = file.getString("notices.per_mod", "");
         config.errors = file.errors();
         return config;
     }
@@ -259,9 +266,12 @@ public final class ServerConfig {
         return this.noticesEnabled;
     }
 
-    /** @return the per mod overrides, as written in the configuration */
-    public String noticePerMod() {
-        return this.noticePerMod;
+    /**
+     * @return the per mod overrides an older build kept as one string, for the one-off migration into
+     *         {@code notices.toml}; empty when there is nothing to move
+     */
+    public String legacyNoticePerMod() {
+        return this.legacyNoticePerMod;
     }
 
     /** @return problems found while reading the file during the last reload. */

@@ -115,8 +115,10 @@ public final class OptionSpec {
         // content
         specs.add(bool("content", "disable_generated_enchantments", false));
         // notices
+        // notices.per_mod is deliberately absent: the per mod switches moved to config/MerlinLib/notices.toml
+        // and are drawn by the join notice page. Keeping a spec for the old string would put a raw
+        // "<modid>=true;..." text field back into both configuration screens.
         specs.add(bool("notices", "enabled", true));
-        specs.add(text("notices", "per_mod", ""));
         ALL = List.copyOf(specs);
     }
 

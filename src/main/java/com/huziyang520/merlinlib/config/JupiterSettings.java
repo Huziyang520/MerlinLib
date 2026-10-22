@@ -10,6 +10,7 @@ import com.iafenvoy.jupiter.config.container.FileConfigContainer;
 import com.iafenvoy.jupiter.config.entry.BooleanEntry;
 import com.iafenvoy.jupiter.config.entry.DoubleEntry;
 import com.iafenvoy.jupiter.config.entry.IntegerEntry;
+import com.iafenvoy.jupiter.config.entry.SeparatorEntry;
 import com.iafenvoy.jupiter.config.entry.StringEntry;
 import com.iafenvoy.jupiter.config.interfaces.ConfigEntry;
 import com.iafenvoy.jupiter.render.screen.ConfigContainerScreen;
@@ -287,6 +288,16 @@ final class JupiterSettings implements ConfigBackend, ConfigReader {
                 continue;
             }
             add(tab, entryFor(spec), spec.kind());
+        }
+        ConfigGroup notices = tabs.get("notices");
+        if (notices != null) {
+            // The per mod switches are not options - the list of mods only exists at runtime - so Jupiter's
+            // category carries a line naming the page that draws them. SeparatorEntry is the only text row
+            // this version's api offers, and it takes no value of its own, so it never reaches the entries map
+            // the read/write path uses.
+            notices.addEntry(SeparatorEntry.builder()
+                    .text(Component.translatable("merlinlib.config.notices.open_hint"))
+                    .build());
         }
     }
 

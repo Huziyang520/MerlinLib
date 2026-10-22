@@ -45,6 +45,7 @@ import java.util.Optional;
  *     <li>{@code /merlinlib book <id> [level]} - hands out the enchanted book, operator only</li>
  *     <li>{@code /merlinlib content} - whether the files on disk are the ones this process registered</li>
  *     <li>{@code /merlinlib editor | health | macro} - opens the matching toolkit screen</li>
+ *     <li>{@code /merlinlib notices} - opens the join notice switches</li>
  * </ul>
  *
  * <h2>Two changes from the 26.3 line</h2>
@@ -99,6 +100,8 @@ public final class MerlinCommand {
                         .executes(context -> openTool(context, OpenToolPayload.HEALTH)))
                 .then(Commands.literal("macro")
                         .executes(context -> openTool(context, OpenToolPayload.MACRO)))
+                .then(Commands.literal("notices")
+                        .executes(context -> openTool(context, OpenToolPayload.NOTICES)))
                 .then(Commands.literal("book")
                         .requires(MerlinCommand::mayManage)
                         .then(Commands.argument("id", StringArgumentType.string())
@@ -135,6 +138,9 @@ public final class MerlinCommand {
         boolean allowed = switch (tool) {
             case OpenToolPayload.EDITOR -> PermissionGate.canOpenEditor(player);
             case OpenToolPayload.HEALTH -> PermissionGate.canOpenHealthEditor(player);
+            // The notice switches are a settings page, not a toolkit action, so they need the same answer as
+            // the macro screen - the toolkit switch and the operator switch - and nothing stricter.
+            case OpenToolPayload.NOTICES -> PermissionGate.canUseTools(player);
             default -> PermissionGate.canUseTools(player);
         };
         if (!allowed) {

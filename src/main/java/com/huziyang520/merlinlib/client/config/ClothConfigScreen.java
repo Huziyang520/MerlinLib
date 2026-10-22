@@ -37,6 +37,9 @@ import java.util.Map;
  */
 public final class ClothConfigScreen {
 
+    /** The section whose category carries the pointer to the join notice page. */
+    private static final String NOTICES = "notices";
+
     private ClothConfigScreen() {
     }
 
@@ -64,6 +67,14 @@ public final class ClothConfigScreen {
                     continue;
                 }
                 add(category, entries, spec, pending);
+            }
+            if (NOTICES.equals(section.getKey())) {
+                // The per mod switches are not options: the list of mods only exists at runtime, and Cloth
+                // 11.1.136 has no action row or sub-screen builder to hand them to (no startSubScreenBuilder,
+                // no button entry). The line names the page that does draw them, which is the same page
+                // Jupiter's category points at, so all three front ends agree.
+                category.addEntry(entries.startTextDescription(
+                        Component.translatable("merlinlib.config.notices.open_hint")).build());
             }
         }
         return builder.build();

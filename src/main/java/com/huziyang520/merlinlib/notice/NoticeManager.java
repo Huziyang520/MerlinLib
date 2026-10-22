@@ -18,9 +18,9 @@ import java.util.List;
  * <p>Installed once at startup; from then on every player who joins is offered every notice they have not
  * already seen, in registration order for code notices and resource order for pack notices.
  *
- * <p>Every switch is read at the moment of sending - the global one, the per mod one, and the recorded ones
- * in the save - which is what makes a settings change take effect on the next join instead of on the next
- * restart.
+ * <p>Every switch is read at the moment of sending - the global one in {@code server.toml} and the per mod
+ * ones in {@code notices.toml} - which is what makes a settings change take effect on the next join instead
+ * of on the next restart.
  *
  * <p>1.20.1 note: the only real divergence is in {@link #remember}, which reaches the save's store through the
  * older three argument {@code DimensionDataStorage#computeIfAbsent(load, create, name)} instead of the single
@@ -79,7 +79,7 @@ public final class NoticeManager {
         }
         int sent = 0;
         for (NoticeEntry entry : all(server)) {
-            if (!NoticePreferences.isEnabled(config, entry)) {
+            if (!NoticeSettings.isEnabled(entry)) {
                 continue;
             }
             if (!shouldSend(level, player, entry)) {
