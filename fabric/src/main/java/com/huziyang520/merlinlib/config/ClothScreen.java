@@ -1,6 +1,7 @@
 package com.huziyang520.merlinlib.config;
 
 import com.huziyang520.merlinlib.util.MerlinColor;
+import me.shedaniel.clothconfig2.api.AbstractConfigListEntry;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
@@ -17,9 +18,11 @@ import java.util.Map;
  * {@link FabricConfig} has found the mod on the classpath, so a game without Cloth Config never has to
  * resolve a single Cloth class.
  *
- * <p>Nothing is written until the player presses save: the entries collect their values into a local map and
- * that map is handed to {@link ConfigManager#saveClient} in one go, which is also what makes the change
- * visible immediately.
+ * <p>The keys, the ranges and the labels are not repeated here: they come from {@link ClientOptions}, the
+ * same list the Jupiter screen walks, so a switch added there appears in both interfaces and a range can
+ * only be declared once. Nothing is written until the player presses save: the entries collect their values
+ * into a local map and that map is handed to {@link ConfigManager#saveClient} in one go, which is also what
+ * makes the change visible immediately.
  */
 public final class ClothScreen {
 
@@ -33,120 +36,20 @@ public final class ClothScreen {
      * @return the screen to show
      */
     public static Screen create(Screen parent) {
-        ClientConfig config = ConfigManager.client();
         ConfigBuilder builder = ConfigBuilder.create()
                 .setParentScreen(parent)
                 .setTitle(Component.translatable("config.merlinlib.title"));
         ConfigEntryBuilder entries = builder.entryBuilder();
         Map<String, String> pending = new LinkedHashMap<>();
+        Map<String, String> current = ClientOptions.values();
 
-        ConfigCategory general = builder.getOrCreateCategory(category("general"));
-        general.addEntry(entries.startBooleanToggle(label("general.notice_enabled"), config.noticeEnabled())
-                .setDefaultValue(true)
-                .setSaveConsumer(value -> pending.put("general.notice_enabled", value.toString()))
-                .build());
-
-        ConfigCategory hud = builder.getOrCreateCategory(category("hud"));
-        hud.addEntry(entries.startBooleanToggle(label("hud.crosshair_damage"), config.crosshairDamage())
-                .setDefaultValue(false)
-                .setSaveConsumer(value -> pending.put("hud.crosshair_damage", value.toString()))
-                .build());
-        hud.addEntry(entries.startIntField(label("hud.crosshair_damage_ticks"), config.crosshairDamageTicks())
-                .setDefaultValue(20)
-                .setMin(1)
-                .setMax(400)
-                .setSaveConsumer(value -> pending.put("hud.crosshair_damage_ticks", value.toString()))
-                .build());
-        hud.addEntry(entries.startBooleanToggle(label("hud.collapse_enabled"), config.hudCollapse())
-                .setDefaultValue(true)
-                .setSaveConsumer(value -> pending.put("hud.collapse_enabled", value.toString()))
-                .build());
-        hud.addEntry(entries.startIntField(label("hud.collapse_threshold"), config.hudCollapseThreshold())
-                .setDefaultValue(99)
-                .setMin(1)
-                .setMax(1000000)
-                .setSaveConsumer(value -> pending.put("hud.collapse_threshold", value.toString()))
-                .build());
-        hud.addEntry(entries.startBooleanToggle(label("hud.armour_auto_dodge"), config.hudArmourDodge())
-                .setDefaultValue(true)
-                .setSaveConsumer(value -> pending.put("hud.armour_auto_dodge", value.toString()))
-                .build());
-
-        ConfigCategory floating = builder.getOrCreateCategory(category("floating_text"));
-        floating.addEntry(entries.startBooleanToggle(label("floating_text.enabled"), config.floatingTextEnabled())
-                .setDefaultValue(false)
-                .setSaveConsumer(value -> pending.put("floating_text.enabled", value.toString()))
-                .build());
-        floating.addEntry(entries.startIntField(label("floating_text.duration_ticks"), config.floatingTextDurationTicks())
-                .setDefaultValue(20)
-                .setMin(1)
-                .setMax(400)
-                .setSaveConsumer(value -> pending.put("floating_text.duration_ticks", value.toString()))
-                .build());
-        floating.addEntry(entries.startDoubleField(label("floating_text.base_scale"), config.floatingTextBaseScale())
-                .setDefaultValue(1.0D)
-                .setMin(0.1D)
-                .setMax(8.0D)
-                .setSaveConsumer(value -> pending.put("floating_text.base_scale", value.toString()))
-                .build());
-        floating.addEntry(entries.startColorField(label("floating_text.normal_color"), config.floatingTextNormalColor())
-                .setDefaultValue(MerlinColor.WHITE)
-                .setAlphaMode(true)
-                .setSaveConsumer(value -> pending.put("floating_text.normal_color", asColour(value)))
-                .build());
-        floating.addEntry(entries.startColorField(label("floating_text.critical_color"), config.floatingTextCriticalColor())
-                .setDefaultValue(MerlinColor.ORANGE)
-                .setAlphaMode(true)
-                .setSaveConsumer(value -> pending.put("floating_text.critical_color", asColour(value)))
-                .build());
-        floating.addEntry(entries.startIntField(label("floating_text.max_concurrent"), config.floatingTextMaxConcurrent())
-                .setDefaultValue(32)
-                .setMin(1)
-                .setMax(512)
-                .setSaveConsumer(value -> pending.put("floating_text.max_concurrent", value.toString()))
-                .build());
-
-        ConfigCategory particles = builder.getOrCreateCategory(category("particles"));
-        particles.addEntry(entries.startBooleanToggle(label("particles.limit_enabled"), config.particleLimitEnabled())
-                .setDefaultValue(true)
-                .setSaveConsumer(value -> pending.put("particles.limit_enabled", value.toString()))
-                .build());
-        particles.addEntry(entries.startIntField(label("particles.limit"), config.particleLimit())
-                .setDefaultValue(512)
-                .setMin(1)
-                .setMax(1000000)
-                .setSaveConsumer(value -> pending.put("particles.limit", value.toString()))
-                .build());
-
-        ConfigCategory editor = builder.getOrCreateCategory(category("editor"));
-        editor.addEntry(entries.startBooleanToggle(label("editor.hotkey_enabled"), config.editorHotkeyEnabled())
-                .setDefaultValue(false)
-                .setSaveConsumer(value -> pending.put("editor.hotkey_enabled", value.toString()))
-                .build());
-        editor.addEntry(entries.startIntField(label("editor.shift_step"), config.editorShiftStep())
-                .setDefaultValue(10)
-                .setMin(1)
-                .setMax(100000)
-                .setSaveConsumer(value -> pending.put("editor.shift_step", value.toString()))
-                .build());
-        editor.addEntry(entries.startIntField(label("editor.scroll_step"), config.editorScrollStep())
-                .setDefaultValue(1)
-                .setMin(1)
-                .setMax(1000)
-                .setSaveConsumer(value -> pending.put("editor.scroll_step", value.toString()))
-                .build());
-        editor.addEntry(entries.startIntField(label("editor.scroll_step_fast"), config.editorScrollStepFast())
-                .setDefaultValue(10)
-                .setMin(1)
-                .setMax(100000)
-                .setSaveConsumer(value -> pending.put("editor.scroll_step_fast", value.toString()))
-                .build());
-
-        ConfigCategory macros = builder.getOrCreateCategory(category("macros"));
-        macros.addEntry(entries.startBooleanToggle(label("macros.enabled"), config.macrosEnabled())
-                .setDefaultValue(true)
-                .setSaveConsumer(value -> pending.put("macros.enabled", value.toString()))
-                .build());
+        for (String section : ClientOptions.sections()) {
+            ConfigCategory category = builder.getOrCreateCategory(
+                    Component.translatable("config.merlinlib." + section));
+            for (ClientOptions.Option option : ClientOptions.in(section)) {
+                category.addEntry(entry(entries, option, ClientOptions.valueOf(option, current), pending));
+            }
+        }
 
         builder.setSavingRunnable(() -> {
             if (pending.isEmpty()) {
@@ -160,19 +63,70 @@ public final class ClothScreen {
     }
 
     /**
-     * @param section the section name of the file
-     * @return its translated title
+     * Builds the control one option needs, bound to the staged map.
+     *
+     * @param entries the entry builder of the screen
+     * @param option  the option being shown
+     * @param value   its value in the file, as the file spells it
+     * @param pending the map values are staged in until the player saves
+     * @return the finished entry
      */
-    private static Component category(String section) {
-        return Component.translatable("config.merlinlib." + section);
+    private static AbstractConfigListEntry<?> entry(ConfigEntryBuilder entries, ClientOptions.Option option,
+                                                    String value, Map<String, String> pending) {
+        Component label = Component.translatable(option.labelKey());
+        return switch (option.kind()) {
+            case BOOLEAN -> entries.startBooleanToggle(label, Boolean.parseBoolean(value))
+                    .setDefaultValue(option.defaultBoolean())
+                    .setSaveConsumer(chosen -> pending.put(option.key(), chosen.toString()))
+                    .build();
+            case INTEGER -> entries.startIntField(label, parseInt(value, option.defaultInt()))
+                    .setDefaultValue(option.defaultInt())
+                    .setMin(option.intMin())
+                    .setMax(option.intMax())
+                    .setSaveConsumer(chosen -> pending.put(option.key(), chosen.toString()))
+                    .build();
+            case DECIMAL -> entries.startDoubleField(label, parseDouble(value, option.defaultDouble()))
+                    .setDefaultValue(option.defaultDouble())
+                    .setMin(option.min())
+                    .setMax(option.max())
+                    .setSaveConsumer(chosen -> pending.put(option.key(), chosen.toString()))
+                    .build();
+            case COLOUR -> entries.startColorField(label, MerlinColor.parse(value).orElse(MerlinColor.WHITE))
+                    .setDefaultValue(MerlinColor.parse(option.defaultValue()).orElse(MerlinColor.WHITE))
+                    .setAlphaMode(true)
+                    .setSaveConsumer(chosen -> pending.put(option.key(), asColour(chosen)))
+                    .build();
+            case TEXT -> entries.startStrField(label, value)
+                    .setDefaultValue(option.defaultValue())
+                    .setSaveConsumer(chosen -> pending.put(option.key(), chosen))
+                    .build();
+        };
     }
 
     /**
-     * @param key the option, as {@code section.key}
-     * @return its translated label
+     * @param text     the text from the file
+     * @param fallback the value to use when it is not a number
+     * @return the number
      */
-    private static Component label(String key) {
-        return Component.translatable("config.merlinlib." + key);
+    private static int parseInt(String text, int fallback) {
+        try {
+            return Integer.parseInt(text.trim());
+        } catch (NumberFormatException exception) {
+            return fallback;
+        }
+    }
+
+    /**
+     * @param text     the text from the file
+     * @param fallback the value to use when it is not a number
+     * @return the number
+     */
+    private static double parseDouble(String text, double fallback) {
+        try {
+            return Double.parseDouble(text.trim());
+        } catch (NumberFormatException exception) {
+            return fallback;
+        }
     }
 
     /**

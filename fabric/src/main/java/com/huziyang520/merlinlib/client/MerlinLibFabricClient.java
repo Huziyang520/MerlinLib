@@ -113,7 +113,7 @@ public class MerlinLibFabricClient implements ClientModInitializer {
                                         return 1;
                                     }
                                     context.getSource().sendError(
-                                            Component.translatable("message.merlinlib.config.needs_cloth"));
+                                            Component.translatable("message.merlinlib.config.needs_screen"));
                                     return 0;
                                 }))));
 

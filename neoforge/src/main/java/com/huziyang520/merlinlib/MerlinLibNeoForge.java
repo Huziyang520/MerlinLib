@@ -92,7 +92,7 @@ public class MerlinLibNeoForge {
     private static void adopt(ModConfig config) {
         if (config.getType() == ModConfig.Type.CLIENT) {
             ConfigManager.setBackend(NeoConfigs.clientBackend());
-        } else if (config.getType() == ModConfig.Type.COMMON) {
+        } else if (config.getType() == NeoConfigs.sharedType()) {
             ConfigManager.setServerBackend(NeoConfigs.commonBackend());
         }
     }

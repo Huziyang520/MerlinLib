@@ -148,8 +148,10 @@ public class EnchantSelectionScreen extends VanillaScreen {
         layout.gap(10 + 6);
 
         int bottom = layout.row(VanillaUi.WIDGET_HEIGHT);
+        // A single button, placed in the right half of the same two column split the other screens use, so
+        // "cancel" always lands where the right hand button of those screens is.
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.cancel"), button -> this.onClose(),
-                layout.footerX(1), bottom, layout.footerWidth()));
+                layout.sliceX(1, 2), bottom, layout.sliceWidth(2)));
 
         this.rowButtons.clear();
         for (int slot = 0; slot < visibleRows(); slot++) {

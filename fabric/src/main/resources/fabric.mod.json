@@ -46,6 +46,7 @@
         "java": ">=${java_version}"
     },
     "recommends": {
-        "cloth-config": "*"
+        "cloth-config": "*",
+        "jupiter": "*"
     }
 }

@@ -18,6 +18,9 @@ out
 build
 .gradle
 
+# Optional compile time mod jars copied in by hand (Jupiter is not on any maven)
+libs/
+
 # other
 eclipse
 run

@@ -38,6 +38,7 @@ final class NeoSpecBackend implements ConfigBackend {
 
     private final String name;
     private final ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
+    private final java.util.Deque<String> path = new java.util.ArrayDeque<>();
     private final Map<String, ModConfigSpec.BooleanValue> booleans = new LinkedHashMap<>();
     private final Map<String, ModConfigSpec.IntValue> integers = new LinkedHashMap<>();
     private final Map<String, ModConfigSpec.DoubleValue> doubles = new LinkedHashMap<>();
@@ -75,6 +76,7 @@ final class NeoSpecBackend implements ConfigBackend {
      */
     NeoSpecBackend push(String path) {
         this.builder.push(path);
+        this.path.addLast(path);
         return this;
     }
 
@@ -85,29 +87,53 @@ final class NeoSpecBackend implements ConfigBackend {
      */
     NeoSpecBackend pop() {
         this.builder.pop();
+        this.path.removeLast();
         return this;
+    }
+
+    /**
+     * The translation key of one option, as {@code config.merlinlib.<section>.<option>}.
+     *
+     * <p>Handed to the spec instead of the loader's own {@code <modid>.configuration.<path>} fallback
+     * because the same keys already name these switches in the Cloth Config and Jupiter screens and in
+     * both language files: one key list, three screens. NeoForge's
+     * {@code ConfigurationSectionScreen} asks {@code ValueSpec#getTranslationKey()} first and only falls
+     * back to the concatenated default when it is unset, so setting it is the supported way to name an
+     * option - and the tooltip key it derives is this key plus {@code .tooltip}.
+     *
+     * @param option the option path, relative to the open section
+     * @return the translation key
+     */
+    private String label(String option) {
+        return this.path.isEmpty()
+                ? "config.merlinlib." + option
+                : "config.merlinlib." + String.join(".", this.path) + "." + option;
     }
 
     NeoSpecBackend bool(String path, boolean defaultValue, String comment) {
         this.builder.comment(comment);
+        this.builder.translation(label(path));
         this.booleans.put(path, this.builder.define(path, defaultValue));
         return this;
     }
 
     NeoSpecBackend number(String path, int defaultValue, int min, int max, String comment) {
         this.builder.comment(comment);
+        this.builder.translation(label(path));
         this.integers.put(path, this.builder.defineInRange(path, defaultValue, min, max));
         return this;
     }
 
     NeoSpecBackend decimal(String path, double defaultValue, double min, double max, String comment) {
         this.builder.comment(comment);
+        this.builder.translation(label(path));
         this.doubles.put(path, this.builder.defineInRange(path, defaultValue, min, max));
         return this;
     }
 
     NeoSpecBackend text(String path, String defaultValue, String comment) {
         this.builder.comment(comment);
+        this.builder.translation(label(path));
         this.strings.put(path, this.builder.define(path, defaultValue));
         return this;
     }

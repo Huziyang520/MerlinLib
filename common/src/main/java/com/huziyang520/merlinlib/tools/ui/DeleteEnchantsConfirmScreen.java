@@ -19,7 +19,6 @@ import java.util.List;
  */
 public class DeleteEnchantsConfirmScreen extends VanillaScreen {
 
-    private static final int BUTTON_WIDTH = 90;
     private static final int MIN_CONTENT_WIDTH = 200;
 
     private final Screen parent;
@@ -43,8 +42,7 @@ public class DeleteEnchantsConfirmScreen extends VanillaScreen {
     @Override
     protected int contentWidth() {
         List<Component> labels = List.of(this.title, Component.translatable("gui.merlinlib.confirm.warning"));
-        return Math.max(MIN_CONTENT_WIDTH,
-                VanillaUi.labelWidth(this.font, labels) + VanillaUi.PADDING + BUTTON_WIDTH * 2 + VanillaUi.GAP);
+        return Math.max(MIN_CONTENT_WIDTH, VanillaUi.labelWidth(this.font, labels) + VanillaUi.PADDING);
     }
 
     @Override
@@ -56,13 +54,15 @@ public class DeleteEnchantsConfirmScreen extends VanillaScreen {
     protected void build(PanelLayout layout) {
         layout.gap(12 + 4 + 12 + 10);
         int y = layout.row(VanillaUi.WIDGET_HEIGHT);
+        // Full width pair, the same split every other toolkit screen uses.
+        int half = layout.sliceWidth(2);
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.confirm.delete"),
                 button -> {
                     this.onConfirm.run();
                     this.onClose();
-                }, layout.left(), y, BUTTON_WIDTH));
+                }, layout.left(), y, half));
         Button cancel = this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.cancel"),
-                button -> this.onClose(), layout.right() - BUTTON_WIDTH, y, BUTTON_WIDTH));
+                button -> this.onClose(), layout.sliceX(1, 2), y, half));
         this.setInitialFocus(cancel);
     }
 

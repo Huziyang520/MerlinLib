@@ -8,20 +8,58 @@ import net.neoforged.fml.config.ModConfig;
  *
  * <h2>Two configurations, no third one</h2>
  *
- * <p>{@code CLIENT} holds the switches that only describe this client's display, and {@code COMMON} holds
- * the authoritative ones a server also needs - the toolkit permissions, the testing ceilings, the join
- * notice switches. {@code SERVER} is deliberately not used: a server configuration in NeoForge is stored
- * per world and only editable from inside a running save, which is the wrong place for switches that also
- * have to be readable before a world exists (the creative tab and the item registration ask for them).
+ * <p>{@code CLIENT} holds the switches that only describe this client's display, and the shared
+ * configuration holds the authoritative ones a server also needs - the toolkit permissions, the testing
+ * ceilings, the join notice switches. {@code SERVER} is deliberately not used: a server configuration in
+ * NeoForge is stored per world and only editable from inside a running save, which is the wrong place for
+ * switches that also have to be readable before a world exists (the creative tab and the item registration
+ * ask for them).
+ *
+ * <h2>Why the shared configuration's type is looked up, not named</h2>
+ *
+ * <p>FancyModLoader 12 (the loader 26.3 ships) deleted the {@code COMMON} constant from
+ * {@code ModConfig.Type} and kept {@code LOCAL}, {@code CLIENT}, {@code SYNCED} and {@code STARTUP}:
+ * {@code javap net.neoforged.fml.config.ModConfig$Type} on {@code loader-12.0.12.jar} lists exactly
+ * those four. A field reference to the removed constant compiles against an older classpath and then
+ * throws {@code NoSuchFieldError} while the mod is being loaded, which is a hard startup crash. The type
+ * is therefore resolved by name at runtime: {@code COMMON} when the loader still has it (26.1, 26.2),
+ * {@code LOCAL} otherwise. {@code LOCAL} is the same thing the old {@code COMMON} was for MerlinLib -
+ * a configuration each side reads from its own file and nothing syncs.
  *
  * <p>NeoForge then produces both the files and the editing screen, so MerlinLib draws nothing itself.
  */
 public final class NeoConfigs {
 
+    /** Loader 12 renamed the shared configuration type; resolved once, never referenced as a constant. */
+    private static final ModConfig.Type SHARED_TYPE = resolveSharedType();
+
     private static final NeoSpecBackend CLIENT = NeoSpecBackend.declare("neoforge client", NeoConfigs::client);
     private static final NeoSpecBackend COMMON = NeoSpecBackend.declare("neoforge common", NeoConfigs::common);
 
     private NeoConfigs() {
+    }
+
+    /**
+     * Finds the type the shared switches are registered under on this loader.
+     *
+     * <p>{@code Type.valueOf} is used instead of a reflective field read because it answers the question
+     * the same way for both generations of the enum and throws the one checked-by-catch exception the
+     * caller can handle: {@link IllegalArgumentException} when the constant is gone.
+     *
+     * @return {@code COMMON} when the loader still declares it, {@code LOCAL} otherwise
+     */
+    private static ModConfig.Type resolveSharedType() {
+        try {
+            return ModConfig.Type.valueOf("COMMON");
+        } catch (IllegalArgumentException removedOnThisLoader) {
+            // 26.3: the shared, unsynced half of a mod's configuration is called LOCAL.
+            return ModConfig.Type.valueOf("LOCAL");
+        }
+    }
+
+    /** @return the resolved type of the shared configuration, for the load listener to recognise it */
+    public static ModConfig.Type sharedType() {
+        return SHARED_TYPE;
     }
 
     /**
@@ -32,7 +70,7 @@ public final class NeoConfigs {
      */
     public static void register(ModContainer container) {
         container.registerConfig(ModConfig.Type.CLIENT, CLIENT.spec());
-        container.registerConfig(ModConfig.Type.COMMON, COMMON.spec());
+        container.registerConfig(SHARED_TYPE, COMMON.spec());
     }
 
     /** @return the backend of the client half */

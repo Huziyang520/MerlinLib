@@ -83,8 +83,14 @@ public final class VanillaUi {
     public static final int PADDING = 8;
     /** Horizontal gap between two controls on the same row. */
     public static final int GAP = 6;
-    /** Width of the compact - / + / X buttons used inside list rows. */
-    public static final int STEP_BUTTON = 18;
+    /**
+     * Width of the compact - / + / X buttons used inside list rows.
+     *
+     * <p>16 pixels, the size the 1.20.1 line uses and the size a list row was designed around: at 18 the
+     * three buttons of an enchantment row plus the gap after them pushed the level field so far left that
+     * the row name lost a character at every GUI scale.
+     */
+    public static final int STEP_BUTTON = 16;
     /** Width of the vanilla scrollbar. */
     public static final int SCROLLBAR_WIDTH = 6;
     /** Height of one compact list row. */
@@ -98,15 +104,6 @@ public final class VanillaUi {
      * pixel of step, which is still rounder than a square corner and never looks bitten.
      */
     public static final int CORNER_RADIUS = 2;
-
-    /**
-     * The width of a footer button.
-     *
-     * <p>The pair used to share the whole content width, so on a wide window "save" and "cancel" were several
-     * hundred pixels of button around a two word label. They keep this width now and sit against the right edge
-     * of the panel.
-     */
-    public static final int FOOTER_BUTTON_WIDTH = 120;
 
     /**
      * The widest a panel is allowed to get.

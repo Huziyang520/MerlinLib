@@ -115,11 +115,12 @@ public class HealthEditorScreen extends VanillaScreen {
         layout.gap(10 + 10 + 10);
 
         int bottom = layout.row(VanillaUi.WIDGET_HEIGHT);
-        int half = layout.footerWidth();
+        // Two full width buttons, the same split the item editor uses.
+        int half = layout.sliceWidth(2);
         this.confirm = this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.health.confirm"),
                 button -> this.send(), left, bottom, half));
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.cancel"), button -> this.onClose(),
-                layout.footerX(1), bottom, half));
+                layout.sliceX(1, 2), bottom, half));
 
         validate();
     }
