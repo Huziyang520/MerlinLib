@@ -131,11 +131,14 @@
   "gui.merlinlib.anim.enabled": "启用界面动画",
   "gui.merlinlib.anim.screen": "配置界面 打开 / 关闭动画",
   "gui.merlinlib.anim.tab": "切换类别时滑动",
-  "gui.merlinlib.anim.sub": "工具界面（物品编辑 / 指令宏 / 血量编辑）打开 / 关闭动画",
+  "gui.merlinlib.anim.sub": "工具界面 打开 / 关闭动画",
   "gui.merlinlib.anim.kind.pop": "跳出",
   "gui.merlinlib.anim.kind.up": "上滑",
   "gui.merlinlib.anim.kind.side": "侧滑",
   "gui.merlinlib.anim.kind.fade": "淡入淡出",
   "gui.merlinlib.anim.kind": "打开 / 关闭动画种类",
-  "gui.merlinlib.anim.hint": "「打开 / 关闭动画种类」只决定界面出现和消失的方式：跳出（缩放）、上滑（自下而上）、侧滑（自侧边滑入）、淡入淡出（整屏由暗渐显）。「切换类别时滑动」是另一回事：切换标签时内容横向滑入，与种类无关，可以单独关掉。只影响 MerlinLib 自己的界面；业务模组可以调用同一套 API，用自己的开关或完全不用。"
+  "gui.merlinlib.anim.hint": "「打开 / 关闭动画种类」只决定界面出现和消失的方式：跳出（缩放）、上滑（自下而上）、侧滑（自侧边滑入）、淡入淡出（整屏由暗渐显）。「切换类别时滑动」是另一回事：切换标签时内容横向滑入，与种类无关，可以单独关掉。只影响 MerlinLib 自己的界面；业务模组可以调用同一套 API，用自己的开关或完全不用。",
+  "gui.merlinlib.config.hud_collapse": "折叠血条",
+  "gui.merlinlib.config.hud_collapse_threshold": "折叠上限阈值",
+  "gui.merlinlib.config.hud_armour_dodge": "护甲条适配"
 }

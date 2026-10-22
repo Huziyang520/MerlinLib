@@ -131,11 +131,14 @@
   "gui.merlinlib.anim.enabled": "Animate the interface",
   "gui.merlinlib.anim.screen": "Configuration screens: opening / closing",
   "gui.merlinlib.anim.tab": "Slide on tab switch",
-  "gui.merlinlib.anim.sub": "Toolkit screens (item editor, macros, health editor): opening / closing",
+  "gui.merlinlib.anim.sub": "Toolkit screens: opening / closing",
   "gui.merlinlib.anim.kind.pop": "Pop",
   "gui.merlinlib.anim.kind.up": "Slide up",
   "gui.merlinlib.anim.kind.side": "Slide from the side",
   "gui.merlinlib.anim.kind.fade": "Fade in and out",
   "gui.merlinlib.anim.kind": "Opening / closing kind",
-  "gui.merlinlib.anim.hint": "\"Opening / closing kind\" decides how a screen appears and disappears: pop (scale), slide up (from the bottom), slide from the side, or fade in and out (the whole screen comes out of the dark). \"Slide on tab switch\" is a different thing: the content slides in sideways when a tab is clicked, whatever the kind is, and it has a switch of its own. Only MerlinLib's own screens are affected; a business mod may use the same API with its own switch, or ignore it."
+  "gui.merlinlib.anim.hint": "\"Opening / closing kind\" decides how a screen appears and disappears: pop (scale), slide up (from the bottom), slide from the side, or fade in and out (the whole screen comes out of the dark). \"Slide on tab switch\" is a different thing: the content slides in sideways when a tab is clicked, whatever the kind is, and it has a switch of its own. Only MerlinLib's own screens are affected; a business mod may use the same API with its own switch, or ignore it.",
+  "gui.merlinlib.config.hud_collapse": "Fold the health bar",
+  "gui.merlinlib.config.hud_collapse_threshold": "Fold threshold",
+  "gui.merlinlib.config.hud_armour_dodge": "Armour bar adapts"
 }
