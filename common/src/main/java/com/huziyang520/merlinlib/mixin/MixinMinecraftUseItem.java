@@ -46,8 +46,9 @@ public class MixinMinecraftUseItem {
         if (player == null || !player.isShiftKeyDown()) {
             return;
         }
-        // 26.1-26.2 keeps the current screen on Minecraft itself (26.3 moved it to the Gui).
-        if (minecraft.screen != null) {
+        // Read through the helper: 26.1 keeps the open screen on Minecraft, 26.2 moved it into the Gui, and
+        // touching the field here crashed 26.2 with NoSuchFieldError the moment the player sneaked and used.
+        if (com.huziyang520.merlinlib.client.ScreenSwitcher.current(minecraft) != null) {
             // A screen is already up. Never stack another one on top: the use key is polled while it is held,
             // so without this the editor reopened as soon as it was closed, which reads as flicker.
             return;

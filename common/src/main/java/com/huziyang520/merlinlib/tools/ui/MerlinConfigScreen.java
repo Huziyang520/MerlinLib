@@ -188,7 +188,8 @@ public class MerlinConfigScreen extends VanillaScreen {
      * @return the height the wrapped hints occupy
      */
     private int hintHeight(int tab) {
-        int wrapWidth = Math.max(120, this.width - SCREEN_MARGIN);
+        // Wrapped at the panel's own width, the same width the lines are drawn with.
+        int wrapWidth = Math.max(120, panelWidth());
         int lines = 0;
         for (String hint : HINTS[tab]) {
             lines += VanillaUi.wrap(this.font, Component.translatable(hint).getString(), wrapWidth).size();
@@ -300,9 +301,8 @@ public class MerlinConfigScreen extends VanillaScreen {
             for (Setting setting : settings(index)) {
                 widest = Math.max(widest, this.font.width(setting.label()) + 12 + CONTROL_WIDTH);
             }
-            for (String hint : HINTS[index]) {
-                widest = Math.max(widest, this.font.width(Component.translatable(hint)));
-            }
+            // The hints are wrapped below, so their unwrapped length must not widen the panel: that is what
+            // pushed the controls to the right edge of the window and left the labels behind.
         }
         // Clamp to the window: at GUI scale 4 the usable width is a quarter of the resolution, and a screen
         // wider than the window simply runs off it. Long labels and hints are clipped instead.
@@ -404,11 +404,11 @@ public class MerlinConfigScreen extends VanillaScreen {
         int bottom = layout.contentBottom() - VanillaUi.WIDGET_HEIGHT;
         this.hintY = bottom - 6 - hintHeight(this.tab);
         layout.cursorTo(bottom + VanillaUi.WIDGET_HEIGHT);
-        int half = layout.sliceWidth(2);
+        int half = layout.footerWidth();
         this.save = this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.config.save"),
-                button -> this.save(), layout.sliceX(0, 2), bottom, half));
+                button -> this.save(), layout.footerX(0), bottom, half));
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.cancel"), button -> this.onClose(),
-                layout.sliceX(1, 2), bottom, half));
+                layout.footerX(1), bottom, half));
 
         validate();
     }

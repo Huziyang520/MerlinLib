@@ -36,6 +36,10 @@ public final class ScreenSwitcher {
     private static Method guiSetScreen;
     /** The 26.2 field that holds the Gui, {@code Minecraft#gui}. */
     private static Field guiField;
+    /** The 26.1 field that holds the open screen, {@code Minecraft#screen}. */
+    private static Field screenField;
+    /** The 26.2 getter for the open screen, {@code Gui#screen()}. */
+    private static Method guiScreenGetter;
     /** The fallback that exists on both, {@code Minecraft#setScreenAndShow(Screen)}. */
     private static Method setScreenAndShow;
 
@@ -74,12 +78,42 @@ public final class ScreenSwitcher {
     }
 
     /**
+     * The screen that is open right now, or {@code null} when the game is showing the world.
+     *
+     * <p>Same story as {@link #show}: the field that holds it moved. 26.1 keeps a public
+     * {@code Minecraft#screen}; 26.2 hides it inside the Gui and only offers {@code Gui#screen()}. Reading the
+     * field directly therefore threw {@code NoSuchFieldError} on 26.2 the first time the player used the health
+     * editor hot key.
+     *
+     * @param minecraft the client instance
+     * @return the open screen, or {@code null}
+     */
+    public static Screen current(Minecraft minecraft) {
+        if (!probed) {
+            probe();
+        }
+        if (screenField != null) {
+            Object open = read(screenField, minecraft);
+            return open instanceof Screen screen ? screen : null;
+        }
+        if (guiScreenGetter != null && guiField != null) {
+            Object gui = read(guiField, minecraft);
+            if (gui != null) {
+                Object open = call(guiScreenGetter, gui);
+                return open instanceof Screen screen ? screen : null;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Finds the method this build actually has. Order matters: the two non-forcing calls are preferred over
      * {@code setScreenAndShow}, which renders an extra frame.
      */
     private static void probe() {
         probed = true;
         minecraftSetScreen = find(Minecraft.class, "setScreen", Screen.class);
+        screenField = field(Minecraft.class, "screen");
         if (minecraftSetScreen != null) {
             com.huziyang520.merlinlib.Constants.LOG.info(
                     "[MerlinLib] screens are opened through Minecraft#setScreen (26.1)");
@@ -88,6 +122,7 @@ public final class ScreenSwitcher {
         guiField = field(Minecraft.class, "gui");
         Class<?> guiClass = guiField == null ? null : guiField.getType();
         guiSetScreen = guiClass == null ? null : find(guiClass, "setScreen", Screen.class);
+        guiScreenGetter = guiClass == null ? null : find(guiClass, "screen");
         if (guiSetScreen != null) {
             com.huziyang520.merlinlib.Constants.LOG.info(
                     "[MerlinLib] screens are opened through Gui#setScreen (26.2 and later)");
@@ -133,6 +168,14 @@ public final class ScreenSwitcher {
                 com.huziyang520.merlinlib.Constants.LOG.error(
                         "[MerlinLib] opening a screen failed through {}", method, failure);
             }
+        }
+    }
+
+    private static Object call(Method method, Object target) {
+        try {
+            return method.invoke(target);
+        } catch (ReflectiveOperationException failure) {
+            return null;
         }
     }
 
