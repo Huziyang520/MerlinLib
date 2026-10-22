@@ -241,6 +241,9 @@ public class MerlinConfigScreen extends VanillaScreen {
         ClientConfig client = ConfigManager.client();
         return switch (tab) {
             case 0 -> List.of(
+                    // First row on purpose: the animation switches are what a player opens this screen for most
+                    // often, and the row used to sit at the bottom under every server switch.
+                    action("gui.animation", T + "animation_edit"),
                     toggle("tools.enable_testing_toolkit", false, T + "toolkit", server.testingToolkitEnabled()),
                     toggle("security.restrict_tools_to_operators", false, T + "operators",
                             server.restrictToolsToOperators()),
@@ -248,7 +251,6 @@ public class MerlinConfigScreen extends VanillaScreen {
                             server.disableGeneratedEnchantments()),
                     toggle("notices.enabled", false, T + "notices", server.noticesEnabled()),
                     action("notices.per_mod", T + "notices_edit"),
-                    action("gui.animation", T + "animation_edit"),
                     action("config.reset", T + "reset"));
             case 1 -> List.of(
                     toggle("editor.hotkey_enabled", true, T + "hotkey", client.editorHotkeyEnabled()),

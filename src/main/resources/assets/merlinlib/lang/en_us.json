@@ -135,7 +135,7 @@
   "gui.merlinlib.anim.enabled": "Animate the interface",
   "gui.merlinlib.anim.screen": "Configuration screens: opening / closing",
   "gui.merlinlib.anim.tab": "Slide on tab switch",
-  "gui.merlinlib.anim.sub": "Toolkit screens (item editor, macros, health editor): opening / closing",
+  "gui.merlinlib.anim.sub": "Toolkit screens: opening / closing",
   "gui.merlinlib.anim.kind.pop": "Pop",
   "gui.merlinlib.anim.kind.up": "Slide up",
   "gui.merlinlib.anim.kind.side": "Slide from the side",
