@@ -29,7 +29,8 @@
     "MixinMinecraftUseItem",
     "MixinHud",
     "MixinClientLevelParticles",
-    "MixinClientPacketListenerParticles"
+    "MixinClientPacketListenerParticles",
+    "MixinHudModern"
   ],
   "server": [],
   "injectors": {
@@ -37,5 +38,6 @@
   },
   "overwrites": {
     "requireAnnotations": true
-  }
+  },
+  "plugin": "com.huziyang520.merlinlib.mixin.MerlinMixinPlugin"
 }
