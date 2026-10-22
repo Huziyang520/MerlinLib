@@ -12,6 +12,7 @@ import com.iafenvoy.jupiter.config.entry.BaseEntry;
 import com.iafenvoy.jupiter.config.entry.BooleanEntry;
 import com.iafenvoy.jupiter.config.entry.DoubleEntry;
 import com.iafenvoy.jupiter.config.entry.IntegerEntry;
+import com.iafenvoy.jupiter.config.entry.SeparatorEntry;
 import com.iafenvoy.jupiter.config.entry.StringEntry;
 import com.iafenvoy.jupiter.config.interfaces.ConfigEntry;
 import com.iafenvoy.jupiter.render.screen.JupiterScreen;
@@ -165,6 +166,14 @@ public final class JupiterBackend implements ConfigBackend {
                 for (ConfigOptions.Option option : section.getValue()) {
                     tab.addEntry(entry(option, reader));
                 }
+                if ("notices".equals(section.getKey())) {
+                    // One row per installed mod is more than a fixed tab can hold, and the retired
+                    // notices.per_mod string must not be a text field, so the switches have a screen of their own
+                    // and this row says how to reach it.
+                    tab.addEntry(SeparatorEntry.builder()
+                            .text(Component.translatable("gui.merlinlib.notices.command_hint"))
+                            .build());
+                }
             }
         }
 
@@ -219,33 +228,41 @@ public final class JupiterBackend implements ConfigBackend {
         /** Builds one entry, at the value currently in effect. */
         private static ConfigEntry<?> entry(ConfigOptions.Option option, ConfigReader reader) {
             Component label = Component.translatable(option.labelKey());
+            // The same text the TOML files carry as a comment, but translated: a comment cannot follow the
+            // language the game runs in, and Jupiter's own line can.
+            Component tooltip = Component.translatable(option.tooltipKey());
             String key = option.key();
             switch (option.kind()) {
                 case BOOL:
                     return BooleanEntry.builder(label, reader.getBoolean(key, option.defaultFlag()))
                             .key(option.name())
+                            .tooltip(tooltip)
                             .build();
                 case INT:
                     return IntegerEntry.builder(label,
                                     reader.getInt(key, option.defaultInt(), (int) option.min(), (int) option.max()))
                             .range((int) option.min(), (int) option.max())
                             .key(option.name())
+                            .tooltip(tooltip)
                             .build();
                 case DOUBLE:
                     return DoubleEntry.builder(label,
                                     reader.getDouble(key, option.defaultValue(), option.min(), option.max()))
                             .range(option.min(), option.max())
                             .key(option.name())
+                            .tooltip(tooltip)
                             .build();
                 case COLOR:
                     return StringEntry.builder(label,
                                     ConfigOptions.colourText(reader.getColor(key, (int) option.defaultValue())))
                             .key(option.name())
+                            .tooltip(tooltip)
                             .build();
                 case TEXT:
                 default:
                     return StringEntry.builder(label, reader.getString(key, option.text()))
                             .key(option.name())
+                            .tooltip(tooltip)
                             .build();
             }
         }

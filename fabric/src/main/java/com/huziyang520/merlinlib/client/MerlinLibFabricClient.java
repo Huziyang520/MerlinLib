@@ -81,6 +81,10 @@ public class MerlinLibFabricClient implements ClientModInitializer {
                             MerlinScreens.openMacroScreen(null);
                             return 1;
                         }))
+                        .then(ClientCommands.literal("notices").executes(context -> {
+                            MerlinScreens.openNoticesScreen(null);
+                            return 1;
+                        }))
                         .then(ClientCommands.literal("config").executes(MerlinLibFabricClient::openConfig))));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {

@@ -477,6 +477,27 @@ public final class TomlFile implements ConfigReader {
         return this.values.getOrDefault(key, fallback);
     }
 
+    /**
+     * Every value under one section, keyed by the key inside that section.
+     *
+     * <p>For a file whose keys are not known in advance - the per mod notice switches are named after the mods
+     * that happen to be installed - a reader cannot ask for a key it has never heard of. This lists what the
+     * file actually holds, in file order.
+     *
+     * @param section the section name, without brackets
+     * @return key to value, without the section prefix
+     */
+    public Map<String, String> keys(String section) {
+        Map<String, String> found = new LinkedHashMap<>();
+        String prefix = section + ".";
+        for (Map.Entry<String, String> entry : this.values.entrySet()) {
+            if (entry.getKey().startsWith(prefix)) {
+                found.put(entry.getKey().substring(prefix.length()), entry.getValue());
+            }
+        }
+        return found;
+    }
+
     @Override
     public List<ContentError> errors() {
         return List.copyOf(this.errors);

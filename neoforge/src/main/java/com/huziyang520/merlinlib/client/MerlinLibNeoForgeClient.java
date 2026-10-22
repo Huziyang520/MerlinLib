@@ -131,6 +131,10 @@ public class MerlinLibNeoForgeClient {
                 .then(Commands.literal("macro").executes(context -> {
                     MerlinScreens.openMacroScreen(null);
                     return 1;
+                }))
+                .then(Commands.literal("notices").executes(context -> {
+                    MerlinScreens.openNoticesScreen(null);
+                    return 1;
                 })));
     }
 

@@ -228,6 +228,23 @@ public final class MerlinScreens {
     }
 
     /**
+     * Opens the join notice switches.
+     *
+     * <p>The same gate as the other tool screens - the toolkit master switch - and no permission check, for the
+     * reason in the class comment: the switches it edits are this installation's own configuration, and on a
+     * dedicated server the server keeps the last word anyway.
+     *
+     * @param parent the screen to return to, or {@code null} to resume the game
+     */
+    public static void openNoticesScreen(Screen parent) {
+        Player player = Minecraft.getInstance().player;
+        if (!mayUseToolsLocally(player)) {
+            return;
+        }
+        Minecraft.getInstance().execute(() -> MerlinScreens.show(new NoticesScreen(parent)));
+    }
+
+    /**
      * Opens the health editor for one entity, when it is allowed.
      *
      * <p>Whether the health editor item has to be held is answered here, from the main hand, rather than

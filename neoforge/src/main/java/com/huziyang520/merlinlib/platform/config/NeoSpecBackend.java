@@ -94,89 +94,101 @@ public final class NeoSpecBackend implements ConfigBackend {
         return "merlinlib.configuration." + section + "." + key;
     }
 
+    /**
+     * Declares the description of one value in both languages.
+     *
+     * <p>The native {@code ConfigurationScreen} shows a value's comment as its tooltip, and a comment is a plain
+     * string - there is no translation key behind it. Writing the Chinese line next to the English one is what
+     * makes the tooltip readable for a player running the game in Chinese, and it also documents the generated
+     * file in both languages.
+     */
+    private static void comment(ModConfigSpec.Builder builder, String english, String chinese) {
+        builder.comment(english, chinese);
+    }
+
     private static ModConfigSpec declareClient(Map<String, ModConfigSpec.ConfigValue<?>> values) {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
 
         builder.push("general");
-        builder.comment("Show the join notices MerlinLib sends, including the one about the configuration "
-                + "screen. Takes effect on the next join.");
+        comment(builder, "Show the join notices MerlinLib sends, including the one about the configuration "
+                + "screen. Takes effect on the next join.", "显示 MerlinLib 发出的进服提示，包括关于设置界面的那一条。下一次进入世界时生效。");
         keep(values, "general", "notice_enabled", builder.translation(translation("general", "notice_enabled"))
                 .define("notice_enabled", true));
         builder.pop();
 
         builder.push("hud");
-        builder.comment("Show the damage of the weapon you just used near the crosshair.");
+        comment(builder, "Show the damage of the weapon you just used near the crosshair.", "在准星附近显示刚刚使用武器的伤害数字。");
         keep(values, "hud", "crosshair_damage", builder.translation(translation("hud", "crosshair_damage"))
                 .define("crosshair_damage", false));
-        builder.comment("How long the crosshair damage number stays on screen, in ticks.");
+        comment(builder, "How long the crosshair damage number stays on screen, in ticks.", "准星伤害数字在屏幕上停留多少 tick（20 tick 为 1 秒）。");
         keep(values, "hud", "crosshair_damage_ticks",
                 builder.translation(translation("hud", "crosshair_damage_ticks"))
                         .defineInRange("crosshair_damage_ticks", 20, 1, 400));
-        builder.comment("Fold a very large health bar into one heart plus the current and maximum numbers.");
+        comment(builder, "Fold a very large health bar into one heart plus the current and maximum numbers.", "把超长血条折叠成一颗心加当前 / 最大数值显示。");
         keep(values, "hud", "collapse_enabled", builder.translation(translation("hud", "collapse_enabled"))
                 .define("collapse_enabled", true));
-        builder.comment("Health above which the bar folds. 99 keeps a normal player bar untouched.");
+        comment(builder, "Health above which the bar folds. 99 keeps a normal player bar untouched.", "超过该生命值时血条才折叠；99 时普通玩家的血条不受影响。");
         keep(values, "hud", "collapse_threshold",
                 builder.translation(translation("hud", "collapse_threshold"))
                         .defineInRange("collapse_threshold", 99, 1, 1000000));
-        builder.comment("Move the armour row up so it sits on the folded health row.");
+        comment(builder, "Move the armour row up so it sits on the folded health row.", "把护甲条上移到折叠后的血条那一行。");
         keep(values, "hud", "armour_auto_dodge", builder.translation(translation("hud", "armour_auto_dodge"))
                 .define("armour_auto_dodge", true));
         builder.pop();
 
         builder.push("floating_text");
-        builder.comment("Show damage numbers flying off a mob when it is hit.");
+        comment(builder, "Show damage numbers flying off a mob when it is hit.", "怪物被击中时在其身上飘出伤害数字。");
         keep(values, "floating_text", "enabled", builder.translation(translation("floating_text", "enabled"))
                 .define("enabled", false));
-        builder.comment("How long a damage number stays visible after a mob is hit, in ticks.");
+        comment(builder, "How long a damage number stays visible after a mob is hit, in ticks.", "伤害飘字在屏幕上停留多少 tick。");
         keep(values, "floating_text", "duration_ticks",
                 builder.translation(translation("floating_text", "duration_ticks"))
                         .defineInRange("duration_ticks", 20, 1, 400));
-        builder.comment("Base scale of a damage number. Higher means larger text.");
+        comment(builder, "Base scale of a damage number. Higher means larger text.", "伤害飘字的缩放，数值越大字越大。");
         keep(values, "floating_text", "base_scale",
                 builder.translation(translation("floating_text", "base_scale"))
                         .defineInRange("base_scale", 1.0D, 0.1D, 8.0D));
-        builder.comment("ARGB colour of a normal hit, written as a signed 32 bit number.");
+        comment(builder, "ARGB colour of a normal hit, written as a signed 32 bit number.", "普通命中的伤害颜色，写成 32 位有符号 ARGB 数值。");
         keep(values, "floating_text", "normal_color",
                 builder.translation(translation("floating_text", "normal_color"))
                         .defineInRange("normal_color", MerlinColor.WHITE, Integer.MIN_VALUE, Integer.MAX_VALUE));
-        builder.comment("ARGB colour of a critical hit, written as a signed 32 bit number.");
+        comment(builder, "ARGB colour of a critical hit, written as a signed 32 bit number.", "暴击命中的伤害颜色，写成 32 位有符号 ARGB 数值。");
         keep(values, "floating_text", "critical_color",
                 builder.translation(translation("floating_text", "critical_color"))
                         .defineInRange("critical_color", MerlinColor.ORANGE, Integer.MIN_VALUE, Integer.MAX_VALUE));
-        builder.comment("Upper bound on simultaneous damage numbers; the oldest one is dropped first.");
+        comment(builder, "Upper bound on simultaneous damage numbers; the oldest one is dropped first.", "同时存在的伤害飘字上限，超出时先丢弃最早的一个。");
         keep(values, "floating_text", "max_concurrent",
                 builder.translation(translation("floating_text", "max_concurrent"))
                         .defineInRange("max_concurrent", 32, 1, 512));
         builder.pop();
 
         builder.push("particles");
-        builder.comment("Cap how many particles this client draws, so a single huge hit cannot freeze it.");
+        comment(builder, "Cap how many particles this client draws, so a single huge hit cannot freeze it.", "限制本客户端每 1/20 秒绘制的粒子数量，避免一次超大伤害把客户端卡死。");
         keep(values, "particles", "limit_enabled",
                 builder.translation(translation("particles", "limit_enabled")).define("limit_enabled", true));
-        builder.comment("How many particles may be drawn per 1/20 second.");
+        comment(builder, "How many particles may be drawn per 1/20 second.", "每 1/20 秒最多绘制多少个粒子。");
         keep(values, "particles", "limit", builder.translation(translation("particles", "limit"))
                 .defineInRange("limit", 512, 1, 1000000));
         builder.pop();
 
         builder.push("editor");
-        builder.comment("Allow the editor hotkey to open the item editor. Off by default, so the library can be "
-                + "installed without claiming a key.");
+        comment(builder, "Allow the editor hotkey to open the item editor. Off by default, so the library can be "
+                + "installed without claiming a key.", "允许用快捷键打开物品编辑界面。默认关闭，安装本库不会自动占用按键。");
         keep(values, "editor", "hotkey_enabled", builder.translation(translation("editor", "hotkey_enabled"))
                 .define("hotkey_enabled", false));
-        builder.comment("Value change when a - or + button is clicked while holding shift.");
+        comment(builder, "Value change when a - or + button is clicked while holding shift.", "按住 Shift 点击 - / + 时的数值变化量。");
         keep(values, "editor", "shift_step", builder.translation(translation("editor", "shift_step"))
                 .defineInRange("shift_step", 10, 1, 100000));
-        builder.comment("Value change per mouse wheel notch over a number field.");
+        comment(builder, "Value change per mouse wheel notch over a number field.", "在数值框上滚动一格滚轮的变化量。");
         keep(values, "editor", "scroll_step", builder.translation(translation("editor", "scroll_step"))
                 .defineInRange("scroll_step", 1, 1, 1000));
-        builder.comment("Value change per mouse wheel notch while holding ctrl.");
+        comment(builder, "Value change per mouse wheel notch while holding ctrl.", "按住 Ctrl 滚动一格滚轮的变化量。");
         keep(values, "editor", "scroll_step_fast", builder.translation(translation("editor", "scroll_step_fast"))
                 .defineInRange("scroll_step_fast", 10, 1, 100000));
         builder.pop();
 
         builder.push("macros");
-        builder.comment("Enable the macro toolkit: the macro screen and running macros from their bound keys.");
+        comment(builder, "Enable the macro toolkit: the macro screen and running macros from their bound keys.", "启用指令宏：指令宏界面，以及用绑定键执行宏。");
         keep(values, "macros", "enabled", builder.translation(translation("macros", "enabled"))
                 .define("enabled", true));
         builder.pop();
@@ -188,70 +200,72 @@ public final class NeoSpecBackend implements ConfigBackend {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
 
         builder.push("security");
-        builder.comment("When true, only operators may use the testing toolkit.");
+        comment(builder, "When true, only operators may use the testing toolkit.", "开启后只有 OP 可以使用测试工具集。");
         keep(values, "security", "restrict_tools_to_operators",
                 builder.translation(translation("security", "restrict_tools_to_operators"))
                         .define("restrict_tools_to_operators", false));
-        builder.comment("Require command permission (operator) to open the item editor.");
+        comment(builder, "Require command permission (operator) to open the item editor.", "打开物品编辑界面需要命令权限（OP）。");
         keep(values, "security", "editor_requires_permission",
                 builder.translation(translation("security", "editor_requires_permission"))
                         .define("editor_requires_permission", true));
-        builder.comment("Require command permission (operator) to open the health editor.");
+        comment(builder, "Require command permission (operator) to open the health editor.", "打开血量编辑器需要命令权限（OP）。");
         keep(values, "security", "health_editor_requires_permission",
                 builder.translation(translation("security", "health_editor_requires_permission"))
                         .define("health_editor_requires_permission", true));
         builder.pop();
 
         builder.push("tools");
-        builder.comment("Master switch of the testing screens. The testing items stay in the creative tab.");
+        comment(builder, "Master switch of the testing screens. The testing items stay in the creative tab.", "测试界面总开关；关闭后物品编辑、血量编辑、指令宏界面都无法打开，测试物品仍留在创造物品栏。");
         keep(values, "tools", "enable_testing_toolkit",
                 builder.translation(translation("tools", "enable_testing_toolkit"))
                         .define("enable_testing_toolkit", true));
-        builder.comment("Upper bound for the damage value of the test weapons.");
+        comment(builder, "Upper bound for the damage value of the test weapons.", "测试武器伤害数值的上限。默认取整数上限。");
         keep(values, "tools", "max_test_weapon_damage",
                 builder.translation(translation("tools", "max_test_weapon_damage"))
                         .defineInRange("max_test_weapon_damage", Integer.MAX_VALUE, 1, Integer.MAX_VALUE));
-        builder.comment("Upper bound for enchantment levels set through the item editor.");
+        comment(builder, "Upper bound for enchantment levels set through the item editor.", "通过物品编辑设置的附魔等级上限。默认取整数上限。");
         keep(values, "tools", "max_enchantment_level",
                 builder.translation(translation("tools", "max_enchantment_level"))
                         .defineInRange("max_enchantment_level", Integer.MAX_VALUE, 1, Integer.MAX_VALUE));
-        builder.comment("When true, an enchantment may be raised above the maximum level its definition declares.");
+        comment(builder, "When true, an enchantment may be raised above the maximum level its definition declares.", "开启后附魔等级可以超过其定义里声明的最高等级。");
         keep(values, "tools", "allow_levels_above_max",
                 builder.translation(translation("tools", "allow_levels_above_max"))
                         .define("allow_levels_above_max", true));
-        builder.comment("When true, any enchantment may be added to any item.");
+        comment(builder, "When true, any enchantment may be added to any item.", "开启后任意附魔都可以加到任意物品上。");
         keep(values, "tools", "allow_mismatched_enchantments",
                 builder.translation(translation("tools", "allow_mismatched_enchantments"))
                         .define("allow_mismatched_enchantments", false));
-        builder.comment("When true, the item editor opens for every item, including blocks.");
+        comment(builder, "When true, the item editor opens for every item, including blocks.", "开启后物品编辑界面对所有物品都能打开，包括方块。");
         keep(values, "tools", "allow_editing_all_items",
                 builder.translation(translation("tools", "allow_editing_all_items"))
                         .define("allow_editing_all_items", false));
-        builder.comment("When true, the base damage of an ordinary weapon can be edited too.");
+        comment(builder, "When true, the base damage of an ordinary weapon can be edited too.", "开启后普通武器的基础伤害也能编辑，而不只是测试武器。");
         keep(values, "tools", "allow_non_test_item_damage",
                 builder.translation(translation("tools", "allow_non_test_item_damage"))
                         .define("allow_non_test_item_damage", false));
-        builder.comment("When true, the health editor only opens while holding the health editor item.");
+        comment(builder, "When true, the health editor only opens while holding the health editor item.", "开启后必须手持血量编辑器才能打开血量编辑器。");
         keep(values, "tools", "health_editor_requires_item",
                 builder.translation(translation("tools", "health_editor_requires_item"))
                         .define("health_editor_requires_item", true));
         builder.pop();
 
         builder.push("content");
-        builder.comment("Emergency switch: when true, no enchantment defined in config/MerlinLib/*.json is "
-                + "generated. Code api registrations are unaffected.");
+        comment(builder, "Emergency switch: when true, no enchantment defined in config/MerlinLib/*.json is "
+                + "generated. Code api registrations are unaffected.", "应急开关：开启后不再生成 config/MerlinLib/*.json 里定义的附魔，代码 API 注册不受影响。");
         keep(values, "content", "disable_generated_enchantments",
                 builder.translation(translation("content", "disable_generated_enchantments"))
                         .define("disable_generated_enchantments", false));
         builder.pop();
 
         builder.push("notices");
-        builder.comment("Show the join notices business mods registered through MerlinLib.");
+        comment(builder, "Show the join notices business mods registered through MerlinLib.",
+                "显示业务模组通过 MerlinLib 登记的进服提示。关闭后所有进服提示一起静音。");
         keep(values, "notices", "enabled", builder.translation(translation("notices", "enabled"))
                 .define("enabled", true));
-        builder.comment("Per mod switches, written as \"<modid>=true;<modid>=false>\".");
-        keep(values, "notices", "per_mod", builder.translation(translation("notices", "per_mod"))
-                .define("per_mod", ""));
+        // The per mod switches are not declared here, and that is on purpose: their keys are mod ids that are only
+        // known at runtime, so a spec could not declare them, and the retired "notices.per_mod" string is not
+        // something a settings screen should show as a text field. They live in config/MerlinLib/notices.toml and
+        // are edited in game with /merlinlib notices - see com.huziyang520.merlinlib.config.NoticeSettings.
         builder.pop();
 
         return builder.build();

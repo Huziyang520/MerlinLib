@@ -77,6 +77,15 @@ public final class ClothBackend implements ConfigBackend {
             category.addEntry(entry(entries, option, reader));
         }
         builder.setSavingRunnable(this::commit);
+        // The join notice switches are one row per installed mod, which a fixed list of entries cannot express and
+        // a text field must not (that was the retired notices.per_mod string). They have a screen of their own, so
+        // the notices category says where it is: a list entry cannot open another screen in Cloth Config, and a row
+        // that silently did nothing would be worse than one that names the command.
+        ConfigCategory notices = categories.get("notices");
+        if (notices != null) {
+            notices.addEntry(entries.startTextDescription(
+                    Component.translatable("gui.merlinlib.notices.command_hint")).build());
+        }
         return builder.build();
     }
 
@@ -96,11 +105,15 @@ public final class ClothBackend implements ConfigBackend {
     private AbstractConfigListEntry entry(ConfigEntryBuilder entries, ConfigOptions.Option option,
                                           ConfigReader reader) {
         Component label = Component.translatable(option.labelKey());
+        // The description is a translation key as well: the configuration file documents the same switch in
+        // comments, but a comment cannot follow the language the game is running in, and this screen can.
+        Component tooltip = Component.translatable(option.tooltipKey());
         String key = option.key();
         switch (option.kind()) {
             case BOOL: {
                 boolean current = reader.getBoolean(key, option.defaultFlag());
                 return entries.startBooleanToggle(label, current)
+                        .setTooltip(tooltip)
                         .setDefaultValue(option.defaultFlag())
                         .setSaveConsumer(value -> this.store.write(key, Boolean.toString(value)))
                         .build();
@@ -108,6 +121,7 @@ public final class ClothBackend implements ConfigBackend {
             case INT: {
                 int current = reader.getInt(key, option.defaultInt(), (int) option.min(), (int) option.max());
                 return entries.startIntField(label, current)
+                        .setTooltip(tooltip)
                         .setMin((int) option.min())
                         .setMax((int) option.max())
                         .setDefaultValue(option.defaultInt())
@@ -117,6 +131,7 @@ public final class ClothBackend implements ConfigBackend {
             case DOUBLE: {
                 double current = reader.getDouble(key, option.defaultValue(), option.min(), option.max());
                 return entries.startDoubleField(label, current)
+                        .setTooltip(tooltip)
                         .setMin(option.min())
                         .setMax(option.max())
                         .setDefaultValue(option.defaultValue())
@@ -126,6 +141,7 @@ public final class ClothBackend implements ConfigBackend {
             case COLOR: {
                 int current = reader.getColor(key, (int) option.defaultValue());
                 return entries.startAlphaColorField(label, current)
+                        .setTooltip(tooltip)
                         .setDefaultValue((int) option.defaultValue())
                         .setSaveConsumer(value -> this.store.write(key, ConfigOptions.colourText(value)))
                         .build();
@@ -134,6 +150,7 @@ public final class ClothBackend implements ConfigBackend {
             default: {
                 String current = reader.getString(key, option.text());
                 return entries.startStrField(label, current)
+                        .setTooltip(tooltip)
                         .setDefaultValue(option.text())
                         .setSaveConsumer(value -> this.store.write(key, value))
                         .build();

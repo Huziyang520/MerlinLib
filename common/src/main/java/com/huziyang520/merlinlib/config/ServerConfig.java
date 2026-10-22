@@ -71,10 +71,9 @@ public final class ServerConfig {
             [notices]
             # Show the join notices business mods registered through MerlinLib (MerlinApi.notices()). On by
             # default; turn it off to silence every join notice at once. Takes effect on the next join.
+            # The switch of each mod is kept in config/MerlinLib/notices.toml, one key per mod, and can be
+            # changed in game with /merlinlib notices.
             enabled = true
-            # Per mod switches, written as "<modid>=true;<modid>=false>". A mod that is not listed uses the
-            # default it declared when it registered. Editing this line by hand works too.
-            per_mod = ""
             """;
 
     private boolean restrictToolsToOperators;
@@ -247,7 +246,7 @@ public final class ServerConfig {
         return this.noticesEnabled;
     }
 
-    /** @return the per mod overrides, as written in the configuration */
+    /** @return the per mod overrides as the retired {@code notices.per_mod} string left them, for the importer */
     public String noticePerMod() {
         return this.noticePerMod;
     }

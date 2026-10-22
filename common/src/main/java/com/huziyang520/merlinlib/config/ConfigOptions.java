@@ -68,6 +68,11 @@ public final class ConfigOptions {
             return "merlinlib.configuration." + key();
         }
 
+        /** @return the translation key of the one line description a screen shows under the label */
+        public String tooltipKey() {
+            return labelKey() + ".tooltip";
+        }
+
         /** @return the default of a {@link Kind#BOOL} option */
         public boolean defaultFlag() {
             return this.defaultValue != 0.0D;
@@ -125,8 +130,7 @@ public final class ConfigOptions {
 
             flag("content", "disable_generated_enchantments", false),
 
-            flag("notices", "enabled", true),
-            text("notices", "per_mod", ""));
+            flag("notices", "enabled", true));
 
     private ConfigOptions() {
     }

@@ -2,6 +2,7 @@ package com.huziyang520.merlinlib.notice;
 
 import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.config.ConfigManager;
+import com.huziyang520.merlinlib.config.NoticeSettings;
 import com.huziyang520.merlinlib.config.ServerConfig;
 import com.huziyang520.merlinlib.platform.Services;
 import net.minecraft.network.chat.Component;
@@ -11,6 +12,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Sends join notices.
@@ -73,9 +75,12 @@ public final class NoticeManager {
         if (!config.noticesEnabled()) {
             return;
         }
+        // Read once per join: the switches live in notices.toml, one key per mod, and a join is the only moment
+        // they matter.
+        Map<String, Boolean> overrides = NoticeSettings.snapshot();
         int sent = 0;
         for (NoticeEntry entry : all(server)) {
-            if (!NoticePreferences.isEnabled(config, entry)) {
+            if (!NoticeSettings.isEnabled(overrides, entry)) {
                 continue;
             }
             if (!shouldSend(level, player, entry)) {

@@ -1,85 +1,42 @@
 package com.huziyang520.merlinlib.notice;
 
-import com.huziyang520.merlinlib.config.ServerConfig;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Per mod switches for join notices, stored in {@code server.toml}.
+ * Parser for the retired {@code notices.per_mod} string.
  *
- * <h2>Why the server holds them</h2>
+ * <h2>What this used to be</h2>
  *
- * <p>The notices are sent by the server, so the decision of whether to send one has to live where the sending
- * happens. A client side switch could only hide a message that had already arrived, and on a dedicated server
- * the players cannot see each other's settings anyway.
+ * <p>Every per mod notice switch lived in one {@code server.toml} line,
+ * {@code per_mod = "modid=true;other=false"}, because the configuration writers of both loaders can only write a
+ * key they were told about at build time while the set of mods is only known at runtime. It worked, but it was a
+ * text field in the settings screen that no player could reasonably edit, and a mod id typed with one typo
+ * silently changed nothing.
  *
- * <h2>Why one string and not a section per mod</h2>
+ * <h2>What it is now</h2>
  *
- * <p>The list of mods is only known at runtime, and the configuration writer only knows how to put a value back
- * into a line the template already contains - a key invented at runtime would be dropped the next time the file
- * is written. One documented key holding {@code modid=true;other=false} therefore keeps every mod's choice
- * writable, and a mod that is absent from the string simply uses the default it declared.
+ * <p>Only a reader. The switches themselves live in {@code config/MerlinLib/notices.toml}, one key per mod - see
+ * {@code com.huziyang520.merlinlib.config.NoticeSettings}, which calls {@link #parseLegacy(String)} once to bring
+ * an old string forward and never looks at one again. This class stays because the string a previous build wrote
+ * is still on players' disks, and it has to be read rather than ignored.
  */
 public final class NoticePreferences {
-
-    /** The {@code server.toml} key holding every override. */
-    public static final String KEY = "notices.per_mod";
 
     private NoticePreferences() {
     }
 
     /**
-     * @param config the server configuration
-     * @param entry  the notice
-     * @return whether the notice should be sent
-     */
-    public static boolean isEnabled(ServerConfig config, NoticeEntry entry) {
-        String override = override(config, entry.owner());
-        return override == null ? entry.enabledByDefault() : Boolean.parseBoolean(override);
-    }
-
-    /**
-     * @param config the server configuration
-     * @param owner  the mod id
-     * @return the stored override, or {@code null} when the mod's own default stands
-     */
-    public static String override(ServerConfig config, String owner) {
-        return parse(config.noticePerMod()).get(owner);
-    }
-
-    /**
-     * @param config  the server configuration
-     * @param owner   the mod id
-     * @param enabled the choice to store
-     * @return the value the configuration key should be set to
-     */
-    public static String with(ServerConfig config, String owner, boolean enabled) {
-        return with(config.noticePerMod(), owner, enabled);
-    }
-
-    /**
-     * Applies one choice to a raw value, for a screen that is changing several at once.
+     * Reads the overrides out of a raw {@code notices.per_mod} value.
      *
-     * @param raw     the raw configuration value to start from
-     * @param owner   the mod id
-     * @param enabled the choice to store
-     * @return the value the configuration key should be set to
+     * @param raw the string as the retired key held it, {@code modid=true;other=false}
+     * @return mod id to the stored value, in the order the string listed them
      */
-    public static String with(String raw, String owner, boolean enabled) {
-        Map<String, String> values = parse(raw);
-        values.put(owner, Boolean.toString(enabled));
-        return join(values);
-    }
-
-    /**
-     * Reads the stored overrides.
-     *
-     * @param raw the raw configuration value
-     * @return the overrides, in a stable order
-     */
-    public static Map<String, String> parse(String raw) {
+    public static Map<String, String> parseLegacy(String raw) {
         Map<String, String> values = new LinkedHashMap<>();
+        if (raw == null) {
+            return values;
+        }
         for (String part : raw.split("[;,]")) {
             int equals = part.indexOf('=');
             if (equals <= 0) {
@@ -92,16 +49,5 @@ public final class NoticePreferences {
             }
         }
         return values;
-    }
-
-    private static String join(Map<String, String> values) {
-        StringBuilder builder = new StringBuilder();
-        for (Map.Entry<String, String> entry : values.entrySet()) {
-            if (!builder.isEmpty()) {
-                builder.append(';');
-            }
-            builder.append(entry.getKey()).append('=').append(entry.getValue());
-        }
-        return builder.toString();
     }
 }
