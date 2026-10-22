@@ -23,6 +23,11 @@ dependencies {
         // this project builds against; the module only needs the Cloth types themselves.
         transitive = false
     }
+    // Jupiter is optional in exactly the same way: a second configuration screen, never bundled and never a
+    // dependency, so the mod runs with neither Cloth nor Jupiter. The jar is copied into libs/ by hand (the
+    // directory is git-ignored and contains no sources); fileTree() rather than a file name keeps the build
+    // working when the jar is absent, which is the normal state of a fresh checkout.
+    compileOnly(fileTree(dir: 'libs', include: ['*.jar']))
     minecraft("com.mojang:minecraft:${minecraft_version}")
     // Plain implementation: probed on 2026-09-24 with Loom 1.18.1, modImplementation() no longer
     // exists on Loom 1.17+ either (the old docs 06 section 6.3.2 rule only applies to the Loom 1.8/1.9 line).

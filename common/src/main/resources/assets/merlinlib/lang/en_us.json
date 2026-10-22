@@ -123,5 +123,5 @@
   "merlinlib.configuration.content.disable_generated_enchantments": "Disable enchantments from config",
   "merlinlib.configuration.notices.enabled": "Join notices in chat",
   "merlinlib.configuration.notices.per_mod": "Per mod notice switches",
-  "command.merlinlib.config.no_cloth": "MerlinLib: the visual configuration screen needs Cloth Config API. Without it, edit config/MerlinLib/client.toml and server.toml by hand."
+  "command.merlinlib.config.no_screen": "MerlinLib: the visual configuration screen needs Cloth Config API or Jupiter. Without either, edit config/MerlinLib/client.toml and server.toml by hand."
 }

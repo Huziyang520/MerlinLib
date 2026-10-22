@@ -23,6 +23,9 @@ eclipse
 run
 runs
 
+# optional compile-only jars copied in by hand (Jupiter, ...); never packaged, never committed
+libs/
+
 # editor
 .vscode/
 *.log

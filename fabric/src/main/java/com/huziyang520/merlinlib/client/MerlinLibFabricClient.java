@@ -11,6 +11,7 @@ import com.huziyang520.merlinlib.tools.ui.MacroScreen;
 import com.huziyang520.merlinlib.tools.ui.MerlinScreens;
 import com.mojang.brigadier.context.CommandContext;
 import com.huziyang520.merlinlib.platform.config.ClothSupport;
+import com.huziyang520.merlinlib.platform.config.JupiterSupport;
 import com.huziyang520.merlinlib.tools.ui.MerlinUi;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -60,9 +61,11 @@ public class MerlinLibFabricClient implements ClientModInitializer {
         KeyMappingHelper.registerKeyMapping(OPEN_EDITOR);
         KeyMappingHelper.registerKeyMapping(OPEN_MACROS);
 
-        // Cloth Config is optional: when it is installed it becomes the configuration screen, otherwise the TOML
-        // files stay the store and /merlinlib config explains that a screen needs one of the supported mods.
+        // Cloth Config and Jupiter are both optional, and either one is enough for a screen: Cloth gets the store
+        // first, Jupiter is always told about the settings so its own configuration list shows this mod, and with
+        // neither installed the TOML files stay the store and /merlinlib config says what to install.
         ClothSupport.activate();
+        JupiterSupport.activate();
 
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, buildContext) ->
                 dispatcher.register(ClientCommands.literal("merlinlib")
@@ -130,11 +133,13 @@ public class MerlinLibFabricClient implements ClientModInitializer {
     }
 
     /**
-     * Opens the configuration screen, which only exists when Cloth Config is installed.
+     * Opens the configuration screen, whichever optional mod can provide one.
      *
-     * <p>A client command rather than a server one: the screen is a client object, and the server has no way to
-     * show it. When Cloth Config is missing the command says so instead of failing silently, because a player who
-     * typed it is asking where the screen went.
+     * <p>Cloth Config first, then Jupiter: a player who has both gets the Cloth screen from the command, and
+     * Jupiter's own configuration list carries the same switches under its own entries. A client command rather
+     * than a server one, because the screen is a client object the server cannot show. When neither mod is
+     * installed the command says so instead of failing silently, because a player who typed it is asking where
+     * the screen went.
      *
      * @param source the command source, used for the message when no screen can be shown
      * @return 1 when the screen was opened, 0 otherwise
@@ -143,7 +148,10 @@ public class MerlinLibFabricClient implements ClientModInitializer {
         FabricClientCommandSource source = context.getSource();
         Screen screen = ClothSupport.openScreen(null);
         if (screen == null) {
-            source.sendError(Component.translatable("command.merlinlib.config.no_cloth"));
+            screen = JupiterSupport.openScreen(null);
+        }
+        if (screen == null) {
+            source.sendError(Component.translatable("command.merlinlib.config.no_screen"));
             return 0;
         }
         ScreenSwitcher.show(Minecraft.getInstance(), screen);

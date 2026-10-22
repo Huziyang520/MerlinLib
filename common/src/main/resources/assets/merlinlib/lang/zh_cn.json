@@ -123,5 +123,5 @@
   "merlinlib.configuration.content.disable_generated_enchantments": "禁用配置注入的附魔",
   "merlinlib.configuration.notices.enabled": "进入世界聊天栏提示",
   "merlinlib.configuration.notices.per_mod": "各模组提示开关",
-  "command.merlinlib.config.no_cloth": "MerlinLib：可视化配置界面需要安装 Cloth Config API。未安装时请直接编辑 config/MerlinLib/client.toml 与 server.toml。"
+  "command.merlinlib.config.no_screen": "MerlinLib：可视化配置界面需要安装 Cloth Config API 或 Jupiter。两者都没有时请直接编辑 config/MerlinLib/client.toml 与 server.toml。"
 }
