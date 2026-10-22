@@ -257,10 +257,8 @@ public final class NeoSpecBackend implements ConfigBackend {
         spec.bool("enabled", true,
                 "Show the join notices business mods registered through MerlinLib (MerlinApi.notices()). On by "
                         + "default; turn it off to silence every join notice at once. Takes effect on the next "
-                        + "join.");
-        spec.text("per_mod", "",
-                "Per mod switches, written as \"<modid>=true;<modid>=false>\". A mod that is not listed uses the "
-                        + "default it declared when it registered. Editing this line by hand works too.");
+                        + "join. The switch of a single business mod is on the join notice page that "
+                        + "/merlinlib notices opens, and is stored in config/MerlinLib/notices.toml.");
         spec.end();
 
         return new NeoSpecBackend(spec, SERVER_FILE, LEGACY_SERVER_FILE);

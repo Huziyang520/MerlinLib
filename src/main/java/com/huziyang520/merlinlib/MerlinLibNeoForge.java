@@ -4,6 +4,7 @@ import com.huziyang520.merlinlib.command.MerlinCommand;
 import com.huziyang520.merlinlib.config.ConfigManager;
 import com.huziyang520.merlinlib.config.ConfigScope;
 import com.huziyang520.merlinlib.config.NeoSpecBackend;
+import com.huziyang520.merlinlib.config.NoticeSettings;
 import com.huziyang520.merlinlib.impl.PermissionGate;
 import com.huziyang520.merlinlib.network.DamageFeedbackPayload;
 import com.huziyang520.merlinlib.network.DamageFeedbackSink;
@@ -40,6 +41,13 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 public class MerlinLibNeoForge {
 
     public MerlinLibNeoForge(IEventBus eventBus, ModContainer modContainer) {
+
+        // The per mod join notice switches moved to config/MerlinLib/notices.toml, and the old
+        // notices.per_mod string of the common file is no longer declared in the specification. Reading it
+        // therefore has to happen here: the loader rewrites a configuration file whose entries do not match
+        // the specification while it loads that file, which would drop the old key before any listener could
+        // see it. Calling it first also covers a fresh install, where notices.toml is simply created.
+        NoticeSettings.captureLegacy();
 
         // The switches are declared as loader specifications, which is what makes the mod list show the
         // "Config" button and the game build the screen from them. The two files are registered here rather

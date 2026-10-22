@@ -75,7 +75,7 @@ public final class NoticeManager {
         }
         int sent = 0;
         for (NoticeEntry entry : all(server)) {
-            if (!NoticePreferences.isEnabled(config, entry)) {
+            if (!NoticePreferences.isEnabled(entry)) {
                 continue;
             }
             if (!shouldSend(level, player, entry)) {

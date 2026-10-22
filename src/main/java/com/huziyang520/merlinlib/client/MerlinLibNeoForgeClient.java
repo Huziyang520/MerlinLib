@@ -110,7 +110,9 @@ public class MerlinLibNeoForgeClient {
                 .then(Commands.literal("health")
                         .executes(MerlinLibNeoForgeClient::openHealth))
                 .then(Commands.literal("macro")
-                        .executes(MerlinLibNeoForgeClient::openMacros)));
+                        .executes(MerlinLibNeoForgeClient::openMacros))
+                .then(Commands.literal("notices")
+                        .executes(MerlinLibNeoForgeClient::openNotices)));
     }
 
     /**
@@ -140,6 +142,23 @@ public class MerlinLibNeoForgeClient {
     private static int openMacros(CommandContext<CommandSourceStack> context) {
 
         MerlinScreens.openMacroScreen(null);
+        return 1;
+    }
+
+    /**
+     * Opens the join notice page: the master switch and one switch per business mod.
+     *
+     * <p>Registered here with the other screen commands for the same reason - only the client can open a
+     * screen - and with the same requirements: none. The switch it writes lives in this side's own
+     * configuration, and a player who may not change it simply does not get the permission to run the command
+     * on a server that cares.
+     *
+     * @param context the command context, unused
+     * @return 1, the standard success code
+     */
+    private static int openNotices(CommandContext<CommandSourceStack> context) {
+
+        MerlinScreens.openNoticesScreen(null);
         return 1;
     }
 

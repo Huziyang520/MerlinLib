@@ -288,6 +288,19 @@ public final class MerlinScreens {
     }
 
     /**
+     * Opens the join notice page.
+     *
+     * <p>Not gated on the toolkit switches: this page configures what players are told when they join, which
+     * has nothing to do with the testing toolkit, and a server owner must be able to reach it with the
+     * toolkit switched off.
+     *
+     * @param parent the screen to return to, or {@code null} to resume the game
+     */
+    public static void openNoticesScreen(Screen parent) {
+        Minecraft.getInstance().setScreen(new NoticesScreen(parent));
+    }
+
+    /**
      * Opens the health editor for one entity, when it is allowed.
      *
      * <p>Whether the health editor item has to be held is answered here, from the main hand, rather than

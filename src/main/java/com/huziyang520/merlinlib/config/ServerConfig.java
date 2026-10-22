@@ -31,7 +31,6 @@ public final class ServerConfig {
     private boolean healthEditorRequiresItem = true;
     private boolean disableGeneratedEnchantments;
     private boolean noticesEnabled = true;
-    private String noticePerMod = "";
     private List<ContentError> errors = List.of();
 
     /**
@@ -60,7 +59,6 @@ public final class ServerConfig {
         config.healthEditorRequiresItem = file.getBoolean("tools.health_editor_requires_item", true);
         config.disableGeneratedEnchantments = file.getBoolean("content.disable_generated_enchantments", false);
         config.noticesEnabled = file.getBoolean("notices.enabled", true);
-        config.noticePerMod = file.getString("notices.per_mod", "");
         config.errors = file.errors();
         return config;
     }
@@ -128,11 +126,6 @@ public final class ServerConfig {
     /** @return whether join notices registered through the api are shown at all */
     public boolean noticesEnabled() {
         return this.noticesEnabled;
-    }
-
-    /** @return the per mod overrides, as written in the configuration */
-    public String noticePerMod() {
-        return this.noticePerMod;
     }
 
     /** @return problems found while reading the file during the last reload. */

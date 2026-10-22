@@ -190,6 +190,19 @@ public final class TomlFile implements ConfigReader {
     }
 
     /**
+     * Every {@code section.key} the file held.
+     *
+     * <p>Needed where the keys are not known ahead of time: the per mod switches of the join notices are
+     * one line per mod, and the mods only exist at runtime. The map is a copy, so a caller enumerating it
+     * cannot change what this reader answers.
+     *
+     * @return the values, keyed by {@code section.key} (or the bare key at the top level), in file order
+     */
+    public Map<String, String> entries() {
+        return new LinkedHashMap<>(this.values);
+    }
+
+    /**
      * @return problems found while reading; the affected options fell back to their defaults.
      */
     public List<ContentError> errors() {
