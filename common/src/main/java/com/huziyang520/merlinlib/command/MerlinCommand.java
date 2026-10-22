@@ -95,8 +95,7 @@ public final class MerlinCommand {
      * takes effect immediately: the client reads that value when the key is pressed, not at startup.
      *
      * <p>On a dedicated server the file that is written is the one next to the server, which belongs to
-     * the machine running the command; a player's own hotkey is their own file and their own configuration
-     * screen.
+     * the machine running the command; a player's own hotkey is their own file on their own computer.
      *
      * @param context the command context
      * @param enabled the value to write

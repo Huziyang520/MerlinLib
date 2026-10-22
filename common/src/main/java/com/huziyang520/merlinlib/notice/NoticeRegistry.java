@@ -17,7 +17,7 @@ import java.util.Map;
  * the earlier entry, so a mod that re-registers on every server start does not end up with duplicates.
  *
  * <p>The mod the notice belongs to is never passed in by hand - it is the id's namespace. A mod therefore
- * cannot accidentally claim another mod's notices, and the settings screen can group by owner without
+ * cannot accidentally claim another mod's notices, and the per mod switches can be grouped by owner without
  * keeping a second list in step with this one.
  */
 public final class NoticeRegistry {
@@ -34,7 +34,7 @@ public final class NoticeRegistry {
      * @param id               the notice id, whose namespace is the owning mod
      * @param mode             when it is shown
      * @param lines            the lines to send
-     * @param enabledByDefault the owner's default for the settings screen
+     * @param enabledByDefault the owner's default for the per mod switch
      */
     public static synchronized void register(Identifier id, NoticeMode mode, List<Component> lines,
                                              boolean enabledByDefault) {

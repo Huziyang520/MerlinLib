@@ -8,16 +8,22 @@ import com.huziyang520.merlinlib.tools.hud.CombatFeedback;
 import com.huziyang520.merlinlib.tools.macro.MacroStorage;
 import com.huziyang520.merlinlib.tools.ui.HealthEditorScreen;
 import com.huziyang520.merlinlib.tools.ui.MacroScreen;
+import com.huziyang520.merlinlib.tools.ui.ConfigScreens;
 import com.huziyang520.merlinlib.tools.ui.MerlinScreens;
 import com.huziyang520.merlinlib.tools.ui.MerlinUi;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.commands.Commands;
 import net.minecraft.resources.Identifier;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
@@ -49,6 +55,7 @@ public class MerlinLibNeoForgeClient {
         modBus.addListener(this::onRegisterGuiLayers);
         modBus.addListener(this::onRegisterClientPayloads);
         NeoForge.EVENT_BUS.addListener(this::onClientTick);
+        NeoForge.EVENT_BUS.addListener(this::onRegisterClientCommands);
         NeoForge.EVENT_BUS.addListener(this::onUseEntity);
         DamageFeedbackSink.setClientSink(payload ->
                 CombatFeedback.instance().onServerDamage(payload.damage(), payload.critical(), payload.targetId()));
@@ -58,6 +65,44 @@ public class MerlinLibNeoForgeClient {
         MacroStorage.load();
         com.huziyang520.merlinlib.tools.HealthEditorItem.setOpener(target ->
                 MerlinScreens.openHealthEditor(null, target));
+        // NeoForge's own configuration screen holds every switch, so /merlinlib config simply opens it.
+        ConfigScreens.install(parent -> {
+            ModContainer container = ModList.get().getModContainerById(Constants.MOD_ID).orElse(null);
+            return container == null ? null : new ConfigurationScreen(container, parent);
+        });
+    }
+
+    /**
+     * Adds the tool entries as client commands, so {@code /merlinlib editor}, {@code health}, {@code macro}
+     * and {@code config} open the screens without a key binding. The key bindings stay as they were.
+     *
+     * <p>Client side on purpose: these commands only ever open a screen on this computer, and a server side
+     * version would have to tell the client to do it, with a payload per screen.
+     *
+     * @param event the client command registration event
+     */
+    private void onRegisterClientCommands(RegisterClientCommandsEvent event) {
+        event.getDispatcher().register(Commands.literal(Constants.MOD_ID)
+                .then(Commands.literal("editor")
+                        .executes(context -> {
+                            MerlinScreens.openItemEditor();
+                            return 1;
+                        }))
+                .then(Commands.literal("health")
+                        .executes(context -> {
+                            MerlinScreens.openHealthEditorSelf();
+                            return 1;
+                        }))
+                .then(Commands.literal("macro")
+                        .executes(context -> {
+                            MerlinScreens.openMacroScreen(null);
+                            return 1;
+                        }))
+                .then(Commands.literal("config")
+                        .executes(context -> {
+                            MerlinScreens.openConfigScreen(null);
+                            return 1;
+                        })));
     }
 
     private void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {

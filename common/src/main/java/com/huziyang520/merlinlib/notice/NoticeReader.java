@@ -24,7 +24,7 @@ import java.util.Map;
  * Reads notices out of data packs.
  *
  * <p>A pack adds one at {@code data/<namespace>/merlinlib/notices/<name>.json}; the notice id is
- * {@code <namespace>:<name>}, so the file's location and the settings screen's grouping both follow from the
+ * {@code <namespace>:<name>}, so the file's location and the per mod switch's grouping both follow from the
  * pack's own namespace. The format is written out in the README.
  *
  * <p>Parsing happens once per player join rather than on a reload listener: the read is a resource listing and

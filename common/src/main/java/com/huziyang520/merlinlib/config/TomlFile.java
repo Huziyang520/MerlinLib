@@ -25,8 +25,11 @@ import java.util.Optional;
  * <p>Files are only ever written when missing, never rewritten: hand written comments are never lost.
  * Reading problems are collected as {@link ContentError}s and the affected key silently falls back to
  * its default, so one typo cannot stop the game from starting.
+ *
+ * <p>This is the {@link ConfigReader} used whenever no platform configuration is installed; see
+ * {@link ConfigBackend} for the other case.
  */
-public final class TomlFile {
+public final class TomlFile implements ConfigReader {
 
     private final Path path;
     private final Map<String, String> values = new LinkedHashMap<>();
@@ -65,7 +68,7 @@ public final class TomlFile {
      * Writes selected values back into an existing file, in place.
      *
      * <p>Only the values named in {@code overrides} are touched: every comment, blank line and order is
-     * kept, so the configuration screen can save a switch without destroying the documentation the file
+     * kept, so saving one switch never destroys the documentation the file
      * exists to carry. A key that is not in the file yet is appended, under its section header, which is
      * what makes a file written by an older version gain new options without being reset.
      *
@@ -174,6 +177,48 @@ public final class TomlFile {
             insertAt = index + 1;
         }
         lines.add(insertAt, line);
+    }
+
+    /**
+     * Replaces a file with a fresh copy of a template, carrying the given values over.
+     *
+     * <p>Used by the layout migrations, which have to be able to drop a whole section: {@link #rewrite}
+     * only ever replaces or adds single keys and leaves everything else exactly as it was, which is right
+     * for a normal save but wrong when an option no longer exists.
+     *
+     * @param path     the file to replace, created when missing
+     * @param defaults the template to write
+     * @param values   the values to carry over, keyed by {@code section.key}; unknown keys are ignored
+     */
+    public static void rebuild(Path path, String defaults, Map<String, String> values) {
+        write(path, defaults);
+        rewrite(path, defaults, values);
+    }
+
+    /**
+     * @param template the commented template of a configuration file
+     * @return every key the template declares, as {@code section.key}
+     */
+    public static java.util.Set<String> keysOf(String template) {
+        java.util.Set<String> keys = new java.util.LinkedHashSet<>();
+        String section = "";
+        for (String raw : template.split("\\R")) {
+            String line = raw.trim();
+            if (line.isEmpty() || line.startsWith("#")) {
+                continue;
+            }
+            if (line.startsWith("[") && line.endsWith("]")) {
+                section = line.substring(1, line.length() - 1).trim();
+                continue;
+            }
+            int equals = line.indexOf('=');
+            if (equals < 0) {
+                continue;
+            }
+            String key = line.substring(0, equals).trim();
+            keys.add(section.isEmpty() ? key : section + "." + key);
+        }
+        return keys;
     }
 
     private static void write(Path path, String content) {
@@ -313,6 +358,13 @@ public final class TomlFile {
 
     public Path path() {
         return this.path;
+    }
+
+    /**
+     * @return every value the file holds, keyed by {@code section.key}, in file order
+     */
+    public Map<String, String> values() {
+        return java.util.Collections.unmodifiableMap(new LinkedHashMap<>(this.values));
     }
 
     private void invalid(String key, String expected, String found) {

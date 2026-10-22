@@ -163,8 +163,8 @@ public final class MerlinScreens {
      * Opens the item editor from the key binding.
      *
      * <p>The binding ships switched off ({@code editor.hotkey_enabled}), so the library can be installed
-     * without claiming a key. It can be switched on from the configuration screen or with
-     * {@code /merlinlib editorhotkey on}.
+     * without claiming a key. It can be switched on with {@code /merlinlib editorhotkey on} or by editing
+     * {@code client.toml}.
      */
     public static void openItemEditorFromHotkey() {
         if (!ConfigManager.client().editorHotkeyEnabled()) {
@@ -193,6 +193,25 @@ public final class MerlinScreens {
             return;
         }
         Minecraft.getInstance().setScreenAndShow(new MacroScreen(parent));
+    }
+
+    /**
+     * Opens the platform configuration screen, if this platform has one.
+     *
+     * <p>MerlinLib has no configuration interface of its own any more: NeoForge shows its native
+     * configuration screen, Fabric shows a Cloth Config screen when that mod is installed. This method
+     * answers {@code false} when neither is available, so the caller can say what is missing.
+     *
+     * @param parent the screen to return to, or {@code null} to resume the game
+     * @return {@code true} when a screen was opened
+     */
+    public static boolean openConfigScreen(Screen parent) {
+        return ConfigScreens.open(parent);
+    }
+
+    /** @return whether this platform can show a configuration screen at all */
+    public static boolean hasConfigScreen() {
+        return ConfigScreens.available();
     }
 
     /**
@@ -226,9 +245,9 @@ public final class MerlinScreens {
             // right click into a self edit, which also made the item look pointless.
             //
             // Both refusals are silent towards the player on purpose: the requirement is already stated in the
-            // item's own tooltip and on the config screen, and repeating it in the middle of the screen on
-            // every stray right click is noise. The log lines stay, because "why does nothing happen" is a
-            // question the log can answer and the screen cannot.
+            // item's own tooltip, and repeating it in the middle of the screen on every stray right click is
+            // noise. The log lines stay, because "why does nothing happen" is a question the log can answer and
+            // the screen cannot.
             Constants.LOG.info("[MerlinLib] a self edit was refused: the health editor item must be held to "
                     + "edit yourself");
             return false;
@@ -245,5 +264,25 @@ public final class MerlinScreens {
         }
         minecraft.setScreenAndShow(new HealthEditorScreen(parent, target));
         return true;
+    }
+
+    /**
+     * Opens the health editor for the player themself, from {@code /merlinlib health}.
+     *
+     * <p>The item requirement is deliberately not applied here: a command is an explicit request, not a
+     * stray right click, and the only caller is the player typing it. Everything that matters is still
+     * checked - the toolkit master switch and the command permission switch - and the server re-validates
+     * permission and clamps the values where the edit is applied.
+     */
+    public static void openHealthEditorSelf() {
+        Minecraft minecraft = Minecraft.getInstance();
+        Player player = minecraft.player;
+        if (player == null || !mayUseToolsLocally(player)) {
+            return;
+        }
+        if (!mayOpenEditorLocally(player, true)) {
+            return;
+        }
+        minecraft.setScreenAndShow(new HealthEditorScreen(null, player));
     }
 }

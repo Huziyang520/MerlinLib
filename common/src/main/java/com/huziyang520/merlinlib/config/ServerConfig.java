@@ -12,10 +12,9 @@ import java.util.Map;
  * Server side switches. This file is authoritative: the client only ever displays what the server
  * allows, and every toolkit action is validated against these values on the server.
  *
- * <p>Single player note: the integrated server shares this process, so editing the file from the
+ * <p>Single player note: the integrated server shares this process, so a value written from a
  * configuration screen takes effect immediately. On a dedicated server the file must be edited there
- * and applied with {@code /reload}, which is why the configuration screen marks the server section as
- * operator owned.
+ * and applied with {@code /reload}, which is why these switches are the server's own.
  */
 public final class ServerConfig {
 
@@ -92,10 +91,22 @@ public final class ServerConfig {
     private String noticePerMod = "";
     private List<ContentError> errors = List.of();
 
+    /**
+     * @return the server switches, read from whichever store is currently installed
+     */
     public static ServerConfig load() {
+        return load(ConfigManager.serverView());
+    }
+
+    /**
+     * Reads the switches from one store.
+     *
+     * @param file the store to read, normally {@link ConfigManager#serverView()}
+     * @return the switches
+     */
+    static ServerConfig load(ConfigReader file) {
         ServerConfig config = new ServerConfig();
-        TomlFile file = TomlFile.read(path(), DEFAULTS);
-        if (migrate(file)) {
+        if (file instanceof TomlFile toml && migrate(toml)) {
             // The values below are read from the file, so the file has to be parsed again after a migration
             // rewrote it; otherwise this launch would still see the old numbers.
             file = TomlFile.read(path(), DEFAULTS);
@@ -125,7 +136,7 @@ public final class ServerConfig {
         return Path.of("config", Constants.CONFIG_DIRECTORY, "server.toml");
     }
 
-    /** The file layout this build writes; see {@link #migrate(TomlFile)}. */
+    /** The file layout this build writes; see {@link #migrate(ConfigReader)}. */
     private static final int CONFIG_VERSION = 4;
 
     /**
@@ -143,7 +154,7 @@ public final class ServerConfig {
      * @param file the file the configuration was read from
      * @return {@code true} when the file was rewritten and has to be read again
      */
-    private static boolean migrate(TomlFile file) {
+    private static boolean migrate(ConfigReader file) {
         if (file.getInt("tools.config_version", 0, 0, Integer.MAX_VALUE) >= CONFIG_VERSION) {
             return false;
         }

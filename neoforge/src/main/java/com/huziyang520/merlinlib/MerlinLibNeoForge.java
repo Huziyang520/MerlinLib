@@ -2,13 +2,13 @@ package com.huziyang520.merlinlib;
 
 import com.huziyang520.merlinlib.command.MerlinCommand;
 import com.huziyang520.merlinlib.config.ConfigManager;
+import com.huziyang520.merlinlib.config.NeoConfigs;
 import com.huziyang520.merlinlib.impl.PermissionGate;
 import com.huziyang520.merlinlib.network.DamageFeedbackPayload;
 import com.huziyang520.merlinlib.network.DamageFeedbackSink;
 import com.huziyang520.merlinlib.network.HealthEditPayload;
 import com.huziyang520.merlinlib.network.ItemEditPayload;
 import com.huziyang520.merlinlib.tools.MerlinCreativeEntries;
-import com.huziyang520.merlinlib.tools.ui.MerlinConfigScreen;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
@@ -22,6 +22,9 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.config.ModConfigEvent;
+import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
@@ -46,13 +49,52 @@ public class MerlinLibNeoForge {
         // A death respawn rebuilds the player and copies attribute base values only (restoreFrom calls
         // assignPermanentModifiers solely when restoreAll is true), so the ceiling is carried over here.
         NeoForge.EVENT_BUS.addListener(this::onPlayerClone);
-        // The mods list screen picks this up and shows the config button for MerlinLib. The factory
-        // lambda only references the client side screen class inside its body, so a dedicated server
-        // never loads it. The named local resolves the registerExtensionPoint overload ambiguity:
-        // a bare lambda matches both Supplier<T> and the functional interface itself.
-        IConfigScreenFactory factory = (mod, parent) -> new MerlinConfigScreen(parent);
+        // The mods list screen picks this up and shows the config button for MerlinLib, which opens
+        // NeoForge's own configuration screen over the specs declared in NeoConfigs. The factory lambda only
+        // references the client side screen class inside its body, so a dedicated server never loads it. The
+        // named local resolves the registerExtensionPoint overload ambiguity: a bare lambda matches both
+        // Supplier<T> and the functional interface itself.
+        NeoConfigs.register(modContainer);
+        eventBus.addListener(this::onConfigLoading);
+        eventBus.addListener(this::onConfigReloading);
+        IConfigScreenFactory factory = (mod, parent) -> new ConfigurationScreen(mod, parent);
         modContainer.<IConfigScreenFactory>registerExtensionPoint(IConfigScreenFactory.class, () -> factory);
         MerlinLib.init(eventBus);
+    }
+
+    /**
+     * Hands the client switches to the configuration that has just been loaded.
+     *
+     * <p>Said explicitly because the two halves are not interchangeable: the client switches come from the
+     * {@code CLIENT} configuration, the authoritative ones from {@code COMMON}, and a backend installed for
+     * the wrong half would silently answer every question with a default.
+     *
+     * @param event the load event
+     */
+    private void onConfigLoading(ModConfigEvent.Loading event) {
+        adopt(event.getConfig());
+    }
+
+    /**
+     * Re-reads after {@code /reload} reloaded the configuration on disk.
+     *
+     * @param event the reload event
+     */
+    private void onConfigReloading(ModConfigEvent.Reloading event) {
+        adopt(event.getConfig());
+    }
+
+    /**
+     * Installs the backend of the half that has just become readable.
+     *
+     * @param config the configuration that was loaded
+     */
+    private static void adopt(ModConfig config) {
+        if (config.getType() == ModConfig.Type.CLIENT) {
+            ConfigManager.setBackend(NeoConfigs.clientBackend());
+        } else if (config.getType() == ModConfig.Type.COMMON) {
+            ConfigManager.setServerBackend(NeoConfigs.commonBackend());
+        }
     }
 
     /**

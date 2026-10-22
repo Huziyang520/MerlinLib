@@ -4,11 +4,16 @@ plugins {
 }
 repositories {
     maven { url = 'https://maven.terraformersmc.com/releases/' }
+    // Cloth Config, for the optional configuration screen. No mirror carries it.
+    maven { url = 'https://maven.shedaniel.me/' }
 }
 
 dependencies {
     // Mod Menu integration: compile only so the mod still runs without it.
     compileOnly("com.terraformersmc:modmenu:21.0.0-beta.1")
+    // Cloth Config: optional, compile only, never bundled. The whole feature sits behind one Class.forName
+    // check in FabricConfig, so a game without it never resolves a Cloth class.
+    compileOnly("me.shedaniel.cloth:cloth-config-fabric:26.3.159")
     minecraft("com.mojang:minecraft:${minecraft_version}")
     // Plain implementation: probed on 2026-09-24 with Loom 1.18.1, modImplementation() no longer
     // exists on Loom 1.18 (the old docs 06 section 6.3.2 rule only applies to the Loom 1.8/1.9 line).

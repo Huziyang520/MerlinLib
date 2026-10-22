@@ -11,7 +11,7 @@ import java.util.List;
  * One join notice, from wherever it came.
  *
  * @param id                the notice's id; its namespace is the mod the notice belongs to, which is what the
- *                          settings screen groups by
+ *                          per mod switch groups by
  * @param mode              when it is shown
  * @param lines             the lines to send, each already carrying its own colours and styles
  * @param enabledByDefault  whether the owning mod wants it on before anyone touches a setting

@@ -26,20 +26,6 @@ import net.minecraft.world.entity.player.Player;
  */
 public class HealthEditorScreen extends VanillaScreen {
 
-    /**
-     * {@code true}: this is a toolkit screen (item editor, enchantment picker, health editor, macros), so it
-     * follows the toolkit animation switch rather than the configuration screen one. The two are separate on
-     * purpose: the configuration screens animate by default, while editing an item should not make the whole
-     * window jump every time.
-     *
-     * @return {@code true}, this screen is a toolkit screen
-     */
-    @Override
-    protected boolean subScreen() {
-        return true;
-    }
-
-
     /** Narrowest content that still lays out sensibly. */
     private static final int MIN_CONTENT_WIDTH = 208;
     /** Width of a value field. */

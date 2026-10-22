@@ -1,14 +1,12 @@
 package com.huziyang520.merlinlib.tools.ui.vanilla;
 
-import com.huziyang520.merlinlib.ui.anim.ScreenIntro;
-import com.huziyang520.merlinlib.ui.anim.UiAnimation;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * Base class of the MerlinLib screens.
+ * Base class of the MerlinLib toolkit screens.
  *
  * <p>It owns the three things that are easy to get wrong:
  * <ul>
@@ -21,6 +19,10 @@ import net.minecraft.network.chat.Component;
  *     <li><b>the screen pauses the game</b> - otherwise the world keeps animating behind the panel and
  *     the screen reads as flicker.</li>
  * </ul>
+ *
+ * <p>Opening and closing are not animated. The toolkit screens are for looking at an item or a number
+ * right now, and a window that slides into place only delays that; the interfaces this class backs are
+ * unchanged otherwise.
  */
 public abstract class VanillaScreen extends Screen {
 
@@ -28,36 +30,11 @@ public abstract class VanillaScreen extends Screen {
     private static final int WORLD_DIM = 0xC0101010;
 
     private PanelLayout layout;
-    /** Whether a close was asked for and is being animated out. */
-    private boolean closing;
-    /** The animation of that close. */
-    private ScreenIntro exitIntro;
-    /**
-     * The animation this screen opened with.
-     *
-     * <p>Made once, when the screen is made, and deliberately not per rebuild: a tab switch rebuilds the
-     * widgets of this screen, and starting the opening animation again there made the panel jump every time a
-     * tab was clicked.
-     */
-    private final ScreenIntro intro = subScreen() ? UiAnimation.subIntro() : UiAnimation.screenIntro();
 
     protected VanillaScreen(Component title) {
         super(title);
     }
 
-    /**
-     * Whether this screen is one of the second level screens the "sub screen opening / closing" switch is about.
-     *
-     * <p>Without it the switch did nothing at all: every screen took the main screen animation, so turning the
-     * sub screen one off changed no screen anywhere. Only a screen that says it is one gets that treatment.
-     *
-     * @return {@code true} for a second level screen
-     */
-    protected boolean subScreen() {
-        return false;
-    }
-
-    /** @return the content width this screen needs, measured from its translated labels */
     /**
      * The width the panel is actually built with.
      *
@@ -113,20 +90,11 @@ public abstract class VanillaScreen extends Screen {
     }
 
     /**
-     * Draws the background, then the widgets and the content under the opening or closing transform.
+     * Draws the content backdrop, then the widgets and the content the screen paints itself.
      *
-     * <p><b>The order is the flicker fix.</b> The world dimming, the panel and the content backdrop belong to
-     * {@link #extractBackground} and are drawn <em>outside</em> the animation's pose; only the widgets and the
-     * content the screen paints itself are transformed. The previous order pushed the animation first and drew
-     * the background from inside it, which scaled a full-screen black veil down to 92% around the centre for
-     * the first frames of every opening and closing: the outer band of the window was not covered by the veil
-     * at all, so the bright world showed through a frame-wide border that snapped shut when the animation
-     * ended. That border is what was being reported as a flash, on opening, on closing and on the handover from
-     * one screen to the next. Dimming is now always exactly the window, on every frame.
-     *
-     * <p>A subclass adds its own text and overlays by overriding {@link #renderContent}, which is called inside
-     * the transform and after the widgets. It must not call {@code super.extractRenderState} for that: this
-     * method already draws the widgets, once.
+     * <p>A subclass adds its own text and overlays by overriding {@link #renderContent}, which is called
+     * after the widgets. It must not call {@code super.extractRenderState} for that: this method already
+     * draws the widgets, once.
      *
      * @param graphics    the render state extractor
      * @param mouseX      the cursor x
@@ -135,22 +103,17 @@ public abstract class VanillaScreen extends Screen {
      */
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        beginIntro(graphics);
-        // Inside the transform on purpose: the recessed list areas belong to the content and have to move with
-        // the rows they sit behind. Drawn with the background they stayed pinned while the rows slid, which is
-        // what made an empty list look detached from its own frame while a screen opened.
+        // Before the widgets on purpose: the recessed list areas belong to the content and have to sit
+        // behind the rows they frame, or the frame paints over the - / + / X buttons of every row.
         drawContentBackground(graphics);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
         renderContent(graphics, mouseX, mouseY, partialTick);
-        endIntro(graphics);
-        drawIntroVeil(graphics);
     }
 
     /**
-     * Draws everything this screen adds on top of its widgets, inside the opening or closing transform.
+     * Draws everything this screen adds on top of its widgets.
      *
-     * <p>Called after the widgets so labels and overlays stay above them, and inside the transform so the
-     * content moves with the controls instead of being left behind. The default draws nothing.
+     * <p>Called after the widgets so labels and overlays stay above them. The default draws nothing.
      *
      * @param graphics    the render state extractor
      * @param mouseX      the cursor x
@@ -162,18 +125,6 @@ public abstract class VanillaScreen extends Screen {
 
     @Override
     public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        if (this.closing && (this.exitIntro == null || !this.exitIntro.running())) {
-            // The leave animation has finished: hand the screen over. Done here rather than in onClose because
-            // the animation needs frames, and this is the method the game calls once per frame.
-            //
-            // The handover does NOT return early, and that is the fix for the "returning to the previous screen
-            // flashes" report: returning here skipped the background, the panel and the content backdrop for
-            // this last frame, so the frame rendered with widgets floating over the raw world - a bright flash
-            // for one frame, immediately before the parent screen appeared. The handover only swaps which
-            // screen is active; the rest of this frame still draws the leaving screen exactly as the previous
-            // frame did.
-            Minecraft.getInstance().setScreenAndShow(parentScreen());
-        }
         super.extractBackground(graphics, mouseX, mouseY, partialTick);
         // The world dimming of a vanilla screen, drawn by us: without it the world behind a panel-less screen
         // stayed at full brightness, and the frame the game itself dims (before our first layout pass) showed
@@ -206,9 +157,9 @@ public abstract class VanillaScreen extends Screen {
     /**
      * Whether the vanilla panel is drawn behind the content.
      *
-     * <p>A screen that is nothing but a column of vanilla buttons - an options screen - reads better with
-     * the panel switched off, because the buttons already carry the vanilla frame. Such a screen draws its
-     * text with a shadow instead, so it stays readable over any world.
+     * <p>A screen that is nothing but a column of vanilla buttons reads better with the panel switched off,
+     * because the buttons already carry the vanilla frame. Such a screen draws its text with a shadow
+     * instead, so it stays readable over any world.
      *
      * @return {@code true} to draw the panel
      */
@@ -227,91 +178,7 @@ public abstract class VanillaScreen extends Screen {
 
     @Override
     public void onClose() {
-        // Closing is animated too, and the switch to the parent happens when the animation is over - so the
-        // screen leaves the way it arrived instead of blinking away.
-        if (this.closing) {
-            return;
-        }
-        this.closing = true;
-        // The same switch that governs how this screen arrived governs how it leaves. Using the main screen
-        // animation here meant a toolkit screen with its animation switched off still animated on the way out.
-        this.exitIntro = subScreen() ? UiAnimation.subIntro() : UiAnimation.screenIntro();
-    }
-
-    /**
-     * How far the screen's own animation has run.
-     *
-     * <p>0 at the start and 1 once it has arrived. On a close it counts back down, so one number describes both
-     * directions and a screen that plays an animation out does not need its own idea of what closing means.
-     *
-     * @return the progress, between 0 and 1
-     */
-    protected final double introProgress() {
-        if (!this.closing) {
-            return this.intro.progress();
-        }
-        return this.exitIntro == null ? 1.0D : 1.0D - this.exitIntro.progress();
-    }
-
-    /**
-     * Pushes the transform of the screen's opening or closing animation, about the centre of the window.
-     *
-     * <p>Every caller must pair it with {@link #endIntro}, in the same frame: the pose stack is shared with the
-     * rest of the interface, and an unbalanced push would move everything drawn after this screen.
-     *
-     * @param graphics the render state extractor
-     */
-    protected final void beginIntro(GuiGraphicsExtractor graphics) {
-        ScreenIntro animation = this.closing ? this.exitIntro : this.intro;
-        double progress = this.introProgress();
-        float centerX = this.width / 2.0F;
-        float centerY = this.height / 2.0F;
-        float scale = animation == null ? 1.0F : (float) animation.scale(progress);
-        var pose = graphics.pose();
-        pose.pushMatrix();
-        pose.translate(centerX + (animation == null ? 0 : animation.offsetX(this.width, progress)),
-                centerY + (animation == null ? 0 : animation.offsetY(this.height, progress)));
-        pose.scale(scale, scale);
-        pose.translate(-centerX, -centerY);
-    }
-
-    /**
-     * Pops what {@link #beginIntro} pushed.
-     *
-     * @param graphics the render state extractor
-     */
-    protected final void endIntro(GuiGraphicsExtractor graphics) {
-        graphics.pose().popMatrix();
-    }
-
-    /**
-     * Draws the veil of a fading screen over the finished frame.
-     *
-     * <p>Over the frame rather than around the content on purpose: the widgets draw themselves in their own
-     * colours and cannot be reached from here, so a veil drawn before them would leave the buttons blazing at
-     * full brightness in the middle of a fade.
-     *
-     * <p>Called by {@link #extractRenderState} at the very end of the frame, after the content: a veil drawn
-     * before the subclass content would sit under its text, and the labels would stay bright while everything
-     * else faded.
-     *
-     * @param graphics the render state extractor
-     */
-    protected final void drawIntroVeil(GuiGraphicsExtractor graphics) {
-        ScreenIntro animation = this.closing ? this.exitIntro : this.intro;
-        if (animation == null || !animation.fades() || this.width <= 0 || this.height <= 0) {
-            return;
-        }
-        // Capped at half opacity on purpose. The veil is the only way to fade the whole frame (see ScreenIntro),
-        // but at full opacity the first frame of a fade is a completely black window that then clears, and a
-        // window that goes black for one frame and comes back is indistinguishable from the flash this method
-        // exists to avoid. Half opacity still reads as a fade in and out, and never blanks the screen.
-        double fade = Math.max(0.0D, Math.min(1.0D, animation.veil(this.introProgress()))) * 0.5D;
-        int alpha = (int) Math.round(fade * 255.0D);
-        if (alpha <= 0) {
-            return;
-        }
-        graphics.fill(0, 0, this.width, this.height, alpha << 24);
+        Minecraft.getInstance().setScreenAndShow(parentScreen());
     }
 
     @Override

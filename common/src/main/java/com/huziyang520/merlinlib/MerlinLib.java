@@ -7,9 +7,12 @@ import com.huziyang520.merlinlib.tools.HealthEditorItem;
 import com.huziyang520.merlinlib.tools.TestWeapons;
 import com.huziyang520.merlinlib.mixin.RangedAttributeAccessor;
 import com.huziyang520.merlinlib.api.MerlinApi;
+import com.huziyang520.merlinlib.api.NoticeMode;
 import com.huziyang520.merlinlib.loot.LootInjector;
 import com.huziyang520.merlinlib.notice.NoticeManager;
 import com.mojang.serialization.Lifecycle;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.flag.FeatureFlagSet;
 import net.minecraft.world.flag.FeatureFlags;
 import com.huziyang520.merlinlib.platform.Services;
@@ -96,12 +99,32 @@ public class MerlinLib {
             }
         });
         ConfigManager.reload();
+        registerOwnNotices();
         widenAttributeCeilings();
         MerlinApi.lifecycle().onServerStarting(SmeltingLookup::initialize);
         BuiltInContent.register();
         TestWeapons.register();
         HealthEditorItem.register();
         ContentManager.refresh();
+    }
+
+    /**
+     * Registers MerlinLib's own join notice about the rebuilt configuration screen.
+     *
+     * <p>Sent once per save and per player, and switched off by {@code general.notice_enabled} in
+     * {@code client.toml}: the switch is read here, right after the configuration has been read, so turning
+     * it off takes effect on the next launch. Registered as a notice rather than as a plain chat message so
+     * that the server's notice switches - the global one and the per mod one in {@code server.toml} - apply
+     * to it exactly like they apply to a business mod's notice.
+     */
+    private static void registerOwnNotices() {
+        if (!ConfigManager.client().noticeEnabled()) {
+            return;
+        }
+        MerlinApi.notices().register(
+                Identifier.fromNamespaceAndPath(Constants.MOD_ID, "config_ui"),
+                NoticeMode.ONCE_PER_SAVE,
+                Component.translatable("merlinlib.notice.config_ui"));
     }
 
     /**
