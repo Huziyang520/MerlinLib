@@ -181,30 +181,16 @@ public final class PanelLayout {
     /**
      * The x of one button in an evenly split row.
      *
+     * <p>Together with {@link #sliceWidth(int)} this is the only footer geometry a screen needs: the pair of
+     * bottom buttons spans the content width, so the left one starts at {@link #left()} and the right one at
+     * {@code sliceX(1, 2)}, and the two are the same width by construction. A fixed button width against the
+     * right edge was tried and reverted: it left a wide empty band between two buttons that were already
+     * full width labels on a narrow panel, and the pair stopped looking like the screen's footer.
+     *
      * @param index the button index, starting at 0
      * @param count how many buttons share the content width
      * @return the left edge of that button
      */
-    /**
-     * The width of a footer button: a button sized one, unless the panel is too narrow to hold two of them.
-     *
-     * @return the width to build a footer button with
-     */
-    public int footerWidth() {
-        return Math.min(VanillaUi.FOOTER_BUTTON_WIDTH, sliceWidth(2));
-    }
-
-    /**
-     * The x of one of the two footer buttons, aligned to the right edge of the panel.
-     *
-     * @param index 0 for the left one, 1 for the right one
-     * @return the left edge of that button
-     */
-    public int footerX(int index) {
-        int width = footerWidth();
-        return right() - (2 - index) * width - (1 - index) * VanillaUi.GAP;
-    }
-
     public int sliceX(int index, int count) {
         return left() + index * (sliceWidth(count) + VanillaUi.GAP);
     }

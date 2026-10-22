@@ -179,7 +179,7 @@ public class EnchantSelectionScreen extends VanillaScreen {
 
         int bottom = layout.row(VanillaUi.WIDGET_HEIGHT);
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.cancel"), button -> this.onClose(),
-                layout.footerX(1), bottom, layout.footerWidth()));
+                layout.sliceX(1, 2), bottom, layout.sliceWidth(2)));
 
         this.rowButtons.clear();
         for (int slot = 0; slot < visibleRows(); slot++) {

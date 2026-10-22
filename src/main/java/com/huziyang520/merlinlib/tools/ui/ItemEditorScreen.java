@@ -124,6 +124,18 @@ public class ItemEditorScreen extends VanillaScreen {
     private static final int LABEL = 12;
     /** Width of the level number field in a row. */
     private static final int LEVEL_FIELD = 34;
+    /**
+     * Height of every control inside an enchantment row: the level field and the three compact buttons.
+     *
+     * <p>One value for both, because the row is measured against the control height and not against the field
+     * alone: the 1.20.1 line lays the field and the buttons out at the same 16 pixels and centres both in the
+     * 20 pixel row with {@code (LIST_ROW - ROW_CONTROL) / 2}, so their top edges agree to the pixel.
+     */
+    private static final int ROW_CONTROL = VanillaUi.STEP_BUTTON;
+    /** Distance between two compact buttons of a row: two pixels, so the two frames never touch. */
+    private static final int STEP_GAP = 2;
+    /** Distance from one compact button's left edge to the next. */
+    private static final int STEP_PITCH = ROW_CONTROL + STEP_GAP;
     /** Width of the damage number field. */
     private static final int DAMAGE_FIELD = 64;
     /** Narrowest content that still lays out sensibly. */
@@ -199,7 +211,7 @@ public class ItemEditorScreen extends VanillaScreen {
 
     /** @return the width the right hand controls of an enchantment row need. */
     private static int rowControlsWidth() {
-        return LEVEL_FIELD + VanillaUi.GAP + (VanillaUi.STEP_BUTTON + 2) * 3;
+        return LEVEL_FIELD + VanillaUi.GAP + STEP_PITCH * 3;
     }
 
     @Override
@@ -300,27 +312,32 @@ public class ItemEditorScreen extends VanillaScreen {
         // which the screen answers to directly anyway, and it cost a row of height on every layout. The buttons
         // stay anchored to the panel's own bottom edge and the list takes the room above them.
         int bottom = layout.contentBottom() - VanillaUi.WIDGET_HEIGHT;
-        int actionY = bottom - 6 - VanillaUi.WIDGET_HEIGHT;
+        int actionY = bottom - VanillaUi.GAP - VanillaUi.WIDGET_HEIGHT;
         int listTop = layout.cursor();
         int listHeight = Math.max(LIST_ROW, Math.min(visibleRows() * LIST_ROW, actionY - 6 - listTop));
 
         this.list = new ScrollArea(left, listTop, content, listHeight, LIST_ROW);
         this.list.setContentHeight(this.rows.size() * LIST_ROW);
 
-        int half = layout.footerWidth();
+        // The footer: two rows of two buttons that each take half the content width. `left()` and
+        // `sliceX(1, 2)` are the two halves of the same split, so the four buttons are the same width, the same
+        // height, and mirror each other around the panel's centre line - which is what the 1.20.1 line looks
+        // like. The rows are one `VanillaUi.GAP` apart, not a larger hand picked gap, so the pair reads as one
+        // block rather than as two unrelated rows.
+        int half = layout.sliceWidth(2);
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.editor.add_enchant"),
                 button -> Minecraft.getInstance().setScreen(new EnchantSelectionScreen(this,
                         this::addEnchantment, this.working)),
-                left, actionY, half));
+                layout.sliceX(0, 2), actionY, half));
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.editor.clear_enchant"),
                 button -> Minecraft.getInstance().setScreen(new DeleteEnchantsConfirmScreen(this,
                         this::clearEnchantments)),
-                layout.footerX(1), actionY, half));
+                layout.sliceX(1, 2), actionY, half));
 
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.done"), button -> this.save(),
-                left, bottom, half));
+                layout.sliceX(0, 2), bottom, half));
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.cancel"), button -> this.onClose(),
-                layout.footerX(1), bottom, half));
+                layout.sliceX(1, 2), bottom, half));
 
         buildRowControls();
         layoutRows();
@@ -331,13 +348,19 @@ public class ItemEditorScreen extends VanillaScreen {
      *
      * <p>Each control is bound to a <em>slot</em>, not to an enchantment: the slot is turned into a row index
      * when it is used, which is what keeps scrolling from corrupting the targets.
+     *
+     * <p>The order and the widths are the 1.20.1 ones, measured from the right edge of the list inwards: the
+     * field is {@link #LEVEL_FIELD} wide, one {@code VanillaUi.GAP} follows it, and the {@code -}, {@code +} and
+     * {@code X} buttons then sit on a {@link #STEP_PITCH} pitch with no extra gap of their own. The block is
+     * measured by {@link #rowControlsWidth()}, which is the same expression, so the name column can never
+     * overlap the controls - and the controls never drift away from the row's right edge.
      */
     private void buildRowControls() {
         int x = this.list.x() + this.list.rowWidth() - rowControlsWidth();
         for (int slot = 0; slot < visibleRows(); slot++) {
             final int index = slot;
             int fieldX = x;
-            EditBox field = new EditBox(this.font, fieldX, 0, LEVEL_FIELD, 16,
+            EditBox field = new EditBox(this.font, fieldX, 0, LEVEL_FIELD, ROW_CONTROL,
                     Component.translatable("gui.merlinlib.editor.level"));
             field.setMaxLength(10);
             field.setResponder(text -> onLevelTyped(index, text));
@@ -348,10 +371,10 @@ public class ItemEditorScreen extends VanillaScreen {
                     button -> stepLevel(index, -1, hasShiftDown()), buttonX, 0)));
             this.rowButtons.add(this.addRenderableWidget(VanillaUi.compact(Component.literal("+"),
                     button -> stepLevel(index, 1, hasShiftDown()),
-                    buttonX + VanillaUi.STEP_BUTTON + 2, 0)));
+                    buttonX + STEP_PITCH, 0)));
             this.rowButtons.add(this.addRenderableWidget(VanillaUi.compact(Component.literal("X"),
                     button -> deleteRow(index),
-                    buttonX + (VanillaUi.STEP_BUTTON + 2) * 2, 0)));
+                    buttonX + STEP_PITCH * 2, 0)));
         }
     }
 
@@ -369,12 +392,14 @@ public class ItemEditorScreen extends VanillaScreen {
             // controls with it - otherwise the extra controls sat on top of the buttons underneath the list.
             boolean visible = index < this.rows.size() && this.list.rowVisible(index);
             int rowY = this.list.y() + slot * LIST_ROW;
-            // Centred in the row: the field and the buttons next to it have different heights, so a shared
-            // top edge made the row look crooked.
-            int y = rowY + (LIST_ROW - 16) / 2;
+            // Centred in the row by the same expression for the field and the buttons, so their top edges are
+            // the same pixel: 20 pixel row, 16 pixel controls, two pixels above and two below. This is exactly
+            // what the 1.20.1 line does, and it is what makes a row read as one line instead of as a field with
+            // three buttons floating beside it.
+            int y = rowY + (LIST_ROW - ROW_CONTROL) / 2;
             EditBox field = this.levelFields.get(slot);
             field.setY(y);
-            field.setHeight(16);
+            field.setHeight(ROW_CONTROL);
             field.visible = visible;
             field.active = visible;
             if (visible) {
@@ -387,7 +412,7 @@ public class ItemEditorScreen extends VanillaScreen {
             }
             for (int column = 0; column < 3; column++) {
                 Button button = this.rowButtons.get(slot * 3 + column);
-                button.setY(rowY + (LIST_ROW - VanillaUi.STEP_BUTTON) / 2);
+                button.setY(rowY + (LIST_ROW - ROW_CONTROL) / 2);
                 button.visible = visible;
                 button.active = visible;
             }

@@ -256,11 +256,11 @@ public class MacroScreen extends VanillaScreen {
                 editorX, this.keyLabelY + LABEL, KEY_WIDTH));
 
         layout.cursorTo(bottom + VanillaUi.WIDGET_HEIGHT);
-        int bottomHalf = layout.footerWidth();
+        int bottomHalf = layout.sliceWidth(2);
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.macro.apply"),
-                button -> this.commit(), layout.footerX(0), bottom, bottomHalf));
+                button -> this.commit(), layout.sliceX(0, 2), bottom, bottomHalf));
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.done"),
-                button -> this.finish(), layout.footerX(1), bottom, bottomHalf));
+                button -> this.finish(), layout.sliceX(1, 2), bottom, bottomHalf));
 
         this.deleteButtons.clear();
         for (int slot = 0; slot < visibleRows(); slot++) {

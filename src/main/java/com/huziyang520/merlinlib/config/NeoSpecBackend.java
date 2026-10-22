@@ -43,6 +43,12 @@ import java.util.Map;
  *
  * <p>Reading and writing go through the same key strings the old {@link TomlFile} reader used
  * ({@code section.key}), so {@link ClientConfig} and {@link ServerConfig} were able to keep their shape.
+ *
+ * <p>Every option and every section is given an explicit translation key with
+ * {@code ModConfigSpec.Builder#translation(String)}, {@code merlinlib.configuration.<file>.<section>.<key>}; see
+ * {@link #LANG_PREFIX} for why the implicit key cannot be used. The matching labels, tooltips and section
+ * buttons are in {@code assets/merlinlib/lang/en_us.json} and {@code zh_cn.json}, side by side and with the
+ * same keys, so a missing one shows up as a bare key on screen rather than as silently English text.
  */
 public final class NeoSpecBackend implements ConfigBackend {
 
@@ -73,6 +79,26 @@ public final class NeoSpecBackend implements ConfigBackend {
     private static final String LEGACY_CLIENT_FILE = "client.toml";
     private static final String LEGACY_SERVER_FILE = "server.toml";
 
+    /**
+     * The prefix of every translation key the configuration screen shows.
+     *
+     * <p>NeoForge builds the key of an option from {@code ValueSpec#getTranslationKey()}, and falls back to
+     * {@code modId + ".configuration." + <entry key>} when the spec never set one - the entry key being the
+     * <em>leaf</em> only, because the screen iterates one section at a time
+     * ({@code ConfigurationSectionScreen#getTranslationKey(String)} in neoforge-21.1.233 sources, line 557:
+     * {@code return result != null ? result : context.modId + ".configuration." + key;}). That fallback cannot
+     * name our file: {@code enabled} exists in three sections and {@code config_version} in both files, so
+     * every one of them would share a single label and a single tooltip.
+     *
+     * <p>The spec therefore sets the key of every section and every value explicitly with
+     * {@code Builder#translation(String)}, which is stored in the {@code ValueSpec} and wins over the fallback.
+     * The keys read {@code merlinlib.configuration.<file>.<section>.<key>}, with {@code client} or
+     * {@code common} standing for the file - the same prefix the screen uses for its own title
+     * ({@code merlinlib.configuration.title}) and for the two file buttons
+     * ({@code merlinlib.configuration.section.<file name>}).
+     */
+    private static final String LANG_PREFIX = Constants.MOD_ID + ".configuration";
+
     /** Suffix a file that has been read into the specification is renamed with. */
     private static final String IMPORTED_SUFFIX = ".imported";
 
@@ -95,7 +121,7 @@ public final class NeoSpecBackend implements ConfigBackend {
      * @return the backend of the client switches, with its specification built
      */
     public static NeoSpecBackend client() {
-        Spec spec = new Spec();
+        Spec spec = new Spec(LANG_PREFIX + ".client");
 
         spec.section("general", "Settings that belong to the file as a whole.");
         spec.intRange("config_version", CLIENT_VERSION, 0, Integer.MAX_VALUE,
@@ -173,7 +199,7 @@ public final class NeoSpecBackend implements ConfigBackend {
      * @return the backend of the server switches, with its specification built
      */
     public static NeoSpecBackend server() {
-        Spec spec = new Spec();
+        Spec spec = new Spec(LANG_PREFIX + ".common");
 
         spec.section("general", "Settings that belong to the file as a whole.");
         spec.intRange("config_version", SERVER_VERSION, 0, Integer.MAX_VALUE,
@@ -483,12 +509,32 @@ public final class NeoSpecBackend implements ConfigBackend {
     /** Builds the specification while remembering every key under its {@code section.key} name. */
     private static final class Spec {
 
+        /** The translation key prefix of this file, {@code merlinlib.configuration.client} or {@code .common}. */
+        private final String lang;
         private final ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
         private final Map<String, ConfigValue<?>> values = new LinkedHashMap<>();
         private final Deque<String> path = new ArrayDeque<>();
 
-        /** @param name    the section name */
+        /**
+         * @param lang the translation key prefix of this file, without a trailing dot
+         */
+        Spec(String lang) {
+            this.lang = lang;
+        }
+
+        /**
+         * Opens a section.
+         *
+         * <p>{@code translation()} comes before {@code push()}: the builder keeps the key aside until the
+         * section is opened and then files it under the section's path, which is the entry
+         * {@code ConfigurationSectionScreen} looks up for a section's title. Without it the title would be
+         * {@code modid.configuration.<section>} - the leaf only, shared by both files.
+         *
+         * @param name    the section name, as written in the file
+         * @param comment the section's note, shown as its tooltip when the lang file has no override
+         */
         void section(String name, String comment) {
+            this.builder.translation(this.key(name));
             this.builder.comment(comment);
             this.builder.push(name);
             this.path.addLast(name);
@@ -500,21 +546,31 @@ public final class NeoSpecBackend implements ConfigBackend {
         }
 
         void bool(String key, boolean defaultValue, String comment) {
-            this.values.put(full(key), this.builder.comment(comment).define(key, defaultValue));
+            this.values.put(full(key), this.builder.translation(this.key(full(key)))
+                    .comment(comment).define(key, defaultValue));
         }
 
         void intRange(String key, int defaultValue, int min, int max, String comment) {
-            this.values.put(full(key),
-                    this.builder.comment(comment).defineInRange(key, defaultValue, min, max));
+            this.values.put(full(key), this.builder.translation(this.key(full(key)))
+                    .comment(comment).defineInRange(key, defaultValue, min, max));
         }
 
         void doubleRange(String key, double defaultValue, double min, double max, String comment) {
-            this.values.put(full(key),
-                    this.builder.comment(comment).defineInRange(key, defaultValue, min, max));
+            this.values.put(full(key), this.builder.translation(this.key(full(key)))
+                    .comment(comment).defineInRange(key, defaultValue, min, max));
         }
 
         void text(String key, String defaultValue, String comment) {
-            this.values.put(full(key), this.builder.comment(comment).define(key, defaultValue));
+            this.values.put(full(key), this.builder.translation(this.key(full(key)))
+                    .comment(comment).define(key, defaultValue));
+        }
+
+        /**
+         * @param name a section or {@code section.key} name
+         * @return the translation key that name is labelled with
+         */
+        String key(String name) {
+            return this.lang + "." + name;
         }
 
         String full(String key) {
