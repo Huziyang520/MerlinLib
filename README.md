@@ -15,9 +15,6 @@ effects and potions** — and ships a ready-to-use testing toolkit on top of the
 
 ### Supported versions
 
-This branch, `main`, holds only what is the same for every release: the documents. The code lives on the
-version branches - pick the one that matches your game and loader.
-
 | Branch | Minecraft | Loader |
 |---|---|---|
 | [`1.20.1`](https://github.com/Huziyang520/MerlinLib/tree/1.20.1) | 1.20.1 | Forge |
@@ -67,21 +64,6 @@ the same jar, so a mod that only wants the registration API still installs one f
 | [`docs/TOOLKIT.md`](docs/TOOLKIT.md) | the testing toolkit in detail |
 | [`docs/LIMITS.md`](docs/LIMITS.md) | what a configuration file can and cannot do |
 
-### Behaviour details
-
-- **Mob behaviour hooks cover brain mobs**: a veto answers for the piglin family as well, so a "do not
-  attack this player" rule works the same for a piglin, a piglin brute and a zombie.
-- **A very large health bar stays readable**: above one hundred health the row becomes a single heart
-  followed by the numbers, instead of one heart per two points.
-- **Join notices**: a mod registers a chat message and the switch, the screen and the per-mod storage
-  are the library's business.
-- **Interface animation**: pop, slide up, slide in from the side or fade — available to any mod that wants
-  them; MerlinLib does not animate its own screens with them.
-- **A particle ceiling on both sides**: one number caps how many particles a client draws per 1/20
-  second and how many one server send may carry.
-- `/merlinlib list` lists every non-vanilla enchantment in the registry, not only the ones this library
-  manages, so a mod whose enchantments failed to register is visible at a glance.
-
 ### Licence
 
 Released under the **MIT licence**, see [LICENSE](LICENSE).
@@ -102,8 +84,6 @@ MerlinLib 是一款 Minecraft **前置库模组**：为模组开发者提供**�
 - 仓库：<https://github.com/Huziyang520/MerlinLib> · 问题反馈：<https://issue.mengcai.online/>
 
 ### 支持版本
-
-本分支 `main` 只放各版本完全相同的内容——文档；代码在版本分支上，按你的游戏版本与加载器选择。
 
 | 分支 | Minecraft | 加载器 |
 |---|---|---|
@@ -151,16 +131,6 @@ MerlinLib 是一款 Minecraft **前置库模组**：为模组开发者提供**�
 | [`docs/DEV.md`](docs/DEV.md) | Java API 与依赖方式 |
 | [`docs/TOOLKIT.md`](docs/TOOLKIT.md) | 测试工具集详解 |
 | [`docs/LIMITS.md`](docs/LIMITS.md) | 配置文件能做什么、不能做什么 |
-
-### 行为细节
-
-- **生物行为挂钩覆盖 Brain 生物**：否决规则对猪灵族同样生效，
-  所以"别攻击这个玩家"这条规则对猪灵、猪灵蛮兵与僵尸表现一致。
-- **极大的血量条仍然可读**：血量超过一百后血条变成一颗心 + 数值，而不是按"每 2 点一颗心"去画。
-- **进服聊天提示**：业务模组只注册一条消息，开关、界面与逐模组存储都由库负责。
-- **界面动画**：跳出、上滑、侧滑、淡入，每个使用位置各有开关。
-- **两端同时生效的粒子上限**：一个数值同时限制客户端每 1/20 秒的绘制量与服务端单次发送量。
-- `/merlinlib list` 会列出注册表里**所有非原版附魔**（不只本库管理的），哪个模组的附魔没注册成功一眼可见。
 
 ### 许可证
 

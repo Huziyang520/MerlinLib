@@ -82,7 +82,7 @@ soon as the file is saved.
 | `tools.health_editor_requires_item` | `true` | the health editor opens only while its own item is held |
 | `content.disable_generated_enchantments` | `false` | emergency switch: none of the enchantments in `config/MerlinLib/*.json` are registered |
 | `notices.enabled` | `true` | show the join notices business mods registered through MerlinLib |
-| `notices.per_mod` | `""` | per mod switches, hand written as `<modid>=true;<modid>=false>` |
+| `notices.per_mod` | `""` | read once and imported into `config/MerlinLib/notices.toml`; no longer shown in any screen |
 
 `server.toml` is authoritative: the client only shows what the server allows and every write is
 validated on the server. In single player the integrated server shares the process, so a change applies
@@ -199,6 +199,7 @@ does not resolve matches nothing and says so once in the log rather than quietly
 | `/merlinlib editor` | opens the item editor for the held item |
 | `/merlinlib health` | opens the health editor |
 | `/merlinlib macro` | opens the command macro screen |
+| `/merlinlib notices` | opens the join notice switches: one row for MerlinLib and one for every mod that registered a notice |
 
 ### The configuration screen
 
@@ -278,7 +279,7 @@ is lost except the window.
 | `tools.health_editor_requires_item` | `true` | 血量编辑器需要手持对应物品 |
 | `content.disable_generated_enchantments` | `false` | 应急开关：不再注册 `config/MerlinLib/*.json` 里的附魔 |
 | `notices.enabled` | `true` | 是否显示业务模组注册的进服聊天提示 |
-| `notices.per_mod` | `""` | 各模组开关，手写成 `<模组id>=true;<模组id>=false>` |
+| `notices.per_mod` | `""` | 只读一次并导入 `config/MerlinLib/notices.toml`，界面上已不再显示 |
 
 `server.toml` 是权威：客户端只展示服务端允许的范围，每次写入都由服务端校验。单人游戏下集成服务端
 与本进程共享，改动立即生效。
@@ -323,6 +324,7 @@ is lost except the window.
 | `/merlinlib editor` | 打开手持物品的物品编辑界面 |
 | `/merlinlib health` | 打开血量编辑器 |
 | `/merlinlib macro` | 打开指令宏界面 |
+| `/merlinlib notices` | 打开进服提示开关页：MerlinLib 一行，每个登记过提示的模组各一行 |
 
 ### 配置界面
 
