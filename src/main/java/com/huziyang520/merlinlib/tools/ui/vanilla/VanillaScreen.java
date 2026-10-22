@@ -60,6 +60,14 @@ public abstract class VanillaScreen extends Screen {
     private PanelLayout layout;
     /** Whether a close was asked for and is being animated out. */
     private boolean closing;
+    /**
+     * Whether this frame's background has already been drawn.
+     *
+     * <p>Reset at the top of {@link #render} and set by {@link #renderBackground}. On this line the base class
+     * calls the background pass from its own {@code render}, so without the flag every frame painted the
+     * dimming and the panel twice - once outside the animation and once inside it.
+     */
+    private boolean backgroundDrawn;
     /** The animation of that close. */
     private ScreenIntro exitIntro;
     /**
@@ -157,10 +165,17 @@ public abstract class VanillaScreen extends Screen {
      */
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // 1.21.1's renderBackground takes the view parameters; they are unused but the signature needs them.
+        // Exactly one background per frame. On this line Screen#render itself calls renderBackground, so calling
+        // it here as well drew the world dimming and the panel twice: the panel was painted once outside the
+        // animation and once inside it, which is what showed up as a ghost of the panel sliding over the real
+        // one. The flag makes the second call a no-op, so the background is drawn once, before the transform.
+        this.backgroundDrawn = false;
         renderBackground(graphics, mouseX, mouseY, partialTick);
         beginIntro(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
+        // Inside the transform on purpose: the recessed list areas are part of the content and have to move with
+        // the rows they sit behind, otherwise the list looks pinned while its rows slide.
+        drawContentBackground(graphics);
         renderContent(graphics, mouseX, mouseY, partialTick);
         endIntro(graphics);
         drawIntroVeil(graphics);
@@ -197,6 +212,10 @@ public abstract class VanillaScreen extends Screen {
      */
     @Override
     public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        if (this.backgroundDrawn) {
+            return;
+        }
+        this.backgroundDrawn = true;
         if (this.closing && (this.exitIntro == null || !this.exitIntro.running())) {
             // The leave animation has finished: hand the screen over. Done here rather than in onClose because
             // the animation needs frames, and this is the method the game calls once per frame.
@@ -218,7 +237,6 @@ public abstract class VanillaScreen extends Screen {
         if (drawsPanel() && this.width > 0 && this.height > 0) {
             layout().draw(graphics);
         }
-        drawContentBackground(graphics);
     }
 
     /**
