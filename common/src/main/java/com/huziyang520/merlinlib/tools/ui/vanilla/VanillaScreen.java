@@ -219,7 +219,9 @@ public abstract class VanillaScreen extends Screen {
             return;
         }
         this.closing = true;
-        this.exitIntro = UiAnimation.intro();
+        // The same switch that governs how this screen arrived governs how it leaves. Using the main screen
+        // animation here meant a toolkit screen with its animation switched off still animated on the way out.
+        this.exitIntro = subScreen() ? UiAnimation.subIntro() : UiAnimation.screenIntro();
     }
 
     /**
