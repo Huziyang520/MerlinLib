@@ -65,6 +65,7 @@ the same jar, so a mod that only wants the registration API still installs one f
 | [`docs/DEV.md`](docs/DEV.md) | the Java API, and how to depend on MerlinLib |
 | [`docs/TOOLKIT.md`](docs/TOOLKIT.md) | the testing toolkit in detail |
 | [`docs/LIMITS.md`](docs/LIMITS.md) | what a configuration file can and cannot do |
+| [`docs/versions/26.x`](docs/versions/26.x) | the same two guides written for the 26.x lines, kept for their version specific notes |
 
 ### Behaviour details
 
@@ -147,6 +148,7 @@ MerlinLib 是一款 Minecraft **前置库模组**：为模组开发者提供**�
 | [`docs/DEV.md`](docs/DEV.md) | Java API 与依赖方式 |
 | [`docs/TOOLKIT.md`](docs/TOOLKIT.md) | 测试工具集详解 |
 | [`docs/LIMITS.md`](docs/LIMITS.md) | 配置文件能做什么、不能做什么 |
+| [`docs/versions/26.x`](docs/versions/26.x) | 面向 26.x 分支的两份同主题文档，保留其版本专有说明 |
 
 ### 行为细节
 
