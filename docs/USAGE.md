@@ -207,12 +207,13 @@ The screen is the loader's, not MerlinLib's:
 | Line | How the screen is reached | Without it |
 |---|---|---|
 | NeoForge | **Config** in the mods list - NeoForge's own screen, built from the declared switches | always available |
-| Forge 1.20.1 | **Config** in the mods list, drawn by **Jupiter** | edit `client.toml` / `server.toml`, use the commands |
-| Fabric | `/merlinlib config`, drawn by **Cloth Config** | edit `config/MerlinLib/*.toml`, use the commands |
+| Forge 1.20.1 | **Config** in the mods list, drawn by **Cloth Config** or **Jupiter** | edit `client.toml` / `server.toml`, use the commands |
+| Fabric | `/merlinlib config` or the mod menu entry, drawn by **Cloth Config** or **Jupiter** | edit `config/MerlinLib/*.toml`, use the commands |
 
-Jupiter and Cloth Config are optional on their lines: nothing else about the mod needs them, and the
-switches themselves live in files either way, so a player without the library keeps every setting and
-only loses the window.
+Cloth Config and Jupiter are both optional, and on Forge and Fabric either one is enough: both screens
+are built from the same list of switches, so the two libraries cannot disagree about what exists. With
+neither installed the switches live in the files and the commands still read and write them, so nothing
+is lost except the window.
 
 ---
 
@@ -330,8 +331,9 @@ only loses the window.
 | 线 | 打开方式 | 没装时 |
 |---|---|---|
 | NeoForge | 模组列表里的 **配置（Config）**，NeoForge 自己的界面，按声明的开关生成 | 始终可用 |
-| Forge 1.20.1 | 模组列表里的 **配置**，由 **Jupiter** 绘制 | 手改 `client.toml` / `server.toml`，或用指令 |
-| Fabric | `/merlinlib config`，由 **Cloth Config** 绘制 | 手改 `config/MerlinLib/*.toml`，或用指令 |
+| Forge 1.20.1 | 模组列表里的 **配置**，由 **Cloth Config** 或 **Jupiter** 绘制 | 手改 `client.toml` / `server.toml`，或用指令 |
+| Fabric | `/merlinlib config` 或模组菜单入口，由 **Cloth Config** 或 **Jupiter** 绘制 | 手改 `config/MerlinLib/*.toml`，或用指令 |
 
-Jupiter 与 Cloth Config 在各自线上都是可选的：模组其它部分都不需要它们，开关本身也始终在文件里，
-所以不装库的玩家一个设置都不会少，只是没有那个窗口。
+Cloth Config 与 Jupiter 都是可选的，且在 Forge 与 Fabric 上**装其中任意一个就够**：两套界面都由同一份
+开关清单生成，不会出现「这边有这个开关、那边没有」。两个都没装时开关仍在文件里、指令照样读写，
+除了窗口不会少任何东西。

@@ -53,8 +53,8 @@ the same jar, so a mod that only wants the registration API still installs one f
   the vanilla ones, an item editor, a health editor, command macros, crosshair damage and floating
   damage numbers. Every part of it can be switched off, and it can be limited to operators.
 - **A configuration screen** — the loader's own where there is one: NeoForge builds it from the declared
-  switches, Forge draws it with Jupiter, Fabric with Cloth Config. Both of those are optional; without
-  them the switches are still in the files and reachable through the commands.
+  switches, while Forge and Fabric draw it with **Cloth Config** or **Jupiter**, whichever is installed.
+  Both are optional; without them the switches are still in the files and reachable through the commands.
 - **A vanilla-UI base** — `tools.ui.vanilla.VanillaUi` and the screens built on it use the vanilla
   widget sprites only, and other mods may reuse them.
 
@@ -138,8 +138,9 @@ MerlinLib 是一款 Minecraft **前置库模组**：为模组开发者提供**�
 
 - **测试工具集**——四件测试武器（剑 / 斧 / 矛 / 三叉戟，原版武器的可编辑变体）、物品编辑界面、血量编辑器、
   命令宏、准心伤害与受伤飘字。整套可以关闭，也可以限制为仅 OP 可用。
-- **配置界面**——有原生界面的加载器就用它自己的：NeoForge 按声明的开关生成，Forge 用 Jupiter 绘制，
-  Fabric 用 Cloth Config 绘制。后两者都是可选依赖；没有它们时开关仍在文件里，也能用指令读写。
+- **配置界面**——有原生界面的加载器就用它自己的：NeoForge 按声明的开关生成；Forge 与 Fabric 则由
+  **Cloth Config** 或 **Jupiter** 绘制，装其中任意一个即可。两者都是可选依赖；都没有时开关仍在文件里，
+  也能用指令读写。
 - **原版界面基座**——`tools.ui.vanilla.VanillaUi` 及其上的全部界面只用原版控件贴图，其它模组可直接复用。
 
 ### 文档
