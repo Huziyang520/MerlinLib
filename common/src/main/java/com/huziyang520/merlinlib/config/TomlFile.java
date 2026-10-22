@@ -26,7 +26,7 @@ import java.util.Optional;
  * Reading problems are collected as {@link ContentError}s and the affected key silently falls back to
  * its default, so one typo cannot stop the game from starting.
  */
-public final class TomlFile {
+public final class TomlFile implements ConfigReader {
 
     private final Path path;
     private final Map<String, String> values = new LinkedHashMap<>();
@@ -65,7 +65,7 @@ public final class TomlFile {
      * Writes selected values back into an existing file, in place.
      *
      * <p>Only the values named in {@code overrides} are touched: every comment, blank line and order is
-     * kept, so the configuration screen can save a switch without destroying the documentation the file
+     * kept, so a screen or a command can save a switch without destroying the documentation the file
      * exists to carry. A key that is not in the file yet is appended, under its section header, which is
      * what makes a file written by an older version gain new options without being reset.
      *
@@ -176,6 +176,174 @@ public final class TomlFile {
         lines.add(insertAt, line);
     }
 
+    /**
+     * Removes one {@code [section]} and everything under it from a file, keeping every other line.
+     *
+     * <p>Only used to retire a section that no longer exists: this reader has no way to express "this key is
+     * gone", and leaving the old switches behind would keep them documented in a file whose screen and code
+     * no longer read them. The comment block directly above the header goes with it, because that block
+     * describes the section being removed.
+     *
+     * @param path    the file to edit
+     * @param section the section name, without brackets
+     */
+    public static void removeSection(Path path, String section) {
+        List<String> lines = readLines(path);
+        if (lines == null) {
+            return;
+        }
+        int[] block = sectionBlock(lines, section);
+        if (block == null) {
+            return;
+        }
+        lines.subList(block[0], block[1]).clear();
+        writeLines(path, collapseBlankLines(lines));
+    }
+
+    /**
+     * Removes one {@code key = value} line, addressed as {@code section.key}, with the comment block above it.
+     *
+     * <p>Used when a key moves to another section: leaving the old line behind would give the file two values
+     * for one setting, and a reader cannot tell which one is meant.
+     *
+     * @param path the file to edit
+     * @param key  the {@code section.key} to drop
+     */
+    public static void removeKey(Path path, String key) {
+        List<String> lines = readLines(path);
+        if (lines == null) {
+            return;
+        }
+        int dot = key.lastIndexOf('.');
+        String section = dot < 0 ? "" : key.substring(0, dot);
+        String name = dot < 0 ? key : key.substring(dot + 1);
+        String current = "";
+        for (int index = 0; index < lines.size(); index++) {
+            String trimmed = lines.get(index).trim();
+            if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+                current = trimmed.substring(1, trimmed.length() - 1).trim();
+                continue;
+            }
+            int equals = trimmed.indexOf('=');
+            if (equals < 0 || !current.equals(section)) {
+                continue;
+            }
+            if (!trimmed.substring(0, equals).trim().equals(name)) {
+                continue;
+            }
+            int start = index;
+            while (start > 0 && lines.get(start - 1).trim().startsWith("#")) {
+                start--;
+            }
+            lines.subList(start, index + 1).clear();
+            writeLines(path, collapseBlankLines(lines));
+            return;
+        }
+    }
+
+    /**
+     * Moves one {@code [section]} and its comment block to the top of the file.
+     *
+     * <p>The sections are documented in a fixed order, and a key that is new to this build is appended at the
+     * end by {@link #rewrite}. A section that has to be first - the general one - would otherwise end up after
+     * the sections it introduces, so the migration moves it rather than rewriting the whole file and losing
+     * the comments the player may have edited.
+     *
+     * @param path    the file to edit
+     * @param section the section name, without brackets
+     */
+    public static void moveSectionToTop(Path path, String section) {
+        List<String> lines = readLines(path);
+        if (lines == null) {
+            return;
+        }
+        int[] block = sectionBlock(lines, section);
+        if (block == null || block[0] == 0) {
+            return;
+        }
+        List<String> moved = new ArrayList<>(lines.subList(block[0], block[1]));
+        lines.subList(block[0], block[1]).clear();
+        moved.add("");
+        lines.addAll(0, moved);
+        writeLines(path, collapseBlankLines(lines));
+    }
+
+    /**
+     * Finds the line range of a section, including the comment block directly above its header.
+     *
+     * @param lines   the file's lines
+     * @param section the section name, without brackets
+     * @return {@code [start, end)} or {@code null} when the section is not there
+     */
+    private static int[] sectionBlock(List<String> lines, String section) {
+        String header = "[" + section + "]";
+        int headerIndex = -1;
+        for (int index = 0; index < lines.size(); index++) {
+            if (lines.get(index).trim().equals(header)) {
+                headerIndex = index;
+                break;
+            }
+        }
+        if (headerIndex < 0) {
+            return null;
+        }
+        int start = headerIndex;
+        while (start > 0) {
+            String previous = lines.get(start - 1).trim();
+            if (previous.startsWith("#")) {
+                start--;
+                continue;
+            }
+            break;
+        }
+        int end = headerIndex + 1;
+        while (end < lines.size()) {
+            String trimmed = lines.get(end).trim();
+            if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+                break;
+            }
+            end++;
+        }
+        return new int[]{start, end};
+    }
+
+    private static List<String> readLines(Path path) {
+        try {
+            return new ArrayList<>(Files.readAllLines(path, StandardCharsets.UTF_8));
+        } catch (IOException exception) {
+            return null;
+        }
+    }
+
+    private static void writeLines(Path path, List<String> lines) {
+        try {
+            Files.write(path, lines, StandardCharsets.UTF_8);
+        } catch (IOException ignored) {
+            // A read only file simply keeps its old content; nothing better can be done here.
+        }
+    }
+
+    /** Keeps at most one blank line in a row, so removing or moving a block leaves no gap. */
+    private static List<String> collapseBlankLines(List<String> lines) {
+        List<String> result = new ArrayList<>();
+        boolean previousBlank = false;
+        for (String line : lines) {
+            boolean blank = line.isBlank();
+            if (blank && previousBlank) {
+                continue;
+            }
+            result.add(line);
+            previousBlank = blank;
+        }
+        while (!result.isEmpty() && result.get(0).isBlank()) {
+            result.remove(0);
+        }
+        while (!result.isEmpty() && result.get(result.size() - 1).isBlank()) {
+            result.remove(result.size() - 1);
+        }
+        return result;
+    }
+
     private static void write(Path path, String content) {
         try {
             Files.createDirectories(path.getParent());
@@ -235,6 +403,7 @@ public final class TomlFile {
         return Optional.ofNullable(this.values.get(key));
     }
 
+    @Override
     public boolean getBoolean(String key, boolean fallback) {
         String value = this.values.get(key);
         if (value == null) {
@@ -250,6 +419,7 @@ public final class TomlFile {
         return fallback;
     }
 
+    @Override
     public int getInt(String key, int fallback, int min, int max) {
         String value = this.values.get(key);
         if (value == null) {
@@ -268,6 +438,7 @@ public final class TomlFile {
         }
     }
 
+    @Override
     public double getDouble(String key, double fallback, double min, double max) {
         String value = this.values.get(key);
         if (value == null) {
@@ -289,6 +460,7 @@ public final class TomlFile {
     /**
      * Reads a colour written either as {@code 0xRRGGBB}, {@code #RRGGBB} or a palette name.
      */
+    @Override
     public int getColor(String key, int fallback) {
         String value = this.values.get(key);
         if (value == null) {
@@ -300,13 +472,12 @@ public final class TomlFile {
         });
     }
 
+    @Override
     public String getString(String key, String fallback) {
         return this.values.getOrDefault(key, fallback);
     }
 
-    /**
-     * @return problems found while reading; the affected options fell back to their defaults.
-     */
+    @Override
     public List<ContentError> errors() {
         return List.copyOf(this.errors);
     }

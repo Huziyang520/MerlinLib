@@ -41,19 +41,6 @@ import java.util.function.Consumer;
  */
 public class EnchantSelectionScreen extends VanillaScreen {
 
-    /**
-     * {@code true}: this is a toolkit screen (item editor, enchantment picker, health editor, macros), so it
-     * follows the toolkit animation switch rather than the configuration screen one. The two are separate on
-     * purpose: the configuration screens animate by default, while editing an item should not make the whole
-     * window jump every time.
-     *
-     * @return {@code true}, this screen is a toolkit screen
-     */
-    @Override
-    protected boolean subScreen() {
-        return true;
-    }
-
 
     /** Rows visible at once on a window tall enough. */
     private static final int MAX_ROWS = 6;

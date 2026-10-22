@@ -3,19 +3,19 @@ package com.huziyang520.merlinlib.config;
 import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.content.ContentError;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Server side switches. This file is authoritative: the client only ever displays what the server
- * allows, and every toolkit action is validated against these values on the server.
+ * Server side switches. This store is authoritative: the client only ever displays what the server allows,
+ * and every toolkit action is validated against these values on the server.
  *
- * <p>Single player note: the integrated server shares this process, so editing the file from the
- * configuration screen takes effect immediately. On a dedicated server the file must be edited there
- * and applied with {@code /reload}, which is why the configuration screen marks the server section as
- * operator owned.
+ * <p>Single player note: the integrated server shares this process, so saving a switch takes effect at once.
+ * On a dedicated server the value must be changed there and applied with {@code /reload}, which is why these
+ * options are marked as operator owned.
  */
 public final class ServerConfig {
 
@@ -24,6 +24,11 @@ public final class ServerConfig {
             # MerlinLib server configuration.
             # This file is authoritative; the client only displays what the server allows.
             # Changes are picked up by the vanilla /reload command, together with the .json content files.
+
+            [general]
+            # File layout version. Written by the mod, read only to bring a file from an older build up to
+            # the current defaults. Leave it alone; setting it back only repeats the migration.
+            config_version = 5
 
             [security]
             # When true, only operators may use the testing toolkit (editors, health editor, macros).
@@ -57,9 +62,6 @@ public final class ServerConfig {
             allow_non_test_item_damage = false
             # When true, the health editor only opens while holding the health editor item.
             health_editor_requires_item = true
-            # File layout version. Written by the mod, read only to bring a file from an older build up to
-            # the current defaults. Leave it alone; setting it back only repeats the migration.
-            config_version = 4
 
             [content]
             # Emergency switch: when true, none of the enchantments defined in config/MerlinLib/*.json
@@ -70,9 +72,8 @@ public final class ServerConfig {
             # Show the join notices business mods registered through MerlinLib (MerlinApi.notices()). On by
             # default; turn it off to silence every join notice at once. Takes effect on the next join.
             enabled = true
-            # Per mod switches, written by "edit each mod's join notices" on the general tab as
-            # "<modid>=true;<modid>=false>". A mod that is not listed uses the default it declared when it
-            # registered. Editing this line by hand works too; the screen is just easier.
+            # Per mod switches, written as "<modid>=true;<modid>=false>". A mod that is not listed uses the
+            # default it declared when it registered. Editing this line by hand works too.
             per_mod = ""
             """;
 
@@ -92,14 +93,13 @@ public final class ServerConfig {
     private String noticePerMod = "";
     private List<ContentError> errors = List.of();
 
+    /** The file layout this build writes; see {@link #migrateFile()}. */
+    private static final int CONFIG_VERSION = 5;
+
     public static ServerConfig load() {
         ServerConfig config = new ServerConfig();
-        TomlFile file = TomlFile.read(path(), DEFAULTS);
-        if (migrate(file)) {
-            // The values below are read from the file, so the file has to be parsed again after a migration
-            // rewrote it; otherwise this launch would still see the old numbers.
-            file = TomlFile.read(path(), DEFAULTS);
-        }
+        migrateFile();
+        ConfigReader file = ConfigManager.read(path(), DEFAULTS);
 
         config.restrictToolsToOperators = file.getBoolean("security.restrict_tools_to_operators", false);
         config.editorRequiresPermission = file.getBoolean("security.editor_requires_permission", true);
@@ -121,56 +121,64 @@ public final class ServerConfig {
     }
 
     /** @return the file this configuration is read from and written to. */
-    static Path path() {
+    public static Path path() {
         return Path.of("config", Constants.CONFIG_DIRECTORY, "server.toml");
     }
 
-    /** The file layout this build writes; see {@link #migrate(TomlFile)}. */
-    private static final int CONFIG_VERSION = 4;
-
     /**
-     * Brings a file written by an older build up to the current defaults, once.
+     * Brings a {@code server.toml} written by an older build up to the current layout, once.
      *
-     * <p>Three options changed meaning while the toolkit was renamed from a weapon editor to an item
-     * editor: the level and damage ceilings were 255 and 100000 and are now the integer limit, and editing
-     * every item used to be off. A file always wins over the template, so a file created by the old build
-     * would keep the old, narrower behaviour forever and the switches would look broken.
+     * <p>{@code config_version} moved from {@code [tools]} to {@code [general]}: it is the version of the whole
+     * file, not of the toolkit section. The old key is dropped rather than left behind, because two version
+     * markers in one file can disagree and the next reader would have to guess which one counts.
      *
-     * <p>A value is only touched while it still holds the old default: any other number was chosen by hand
-     * and is left exactly as it is. The version marker makes this a one-off, so setting a value back to 255
-     * on purpose stays honoured on the next launch.
+     * <p>Three options changed meaning while the toolkit was renamed from a weapon editor to an item editor:
+     * the level and damage ceilings were 255 and 100000 and are now the integer limit, and editing every item
+     * used to be off. A file always wins over the template, so a file created by the old build would keep the
+     * old, narrower behaviour forever. A value is only touched while it still holds the old default: any other
+     * number was chosen by hand and is left exactly as it is. The version marker makes it a one-off.
      *
-     * @param file the file the configuration was read from
-     * @return {@code true} when the file was rewritten and has to be read again
+     * <p>It works on the TOML file only; a loader store owns its own values and layout.
      */
-    private static boolean migrate(TomlFile file) {
-        if (file.getInt("tools.config_version", 0, 0, Integer.MAX_VALUE) >= CONFIG_VERSION) {
-            return false;
+    private static void migrateFile() {
+        if (ConfigManager.backend() != null || !Files.exists(path())) {
+            return;
         }
+        TomlFile file = TomlFile.read(path(), DEFAULTS);
+        int version = Math.max(file.getInt("general.config_version", 0, 0, Integer.MAX_VALUE),
+                file.getInt("tools.config_version", 0, 0, Integer.MAX_VALUE));
+        if (version >= CONFIG_VERSION) {
+            return;
+        }
+
         Map<String, String> overrides = new LinkedHashMap<>();
-        overrides.put("tools.config_version", Integer.toString(CONFIG_VERSION));
-        if (file.getInt("tools.max_enchantment_level", 255, 1, Integer.MAX_VALUE) == 255) {
-            overrides.put("tools.max_enchantment_level", Integer.toString(Integer.MAX_VALUE));
-        }
-        if (file.getInt("tools.max_test_weapon_damage", 100000, 1, Integer.MAX_VALUE) == 100000) {
-            overrides.put("tools.max_test_weapon_damage", Integer.toString(Integer.MAX_VALUE));
-        }
-        // Editing every item was on by default until this build, and the migration before this one wrote it into
-        // every file it touched as true - which is exactly why a file kept ignoring the new default. It is moved
-        // back to the default once, so the switch finally reads "off" the way the template documents it.
-        if (file.getBoolean("tools.allow_editing_all_items", false)) {
-            overrides.put("tools.allow_editing_all_items", "false");
-        }
-        if (!file.getBoolean("tools.allow_levels_above_max", false)) {
-            overrides.put("tools.allow_levels_above_max", "true");
+        overrides.put("general.config_version", Integer.toString(CONFIG_VERSION));
+        if (version < 4) {
+            if (file.getInt("tools.max_enchantment_level", 255, 1, Integer.MAX_VALUE) == 255) {
+                overrides.put("tools.max_enchantment_level", Integer.toString(Integer.MAX_VALUE));
+            }
+            if (file.getInt("tools.max_test_weapon_damage", 100000, 1, Integer.MAX_VALUE) == 100000) {
+                overrides.put("tools.max_test_weapon_damage", Integer.toString(Integer.MAX_VALUE));
+            }
+            // Editing every item was on by default until that build, and the migration before this one wrote it
+            // into every file it touched as true - which is exactly why a file kept ignoring the new default.
+            if (file.getBoolean("tools.allow_editing_all_items", false)) {
+                overrides.put("tools.allow_editing_all_items", "false");
+            }
+            if (!file.getBoolean("tools.allow_levels_above_max", false)) {
+                overrides.put("tools.allow_levels_above_max", "true");
+            }
         }
         TomlFile.rewrite(path(), DEFAULTS, overrides);
+        // [general] is new to this file and rewrite() appends an unknown section at the end; the documented
+        // order puts it first, so it is moved there rather than rewriting the file and losing its comments.
+        TomlFile.moveSectionToTop(path(), "general");
+        TomlFile.removeKey(path(), "tools.config_version");
         Constants.LOG.info("[MerlinLib] server.toml migrated to layout {}: {}", CONFIG_VERSION, overrides.keySet());
-        return true;
     }
 
     /** @return the commented template, which is also the documentation of the file. */
-    static String defaults() {
+    public static String defaults() {
         return DEFAULTS;
     }
 

@@ -19,7 +19,7 @@ import java.lang.reflect.Method;
  *   <li><b>26.2</b>: {@code Minecraft#setScreen} is <b>gone</b> - the screen moved to {@code Minecraft#gui},
  *       that is {@code Gui#setScreen(Screen)}. Calling the old method throws
  *       {@code NoSuchMethodError: 'void net.minecraft.client.Minecraft.setScreen(...)'}, which is what crashed
- *       the client the moment the configuration screen was closed.</li>
+ *       the client the moment a screen was closed.</li>
  * </ul>
  *
  * <p>A single jar therefore has to pick at run time. The first call probes the candidates once, keeps the one

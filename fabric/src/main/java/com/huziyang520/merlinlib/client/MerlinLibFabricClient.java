@@ -9,8 +9,13 @@ import com.huziyang520.merlinlib.tools.macro.MacroStorage;
 import com.huziyang520.merlinlib.tools.ui.HealthEditorScreen;
 import com.huziyang520.merlinlib.tools.ui.MacroScreen;
 import com.huziyang520.merlinlib.tools.ui.MerlinScreens;
+import com.mojang.brigadier.context.CommandContext;
+import com.huziyang520.merlinlib.platform.config.ClothSupport;
 import com.huziyang520.merlinlib.tools.ui.MerlinUi;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
+import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -20,6 +25,8 @@ import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 
@@ -52,6 +59,26 @@ public class MerlinLibFabricClient implements ClientModInitializer {
 
         KeyMappingHelper.registerKeyMapping(OPEN_EDITOR);
         KeyMappingHelper.registerKeyMapping(OPEN_MACROS);
+
+        // Cloth Config is optional: when it is installed it becomes the configuration screen, otherwise the TOML
+        // files stay the store and /merlinlib config explains that a screen needs one of the supported mods.
+        ClothSupport.activate();
+
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, buildContext) ->
+                dispatcher.register(ClientCommands.literal("merlinlib")
+                        .then(ClientCommands.literal("editor").executes(context -> {
+                            MerlinScreens.openItemEditor();
+                            return 1;
+                        }))
+                        .then(ClientCommands.literal("health").executes(context -> {
+                            MerlinScreens.openOwnHealthEditor();
+                            return 1;
+                        }))
+                        .then(ClientCommands.literal("macro").executes(context -> {
+                            MerlinScreens.openMacroScreen(null);
+                            return 1;
+                        }))
+                        .then(ClientCommands.literal("config").executes(MerlinLibFabricClient::openConfig))));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (OPEN_EDITOR.consumeClick()) {
@@ -100,5 +127,26 @@ public class MerlinLibFabricClient implements ClientModInitializer {
             }
             return net.minecraft.world.InteractionResult.PASS;
         });
+    }
+
+    /**
+     * Opens the configuration screen, which only exists when Cloth Config is installed.
+     *
+     * <p>A client command rather than a server one: the screen is a client object, and the server has no way to
+     * show it. When Cloth Config is missing the command says so instead of failing silently, because a player who
+     * typed it is asking where the screen went.
+     *
+     * @param source the command source, used for the message when no screen can be shown
+     * @return 1 when the screen was opened, 0 otherwise
+     */
+    private static int openConfig(CommandContext<FabricClientCommandSource> context) {
+        FabricClientCommandSource source = context.getSource();
+        Screen screen = ClothSupport.openScreen(null);
+        if (screen == null) {
+            source.sendError(Component.translatable("command.merlinlib.config.no_cloth"));
+            return 0;
+        }
+        ScreenSwitcher.show(Minecraft.getInstance(), screen);
+        return 1;
     }
 }

@@ -1,8 +1,5 @@
 package com.huziyang520.merlinlib.ui.anim;
 
-import com.huziyang520.merlinlib.config.ClientConfig;
-import com.huziyang520.merlinlib.config.ConfigManager;
-
 /**
  * Interface animation, public and usable by any mod.
  *
@@ -13,21 +10,13 @@ import com.huziyang520.merlinlib.config.ConfigManager;
  * uses {@link Easing} on its own for something completely different. The library draws nothing for the caller
  * and does not know which screen it is for.
  *
- * <h2>The four switches</h2>
+ * <h2>Where the switches went</h2>
  *
- * <p>MerlinLib uses the animation in three places, each with a switch of its own, plus one master switch that
- * turns all of them off at once:
- *
- * <ul>
- *   <li>{@code gui.animation_enabled} - the master switch, on the general tab;</li>
- *   <li>{@code gui.animation_screen} - a main screen opening and closing ({@link #screenIntro()});</li>
- *   <li>{@code gui.animation_tab} - a tab switch sliding the rows ({@link #tabIntro()});</li>
- *   <li>{@code gui.animation_sub} - a sub screen opening and closing ({@link #subIntro()}).</li>
- * </ul>
- *
- * <p>A business mod may read these through the three methods, pass its own choice to {@link #intro(int)} or
- * {@link ScreenIntro#of(int)}, use {@link Easing} directly, or ignore the feature. Nothing here touches another
- * mod's screens by itself: the switches are MerlinLib's own, which is why they live in MerlinLib's config.
+ * <p>These helpers used to be driven by MerlinLib's own {@code [gui]} switches. That section is gone: this
+ * build draws no configuration screen of its own, the toolkit screens no longer animate, and a setting that
+ * governs code nobody calls is only a promise that cannot be kept. The helpers stay - they are part of the
+ * public api and a business mod may use them - but they no longer consult MerlinLib's configuration: a caller
+ * that wants a switch keeps its own, and passes the choice to {@link #intro(int)} or {@link ScreenIntro#of(int)}.
  */
 public final class UiAnimation {
 
@@ -35,50 +24,42 @@ public final class UiAnimation {
     }
 
     /**
-     * @return the animation for a main screen, honouring the master and per-place switches
+     * @return the default animation for a screen opening or closing
      */
     public static ScreenIntro intro() {
         return screenIntro();
     }
 
     /**
-     * @return the animation for a main screen opening or closing
+     * @return the default animation for a screen opening or closing; see {@link ScreenIntro#of(int)}
      */
     public static ScreenIntro screenIntro() {
-        ClientConfig config = ConfigManager.client();
-        return pick(config.uiAnimationEnabled() && config.animationScreen(), config.uiAnimationKind());
+        return ScreenIntro.of(0);
     }
 
     /**
-     * @return the animation for a tab switch sliding the rows into place
+     * @return the default animation for a tab switch sliding the rows into place
      *
-     * <p>Always a sideways slide, and never the configured kind: the kind is the open and close animation, and
-     * letting it drive the tab switch too meant that choosing a kind for opening a screen changed what a tab
-     * switch looked like - the two became the same setting, which is not what either of them says.
+     * <p>Always a sideways slide, and never a configured kind: a tab switch is a different motion from a
+     * screen opening, and letting one setting drive both made choosing a kind for opening a screen change what
+     * a tab switch looked like.
      */
     public static ScreenIntro tabIntro() {
-        ClientConfig config = ConfigManager.client();
-        return config.uiAnimationEnabled() && config.animationTab()
-                ? ScreenIntro.sideSlide() : ScreenIntro.finished();
+        return ScreenIntro.sideSlide();
     }
 
     /**
-     * @return the animation for a sub screen opening or closing
+     * @return the default animation for a second level screen opening or closing
      */
     public static ScreenIntro subIntro() {
-        ClientConfig config = ConfigManager.client();
-        return pick(config.uiAnimationEnabled() && config.animationSub(), config.uiAnimationKind());
+        return ScreenIntro.of(0);
     }
 
     /**
-     * @param kind the configured choice, for a mod that keeps its own setting
+     * @param kind the choice of a mod that keeps its own setting
      * @return the animation for that choice
      */
     public static ScreenIntro intro(int kind) {
         return ScreenIntro.of(kind);
-    }
-
-    private static ScreenIntro pick(boolean enabled, int kind) {
-        return enabled ? ScreenIntro.of(kind) : ScreenIntro.finished();
     }
 }

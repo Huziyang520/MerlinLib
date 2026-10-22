@@ -49,6 +49,11 @@ import java.util.stream.Collectors;
  *     <li>{@code /merlinlib info <id>} - effective source, enabled flag, level and weight</li>
  *     <li>{@code /merlinlib book <id> [level]} - hands out the enchanted book, operator only</li>
  * </ul>
+ *
+ * <p>The three screen entry points - {@code /merlinlib editor}, {@code /merlinlib health} and
+ * {@code /merlinlib macro} - are client commands, registered by each loader's client entrypoint: a screen can
+ * only be shown where it exists, so a server command could not open one. Their literals share this root and do
+ * not collide with the ones registered here.
  */
 public final class MerlinCommand {
 

@@ -4,12 +4,25 @@ plugins {
 }
 repositories {
     maven { url = 'https://maven.terraformersmc.com/releases/' }
+    // Cloth Config: only needed at compile time for the optional configuration screen.
+    maven { url = 'https://maven.shedaniel.me/' }
 }
 
 dependencies {
     // Mod Menu integration: compile only so the mod still runs without it. 20.0.3 is the
     // 26.1-26.2 line of Mod Menu (21.x belongs to 26.3).
     compileOnly("com.terraformersmc:modmenu:20.0.3")
+    // Cloth Config is optional: it only provides the configuration screen. It is compiled against, never
+    // bundled (no include), and declared as a suggestion rather than a dependency, so the mod still starts
+    // without it - see ClothSupport, which loads it by name and falls back to the TOML files.
+    // 26.2.155 is the build of the 26.1-26.2 line that is already in the local Gradle cache.
+    // Cloth's colour entry overloads mention its maths types, so those have to be on the compile class path too.
+    compileOnly("me.shedaniel.cloth:basic-math:0.6.1")
+    compileOnly("me.shedaniel.cloth:cloth-config-fabric:26.2.155") {
+        // Transitive dependencies of Cloth would pull a different fabric-loader and fabric-api than the ones
+        // this project builds against; the module only needs the Cloth types themselves.
+        transitive = false
+    }
     minecraft("com.mojang:minecraft:${minecraft_version}")
     // Plain implementation: probed on 2026-09-24 with Loom 1.18.1, modImplementation() no longer
     // exists on Loom 1.17+ either (the old docs 06 section 6.3.2 rule only applies to the Loom 1.8/1.9 line).

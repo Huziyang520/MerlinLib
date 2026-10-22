@@ -13,8 +13,8 @@ import java.util.List;
  *
  * <p>A message a mod wants to show in the chat when a player arrives - a warning, an announcement, a note
  * about something that changed. The mod says what to show and when, and the library handles the rest: the
- * three once/every modes, the player's and the server's switches for it, and the settings screen that lists
- * every mod that signed up.
+ * three once/every modes, and the switches for it - the global one and the per mod ones, both in
+ * {@code server.toml} under {@code [notices]}.
  *
  * <pre>{@code
  * MerlinApi.notices().register(
@@ -26,9 +26,8 @@ import java.util.List;
  * <h2>The rules that make it work</h2>
  *
  * <ul>
- *   <li>The <b>id's namespace is the owning mod</b>. The settings screen groups by it and the per mod switch
- *       is stored under it, so registering under someone else's namespace would put your notice in their
- *       group.</li>
+ *   <li>The <b>id's namespace is the owning mod</b>. The per mod switch is stored under it, so registering
+ *       under someone else's namespace would put your notice in their group.</li>
  *   <li>Registration happens <b>before a player joins</b>. Registering from {@code onServerStarting} is the
  *       usual place, because that is where a mod has usually read its own configuration and knows what its
  *       default should be.</li>
@@ -62,7 +61,7 @@ public final class NoticeApi {
      * @param id               the notice id, whose namespace is the owning mod
      * @param mode             when to show it
      * @param line             the line to send
-     * @param enabledByDefault the default the settings screen starts from
+     * @param enabledByDefault the default a mod that has not set a switch uses
      */
     public void register(Identifier id, NoticeMode mode, Component line, boolean enabledByDefault) {
         register(id, mode, List.of(line), enabledByDefault);
@@ -74,7 +73,7 @@ public final class NoticeApi {
      * @param id               the notice id, whose namespace is the owning mod
      * @param mode             when to show it
      * @param lines            the lines to send, in order
-     * @param enabledByDefault the default the settings screen starts from
+     * @param enabledByDefault the default a mod that has not set a switch uses
      */
     public void register(Identifier id, NoticeMode mode, List<Component> lines, boolean enabledByDefault) {
         NoticeRegistry.register(id, mode, lines, enabledByDefault);

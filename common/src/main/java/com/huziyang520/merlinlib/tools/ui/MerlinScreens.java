@@ -151,6 +151,20 @@ public final class MerlinScreens {
     }
 
     /**
+     * Opens the health editor for the local player.
+     *
+     * <p>Used by {@code /merlinlib health}: the command has no target argument, because the editor is a client
+     * side screen and an entity id in a command would mean nothing on the client that has to open it.
+     */
+    public static void openOwnHealthEditor() {
+        Player player = Minecraft.getInstance().player;
+        if (player == null) {
+            return;
+        }
+        openHealthEditor(null, player);
+    }
+
+    /**
      * Opens the item editor for the item in the main hand, when it is allowed.
      */
     public static void openItemEditor() {
@@ -181,7 +195,7 @@ public final class MerlinScreens {
      * Opens the item editor from the key binding.
      *
      * <p>The binding ships switched off ({@code editor.hotkey_enabled}), so the library can be installed
-     * without claiming a key. It can be switched on from the configuration screen or with
+     * without claiming a key. It can be switched on in the configuration file or with
      * {@code /merlinlib editorhotkey on}.
      */
     public static void openItemEditorFromHotkey() {
@@ -244,7 +258,7 @@ public final class MerlinScreens {
             // right click into a self edit, which also made the item look pointless.
             //
             // Both refusals are silent towards the player on purpose: the requirement is already stated in the
-            // item's own tooltip and on the config screen, and repeating it in the middle of the screen on
+            // item's own tooltip and in the configuration file, and repeating it in the middle of the screen on
             // every stray right click is noise. The log lines stay, because "why does nothing happen" is a
             // question the log can answer and the screen cannot.
             Constants.LOG.info("[MerlinLib] a self edit was refused: the health editor item must be held to "

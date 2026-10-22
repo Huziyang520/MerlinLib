@@ -11,11 +11,13 @@ import com.huziyang520.merlinlib.tools.ui.MacroScreen;
 import com.huziyang520.merlinlib.tools.ui.MerlinScreens;
 import com.huziyang520.merlinlib.tools.ui.MerlinUi;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.commands.Commands;
 import net.minecraft.resources.Identifier;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.common.NeoForge;
@@ -48,6 +50,7 @@ public class MerlinLibNeoForgeClient {
         modBus.addListener(this::onRegisterKeyMappings);
         modBus.addListener(this::onRegisterGuiLayers);
         modBus.addListener(this::onRegisterClientPayloads);
+        NeoForge.EVENT_BUS.addListener(this::onRegisterClientCommands);
         NeoForge.EVENT_BUS.addListener(this::onClientTick);
         NeoForge.EVENT_BUS.addListener(this::onUseEntity);
         DamageFeedbackSink.setClientSink(payload ->
@@ -101,6 +104,34 @@ public class MerlinLibNeoForgeClient {
 
         event.register(OPEN_EDITOR);
         event.register(OPEN_MACROS);
+    }
+
+    /**
+     * Registers the client side entry points of the toolkit screens.
+     *
+     * <p>A screen can only be opened where the screen exists, so these are client commands rather than server
+     * ones: {@code /merlinlib editor} would otherwise be a server command that can do nothing on the client.
+     * The root literal is the same one the server command uses, and the children do not collide, so both trees
+     * are usable at once - the server answers {@code list}/{@code info}/{@code book}, the client answers the
+     * three screens.
+     *
+     * @param event the client command registration event
+     */
+    private void onRegisterClientCommands(RegisterClientCommandsEvent event) {
+
+        event.getDispatcher().register(Commands.literal("merlinlib")
+                .then(Commands.literal("editor").executes(context -> {
+                    MerlinScreens.openItemEditor();
+                    return 1;
+                }))
+                .then(Commands.literal("health").executes(context -> {
+                    MerlinScreens.openOwnHealthEditor();
+                    return 1;
+                }))
+                .then(Commands.literal("macro").executes(context -> {
+                    MerlinScreens.openMacroScreen(null);
+                    return 1;
+                })));
     }
 
     /**
