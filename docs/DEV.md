@@ -149,7 +149,7 @@ MerlinApi.notices().register(
 ```
 
 `NoticeMode` is `EVERY_JOIN`, `ONCE_PER_SAVE` or `FIRST_JOIN`. The id's namespace is the owning mod:
-the settings screen groups by it and the per mod switch is stored under it. Colours come from the
+the per mod switch is stored under it. Colours come from the
 component itself, so a line may carry as many styles as it likes. A data pack can add one at
 `data/<namespace>/merlinlib/notices/<name>.json`.
 
@@ -192,21 +192,21 @@ MerlinApi.ai().register(new AiHook() {
 
 ### Interface animation
 
-MerlinLib's own screens pop open instead of appearing at once, and any mod can ask for the same, or for
-parts of it:
+The curves and the intro are a public API. MerlinLib itself no longer animates its screens with them -
+the configuration screen belongs to the loader and the toolkit screens open at once - so a mod that
+wants the same feel drives them itself:
 
 ```java
-ScreenIntro intro = UiAnimation.intro();          // honours client.toml gui.animation_*
-graphics.pose().translate(intro.offsetX(width), intro.offsetY(height));
-graphics.pose().scale((float) intro.scale(), (float) intro.scale());
+ScreenIntro intro = UiAnimation.intro();          // SCALE_POP unless the mod asks for another kind
 ```
 
-- `Easing` is a set of five curves (`LINEAR`, `EASE_OUT_CUBIC`, `EASE_IN_OUT_SINE`, `EASE_OUT_BACK`,
-  `EASE_OUT_ELASTIC`) as plain double functions, with nothing Minecraft in them.
-- `ScreenIntro` is one opening animation — `SCALE_POP`, `SLIDE_UP`, `SLIDE_SIDE` or `FADE` — with
-  `scale()`, `offsetX()`, `offsetY()` and `alpha()` for the caller to apply. It is driven by the clock
-  rather than by ticks, so a screen asks for the current value whenever it draws.
-- The library draws nothing for the caller and does not touch another mod's screens.
+- `Easing` is five curves as plain `double` functions, with no Minecraft types in the signature.
+- `ScreenIntro` is one opening animation - `SCALE_POP`, `SLIDE_UP`, `SLIDE_SIDE` or `FADE` - with
+  its progress, scale and offset for a given age.
+- `UiAnimation` hands out those values; nothing in it reads a configuration file, so a mod keeps its own
+  switch instead of inheriting one.
+
+es not touch another mod's screens.
 
 ### Colours, counters and lookups
 
@@ -314,7 +314,7 @@ MerlinApi.loot().register(LootInjectionBuilder.create()
 ### 进服提示
 
 `MerlinApi.notices().register(id, NoticeMode.EVERY_JOIN, Component..., true)`。三种时机：
-`EVERY_JOIN` / `ONCE_PER_SAVE` / `FIRST_JOIN`。**id 的命名空间就是归属模组**：设置界面按它分组，
+`EVERY_JOIN` / `ONCE_PER_SAVE` / `FIRST_JOIN`。**id 的命名空间就是归属模组**，逐模组开关就存在这个命名空间下，
 逐模组开关也存在它名下。颜色来自组件本身。数据包也可以加，位置
 `data/<命名空间>/merlinlib/notices/<名字>.json`。
 
@@ -341,17 +341,14 @@ MerlinApi.lifecycle().onServerStarted(server -> MyEnchantments.bind(server));
 
 ### 界面动画
 
+曲线与入场动画是公开 API。MerlinLib 自己不再拿它们做动画——配置界面归加载器，工具界面直接出现——
+想要同样手感的模组自己驱动：
+
 ```java
-ScreenIntro intro = UiAnimation.intro();          // 读 client.toml 的 gui.animation_*
-graphics.pose().translate(intro.offsetX(width), intro.offsetY(height));
-graphics.pose().scale((float) intro.scale(), (float) intro.scale());
+ScreenIntro intro = UiAnimation.intro();          // 默认 SCALE_POP，需要别的种类就自己指定
 ```
 
-`Easing` 是五条缓动（纯 double 函数，与 Minecraft 无关）；`ScreenIntro` 是一个入场动画
-（`SCALE_POP` / `SLIDE_UP` / `SLIDE_SIDE` / `FADE`），对外给 `scale()` / `offsetX()` / `offsetY()` /
-`alpha()` 由调用方自己施加，**按时间推进**而不是按 tick。库不替调用方画任何东西，也不碰别人的界面。
+- `Easing` 是五条缓动（纯 double 函数，签名里没有 Minecraft 类型）；
+- `ScreenIntro` 是一个入场动画——`SCALE_POP`、`SLIDE_UP`、`SLIDE_SIDE` 或 `FADE`——给出某个时长下的进度、缩放与偏移；
+- `UiAnimation` 只负责取值，不读任何配置文件，所以模组用自己开关，不继承别人的。
 
-### 颜色与其它工具
-
-`MerlinColor` 提供调色板常量、`parse`、`gradient`（[高光, 基色, 阴影]）与 `mix`；
-`EntityCounter` 记录"谁授予了什么"，用于只收回自己给的那一份；`SmeltingLookup` 查询熔炼产物。

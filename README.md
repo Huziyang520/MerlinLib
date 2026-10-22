@@ -41,10 +41,10 @@ Everything is reached through one entry point, `com.huziyang520.merlinlib.api.Me
 | **Join notices** | a chat message shown when a player arrives, with the per-mod switch handled for you |
 | **Server lifecycle** | starting / started / stopping and player join, with the two start moments kept distinct |
 | **Mob behaviour hooks** | veto a mob's target, make it keep its distance — ordinary mobs **and** brain mobs such as the piglin family |
-| **Interface animation** | the library's own screens animate; any mod can ask for the same curves and intro |
+| **Interface animation** | opening curves and an intro a mod can drive its own screens with |
 | **Colours and helpers** | colour parsing and gradients, grant counters, smelting lookups |
 
-The library is **client side too**: the settings screen, the toolkit and every display feature live in
+The library is **client side too**: the toolkit and every display feature live in
 the same jar, so a mod that only wants the registration API still installs one file.
 
 ### What it ships as content
@@ -52,8 +52,9 @@ the same jar, so a mod that only wants the registration API still installs one f
 - **Testing toolkit** — four testing weapons (sword, axe, spear, trident) that are editable variants of
   the vanilla ones, an item editor, a health editor, command macros, crosshair damage and floating
   damage numbers. Every part of it can be switched off, and it can be limited to operators.
-- **A settings screen** — reachable from the mods list, covering every switch, grouped by module, and
-  writing only what changed while keeping the comments in the files.
+- **A configuration screen** — the loader's own where there is one: NeoForge builds it from the declared
+  switches, Forge draws it with Jupiter, Fabric with Cloth Config. Both of those are optional; without
+  them the switches are still in the files and reachable through the commands.
 - **A vanilla-UI base** — `tools.ui.vanilla.VanillaUi` and the screens built on it use the vanilla
   widget sprites only, and other mods may reuse them.
 
@@ -61,11 +62,10 @@ the same jar, so a mod that only wants the registration API still installs one f
 
 | Document | What is in it |
 |---|---|
-| [`docs/USAGE.md`](docs/USAGE.md) | the config files, the commands, the settings screen |
+| [`docs/USAGE.md`](docs/USAGE.md) | the config files, the commands, where the configuration screen comes from |
 | [`docs/DEV.md`](docs/DEV.md) | the Java API, and how to depend on MerlinLib |
 | [`docs/TOOLKIT.md`](docs/TOOLKIT.md) | the testing toolkit in detail |
 | [`docs/LIMITS.md`](docs/LIMITS.md) | what a configuration file can and cannot do |
-| [`docs/versions/26.x`](docs/versions/26.x) | the same two guides written for the 26.x lines, kept for their version specific notes |
 
 ### Behaviour details
 
@@ -75,7 +75,8 @@ the same jar, so a mod that only wants the registration API still installs one f
   followed by the numbers, instead of one heart per two points.
 - **Join notices**: a mod registers a chat message and the switch, the screen and the per-mod storage
   are the library's business.
-- **Interface animation**: pop, slide up, slide in from the side or fade, each place with its own switch.
+- **Interface animation**: pop, slide up, slide in from the side or fade — available to any mod that wants
+  them; MerlinLib does not animate its own screens with them.
 - **A particle ceiling on both sides**: one number caps how many particles a client draws per 1/20
   second and how many one server send may carry.
 - `/merlinlib list` lists every non-vanilla enchantment in the registry, not only the ones this library
@@ -130,25 +131,25 @@ MerlinLib 是一款 Minecraft **前置库模组**：为模组开发者提供**�
 | **界面动画** | 库自己的界面带动画，任何模组都能拿到同一套曲线与入场动画 |
 | **颜色与工具** | 颜色解析与渐变、授予记账、熔炼查询 |
 
-本库**同时也是客户端模组**：设置界面、测试工具与全部显示功能都在同一个 jar 里，所以只想要注册 API 的
+本库**同时也是客户端模组**：测试工具与全部显示功能都在同一个 jar 里，所以只想要注册 API 的
 模组也只装一个文件。
 
 ### 内置内容模块
 
 - **测试工具集**——四件测试武器（剑 / 斧 / 矛 / 三叉戟，原版武器的可编辑变体）、物品编辑界面、血量编辑器、
   命令宏、准心伤害与受伤飘字。整套可以关闭，也可以限制为仅 OP 可用。
-- **设置界面**——模组列表里可进，按模块收录全部开关，只写改动过的项并保留文件注释。
+- **配置界面**——有原生界面的加载器就用它自己的：NeoForge 按声明的开关生成，Forge 用 Jupiter 绘制，
+  Fabric 用 Cloth Config 绘制。后两者都是可选依赖；没有它们时开关仍在文件里，也能用指令读写。
 - **原版界面基座**——`tools.ui.vanilla.VanillaUi` 及其上的全部界面只用原版控件贴图，其它模组可直接复用。
 
 ### 文档
 
 | 文档 | 内容 |
 |---|---|
-| [`docs/USAGE.md`](docs/USAGE.md) | 配置文件、指令、设置界面 |
+| [`docs/USAGE.md`](docs/USAGE.md) | 配置文件、指令、配置界面的来源 |
 | [`docs/DEV.md`](docs/DEV.md) | Java API 与依赖方式 |
 | [`docs/TOOLKIT.md`](docs/TOOLKIT.md) | 测试工具集详解 |
 | [`docs/LIMITS.md`](docs/LIMITS.md) | 配置文件能做什么、不能做什么 |
-| [`docs/versions/26.x`](docs/versions/26.x) | 面向 26.x 分支的两份同主题文档，保留其版本专有说明 |
 
 ### 行为细节
 

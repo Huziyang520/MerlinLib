@@ -87,7 +87,7 @@ Commands that go with the toolkit are listed in [`USAGE.md`](USAGE.md).
 
 ### 物品编辑界面
 
-用快捷键打开——默认左方向键，且快捷键**默认关闭**，可在设置界面或 `/merlinlib editorhotkey on` 开启。
+用快捷键或 `/merlinlib editor` 打开——默认左方向键，且快捷键**默认关闭**，可用 `/merlinlib editorhotkey on` 开启。
 
 - 给任意物品改名。
 - 逐条编辑附魔：每行有等级输入框与 `-` / `+` / `X`，另有二级选择界面支持实时搜索。

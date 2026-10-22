@@ -2,7 +2,7 @@
 
 [English](#english) | [中文](#中文)
 
-> Configuration files, commands and the settings screen.
+> Configuration files, commands and where the visual configuration screen comes from.
 > For the Java API see [`DEV.md`](DEV.md); for the built-in toolkit see [`TOOLKIT.md`](TOOLKIT.md);
 > for what can and cannot be changed from a file see [`LIMITS.md`](LIMITS.md).
 
@@ -12,7 +12,18 @@
 
 ### Where everything lives
 
-MerlinLib keeps everything under `config/MerlinLib/`:
+The file that holds a given switch depends on the loader, because each line hands the switches to that
+loader's own configuration system:
+
+| Line | Client switches | Server switches |
+|---|---|---|
+| NeoForge | `config/merlinlib-client.toml` | `config/merlinlib-common.toml` |
+| Forge 1.20.1 | `config/MerlinLib/settings.jcfg`, or `config/MerlinLib/client.toml` without Jupiter | `config/MerlinLib/server.toml` |
+| Fabric | `config/MerlinLib/client.toml` | `config/MerlinLib/server.toml` |
+
+A `config/MerlinLib/client.toml` left by an earlier build is read once and renamed to
+`client.toml.imported`; the content definitions (`enchantments.json`, `effects.json`) and the
+`config/MerlinLib/*.json` folders stay where they were.
 
 | File | Purpose | How a change applies |
 |---|---|---|
@@ -51,9 +62,8 @@ soon as the file is saved.
 | `editor.scroll_step` / `scroll_step_fast` | `1` / `10` | how much one wheel notch over a row changes its level, and the same with control held |
 | `macros.enabled` | `true` | the macro toolkit (its screen and running macros from their keys) |
 | `particles.limit_enabled` / `particles.limit` | `true` / `512` | cap on how many particles this client draws per 1/20 second and how many one server send may carry |
-| `gui.animation_enabled` | `true` | whether MerlinLib's own screens animate when they open |
-| `gui.animation_kind` | `0` | which opening animation: pop / slide up / slide side / fade |
-| `gui.animation_screen` / `_tab` / `_sub` | `true` | which places use it: the screen itself, switching tabs, opening a sub-screen |
+| `general.notice_enabled` | `true` | show the join notice that explains where the configuration screen comes from |
+| `general.config_version` | current | file layout marker, written by the mod; not meant to be edited |
 
 ### `server.toml`
 
@@ -72,7 +82,7 @@ soon as the file is saved.
 | `tools.health_editor_requires_item` | `true` | the health editor opens only while its own item is held |
 | `content.disable_generated_enchantments` | `false` | emergency switch: none of the enchantments in `config/MerlinLib/*.json` are registered |
 | `notices.enabled` | `true` | show the join notices business mods registered through MerlinLib |
-| `notices.per_mod` | `""` | per mod switches, written by the settings screen as `<modid>=true;<modid>=false>` |
+| `notices.per_mod` | `""` | per mod switches, hand written as `<modid>=true;<modid>=false>` |
 
 `server.toml` is authoritative: the client only shows what the server allows and every write is
 validated on the server. In single player the integrated server shares the process, so a change applies
@@ -186,13 +196,23 @@ does not resolve matches nothing and says so once in the log rather than quietly
 | `/merlinlib info <id>` | one enchantment: whether it is in the registry, its maximum level and weight |
 | `/merlinlib book <id> [level]` | hands out the enchanted book (operators) |
 | `/merlinlib editorhotkey on\|off` | switches the item editor hotkey, writing `editor.hotkey_enabled` |
+| `/merlinlib editor` | opens the item editor for the held item |
+| `/merlinlib health` | opens the health editor |
+| `/merlinlib macro` | opens the command macro screen |
 
-### The settings screen
+### The configuration screen
 
-On this loader the entry point is the **Config** button in the mods list. It covers every switch,
-grouped by module, and writes only what changed while keeping the comments in the files. The join
-notice list lives under *General → Edit each mod's join notices*, and lists MerlinLib's own notices
-first, then one row per business mod that registered one; a mod that did not opt in never appears.
+The screen is the loader's, not MerlinLib's:
+
+| Line | How the screen is reached | Without it |
+|---|---|---|
+| NeoForge | **Config** in the mods list - NeoForge's own screen, built from the declared switches | always available |
+| Forge 1.20.1 | **Config** in the mods list, drawn by **Jupiter** | edit `client.toml` / `server.toml`, use the commands |
+| Fabric | `/merlinlib config`, drawn by **Cloth Config** | edit `config/MerlinLib/*.toml`, use the commands |
+
+Jupiter and Cloth Config are optional on their lines: nothing else about the mod needs them, and the
+switches themselves live in files either way, so a player without the library keeps every setting and
+only loses the window.
 
 ---
 
@@ -200,7 +220,7 @@ first, then one row per business mod that registered one; a mod that did not opt
 
 ### 文件都在哪
 
-MerlinLib 的一切都在 `config/MerlinLib/` 下：
+开关落在哪个文件取决于加载器——每条线都把开关交给该加载器自己的配置系统：
 
 | 文件 | 作用 | 生效方式 |
 |---|---|---|
@@ -237,9 +257,8 @@ MerlinLib 的一切都在 `config/MerlinLib/` 下：
 | `editor.scroll_step` / `scroll_step_fast` | `1` / `10` | 鼠标停在某行上滚轮每格的变化量，以及按住 Ctrl 时的 |
 | `macros.enabled` | `true` | 命令宏总开关（宏界面与按键触发） |
 | `particles.limit_enabled` / `particles.limit` | `true` / `512` | 粒子上限：既是客户端每 1/20 秒的绘制上限，也是服务端单次发送上限 |
-| `gui.animation_enabled` | `true` | 库自己的界面是否带入场动画 |
-| `gui.animation_kind` | `0` | 入场动画种类：跳出 / 上滑 / 侧滑 / 淡入 |
-| `gui.animation_screen` / `_tab` / `_sub` | `true` | 哪些位置使用它：界面本身、切换标签、打开二级界面 |
+| `general.notice_enabled` | `true` | 是否显示说明「配置界面从哪来」的那条进服提示 |
+| `general.config_version` | 当前值 | 文件布局标记，由模组写入，不必手改 |
 
 ### `server.toml`
 
@@ -258,7 +277,7 @@ MerlinLib 的一切都在 `config/MerlinLib/` 下：
 | `tools.health_editor_requires_item` | `true` | 血量编辑器需要手持对应物品 |
 | `content.disable_generated_enchantments` | `false` | 应急开关：不再注册 `config/MerlinLib/*.json` 里的附魔 |
 | `notices.enabled` | `true` | 是否显示业务模组注册的进服聊天提示 |
-| `notices.per_mod` | `""` | 各模组开关，由设置界面写成 `<模组id>=true;<模组id>=false>` |
+| `notices.per_mod` | `""` | 各模组开关，手写成 `<模组id>=true;<模组id>=false>` |
 
 `server.toml` 是权威：客户端只展示服务端允许的范围，每次写入都由服务端校验。单人游戏下集成服务端
 与本进程共享，改动立即生效。
@@ -300,9 +319,19 @@ MerlinLib 的一切都在 `config/MerlinLib/` 下：
 | `/merlinlib info <id>` | 单个附魔：是否在注册表、最大等级、权重 |
 | `/merlinlib book <id> [等级]` | 发放对应附魔书（需要 OP） |
 | `/merlinlib editorhotkey on\|off` | 切换物品编辑快捷键，写入 `editor.hotkey_enabled` |
+| `/merlinlib editor` | 打开手持物品的物品编辑界面 |
+| `/merlinlib health` | 打开血量编辑器 |
+| `/merlinlib macro` | 打开指令宏界面 |
 
-### 设置界面
+### 配置界面
 
-本加载器上的入口是模组列表里的 **配置（Config）** 按钮。它按模块收录全部开关，**只写改动过的项，
-并且保留文件里的注释**。进服提示的列表在**通用 → 编辑各模组聊天栏提示**：先列 MerlinLib 自己的通知，
-再每个"主动适配过本功能"的业务模组一行；没有适配的模组不会出现。
+界面由加载器提供，不是本模组画的：
+
+| 线 | 打开方式 | 没装时 |
+|---|---|---|
+| NeoForge | 模组列表里的 **配置（Config）**，NeoForge 自己的界面，按声明的开关生成 | 始终可用 |
+| Forge 1.20.1 | 模组列表里的 **配置**，由 **Jupiter** 绘制 | 手改 `client.toml` / `server.toml`，或用指令 |
+| Fabric | `/merlinlib config`，由 **Cloth Config** 绘制 | 手改 `config/MerlinLib/*.toml`，或用指令 |
+
+Jupiter 与 Cloth Config 在各自线上都是可选的：模组其它部分都不需要它们，开关本身也始终在文件里，
+所以不装库的玩家一个设置都不会少，只是没有那个窗口。
