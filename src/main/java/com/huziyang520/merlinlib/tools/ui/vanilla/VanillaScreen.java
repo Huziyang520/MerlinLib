@@ -94,8 +94,10 @@ public abstract class VanillaScreen extends Screen {
         // well drew the world dimming and the panel twice; the flag makes the second call a no-op.
         this.backgroundDrawn = false;
         renderBackground(graphics, mouseX, mouseY, partialTick);
-        super.render(graphics, mouseX, mouseY, partialTick);
+        // Before the widgets on purpose: the recessed list areas belong to the content and have to sit behind
+        // the rows they frame, or the fill paints over the - / + / X buttons and the level fields of every row.
         drawContentBackground(graphics);
+        super.render(graphics, mouseX, mouseY, partialTick);
         renderContent(graphics, mouseX, mouseY, partialTick);
     }
 
