@@ -39,3 +39,5 @@ Thumbs.db
 
 # the wrapper jar must stay in the repository
 !gradle/wrapper/gradle-wrapper.jar
+
+*.log
