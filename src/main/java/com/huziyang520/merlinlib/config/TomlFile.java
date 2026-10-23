@@ -8,9 +8,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Reader and writer of the small, commented TOML subset MerlinLib keeps its switches in: comments,
@@ -51,6 +53,174 @@ public final class TomlFile implements ConfigReader {
             file.errors.add(new ContentError(path.getFileName().toString(), "<root>", "-", "a readable file", String.valueOf(exception.getMessage())));
         }
         return file;
+    }
+
+    /**
+     * Writes selected values back into an existing file, in place.
+     *
+     * <p>Only the values named in {@code overrides} are touched: every comment, blank line and order is
+     * kept, so saving one switch never destroys the documentation the file exists to carry. A key that is
+     * not in the file yet is appended under its section header.
+     *
+     * <p>Keys are addressed the same way as when reading: {@code section.key}, or just {@code key} for a
+     * value before any section header.
+     *
+     * @param path      the file to update, created from {@code defaults} when missing
+     * @param defaults  the template written when the file does not exist yet
+     * @param overrides the values to replace, keyed by {@code section.key}
+     */
+    public static void rewrite(Path path, String defaults, Map<String, String> overrides) {
+        if (overrides.isEmpty()) {
+            return;
+        }
+        if (!Files.exists(path)) {
+            write(path, defaults);
+        }
+
+        List<String> lines;
+        try {
+            lines = new ArrayList<>(Files.readAllLines(path, StandardCharsets.UTF_8));
+        } catch (IOException exception) {
+            return;
+        }
+
+        Map<String, String> pending = new LinkedHashMap<>(overrides);
+        String section = "";
+        for (int i = 0; i < lines.size(); i++) {
+            String trimmed = lines.get(i).trim();
+            if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+                section = trimmed.substring(1, trimmed.length() - 1).trim();
+                continue;
+            }
+            if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+                continue;
+            }
+            int equals = trimmed.indexOf('=');
+            if (equals < 0) {
+                continue;
+            }
+            String key = trimmed.substring(0, equals).trim();
+            String full = section.isEmpty() ? key : section + "." + key;
+            if (pending.containsKey(full)) {
+                lines.set(i, key + " = " + pending.remove(full));
+            }
+        }
+
+        for (Map.Entry<String, String> entry : pending.entrySet()) {
+            String key = entry.getKey();
+            int dot = key.lastIndexOf('.');
+            String prefix = dot < 0 ? "" : key.substring(0, dot);
+            String name = dot < 0 ? key : key.substring(dot + 1);
+            insert(lines, prefix, name + " = " + entry.getValue());
+        }
+
+        try {
+            Files.write(path, lines, StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            // A read only file must not break the screen: the values simply stay as they were on disk.
+        }
+    }
+
+    /**
+     * Inserts a line into the section it belongs to, creating the header only when it is missing.
+     *
+     * @param lines   the file's lines, modified in place
+     * @param section the section name, empty for a key before any header
+     * @param line    the complete {@code key = value} line to insert
+     */
+    private static void insert(List<String> lines, String section, String line) {
+        if (section.isEmpty()) {
+            lines.add(0, line);
+            return;
+        }
+        String header = "[" + section + "]";
+        int headerIndex = -1;
+        for (int index = 0; index < lines.size(); index++) {
+            if (lines.get(index).trim().equals(header)) {
+                headerIndex = index;
+                break;
+            }
+        }
+        if (headerIndex < 0) {
+            if (!lines.isEmpty() && !lines.get(lines.size() - 1).isBlank()) {
+                lines.add("");
+            }
+            lines.add(header);
+            lines.add(line);
+            return;
+        }
+        // Walk to the end of the section: past comments and blank lines, stopping at the next header.
+        int insertAt = headerIndex + 1;
+        for (int index = headerIndex + 1; index < lines.size(); index++) {
+            String trimmed = lines.get(index).trim();
+            if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+                break;
+            }
+            if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+                continue;
+            }
+            insertAt = index + 1;
+        }
+        lines.add(insertAt, line);
+    }
+
+    /**
+     * Deletes keys from a file, together with the comment lines that introduce them.
+     *
+     * <p>Used for a value a build no longer has: {@link #rewrite} can only replace or add a line, so a key
+     * that must disappear would otherwise stay in the file for good. Everything else is left alone.
+     *
+     * @param path the file to edit, ignored when it is missing
+     * @param keys the keys to delete, as {@code section.key}
+     */
+    public static void remove(Path path, Set<String> keys) {
+        if (keys.isEmpty() || !Files.isRegularFile(path)) {
+            return;
+        }
+        List<String> lines;
+        try {
+            lines = new ArrayList<>(Files.readAllLines(path, StandardCharsets.UTF_8));
+        } catch (IOException exception) {
+            return;
+        }
+
+        List<Integer> doomed = new ArrayList<>();
+        String section = "";
+        for (int index = 0; index < lines.size(); index++) {
+            String trimmed = lines.get(index).trim();
+            if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+                section = trimmed.substring(1, trimmed.length() - 1).trim();
+                continue;
+            }
+            if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+                continue;
+            }
+            int equals = trimmed.indexOf('=');
+            if (equals < 0) {
+                continue;
+            }
+            String key = trimmed.substring(0, equals).trim();
+            String full = section.isEmpty() ? key : section + "." + key;
+            if (!keys.contains(full)) {
+                continue;
+            }
+            doomed.add(index);
+            for (int above = index - 1; above >= 0 && lines.get(above).trim().startsWith("#"); above--) {
+                doomed.add(above);
+            }
+        }
+        if (doomed.isEmpty()) {
+            return;
+        }
+        doomed.sort(Comparator.reverseOrder());
+        for (int index : doomed) {
+            lines.remove(index);
+        }
+        try {
+            Files.write(path, lines, StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            // A read only file must not break startup; the stale line simply stays.
+        }
     }
 
     private static void write(Path path, String content) {

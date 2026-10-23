@@ -3,13 +3,19 @@ package com.huziyang520.merlinlib.config;
 import com.huziyang520.merlinlib.content.ContentError;
 import com.huziyang520.merlinlib.util.MerlinColor;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Client only switches: display options and interaction tuning, read at the moment they are used so a
  * change is visible immediately.
  */
 public final class ClientConfig {
+
+    /** The file layout this build writes. Kept out of the specification: the mod owns this key alone. */
+    private static final int CONFIG_VERSION = 3;
 
     private boolean crosshairDamage;
     private int crosshairDamageTicks = 20;
@@ -27,7 +33,6 @@ public final class ClientConfig {
     private int editorScrollStep = 1;
     private int editorScrollStepFast = 10;
     private boolean macrosEnabled = true;
-    private boolean noticeEnabled = true;
     private boolean particleLimitEnabled = true;
     private int particleLimit = 512;
     private List<ContentError> errors = List.of();
@@ -42,6 +47,7 @@ public final class ClientConfig {
     public static ClientConfig load() {
         ClientConfig config = new ClientConfig();
         ConfigReader file = ConfigManager.read(ConfigScope.CLIENT);
+        ensureLayoutVersion();
 
         config.crosshairDamage = file.getBoolean("hud.crosshair_damage", false);
         config.crosshairDamageTicks = file.getInt("hud.crosshair_damage_ticks", 20, 1, 400);
@@ -59,11 +65,40 @@ public final class ClientConfig {
         config.editorScrollStep = file.getInt("editor.scroll_step", 1, 1, 1000);
         config.editorScrollStepFast = file.getInt("editor.scroll_step_fast", 10, 1, 100000);
         config.macrosEnabled = file.getBoolean("macros.enabled", true);
-        config.noticeEnabled = file.getBoolean("general.notice_enabled", true);
         config.particleLimitEnabled = file.getBoolean("particles.limit_enabled", true);
         config.particleLimit = file.getInt("particles.limit", 512, 1, 1000000);
         config.errors = file.errors();
         return config;
+    }
+
+    /**
+     * Keeps the layout marker in the file after the loader has rewritten it from its specification.
+     *
+     * <p>{@code general.config_version} is not declared in the specification, so a save from the
+     * configuration screen writes a file without it. The marker still has to be there, because the next
+     * build reads it to learn which layout a file was written with; this restores it on every reload, which
+     * a save always triggers, so the key is back in the file by the time anybody looks at it.
+     */
+    private static void ensureLayoutVersion() {
+        Path file = path();
+        if (!Files.isRegularFile(file)) {
+            return;
+        }
+        // Only a file that lost the key is touched: writing it on every reload would change its timestamp,
+        // which the loader answers with another reload, and the two would keep each other going.
+        if (TomlFile.read(file, "").getInt("general.config_version", 0, 0, Integer.MAX_VALUE) == CONFIG_VERSION) {
+            return;
+        }
+        try {
+            TomlFile.rewrite(file, "", Map.of("general.config_version", Integer.toString(CONFIG_VERSION)));
+        } catch (RuntimeException exception) {
+            // A read only file must not break startup: the marker simply stays as it was.
+        }
+    }
+
+    /** @return the file the loader writes this half to */
+    static Path path() {
+        return Path.of("config", NeoConfigs.CLIENT_FILE);
     }
 
     /** @return whether the crosshair damage display is on. */
@@ -129,11 +164,6 @@ public final class ClientConfig {
     /** @return whether the macro toolkit is enabled. */
     public boolean macrosEnabled() {
         return this.macrosEnabled;
-    }
-
-    /** @return whether MerlinLib's own join notice about the rebuilt configuration screen is shown. */
-    public boolean noticeEnabled() {
-        return this.noticeEnabled;
     }
 
     /** @return whether a very large health bar is folded to one heart plus the numbers. */

@@ -16,9 +16,6 @@ public final class NeoConfigs {
     /** The common file, below the game's {@code config} directory. */
     public static final String COMMON_FILE = Constants.MOD_ID + "-common.toml";
 
-    /** Layout this build writes into the client file; client only, the shared half carries no marker. */
-    public static final int CLIENT_VERSION = 3;
-
     /** Name of the pre-specification client file inside {@link ConfigDirectory#root()}. */
     private static final String LEGACY_CLIENT_FILE = "client.toml";
 
@@ -72,17 +69,11 @@ public final class NeoConfigs {
     }
 
     /**
-     * Declares the client switches, in the order {@code client.toml} documents them. The layout version is
-     * client only and therefore declared here, never in the shared half.
+     * Declares the client switches, in the order {@code client.toml} documents them. The file layout
+     * version is deliberately not here: it is written and read by the mod itself, and a key the screen
+     * shows but nothing can meaningfully change only invites edits.
      */
     private static void client(NeoSpecBackend spec) {
-        spec.push("general")
-                .number("config_version", CLIENT_VERSION, 0, Integer.MAX_VALUE,
-                        "File layout version, written by the mod. Client only: the shared half carries no "
-                                + "layout marker.")
-                .bool("notice_enabled", true, "Show MerlinLib's own join notice in chat.")
-                .pop();
-
         spec.push("hud")
                 .bool("crosshair_damage", false,
                         "Show the listed damage of the weapon you just used near the crosshair.")

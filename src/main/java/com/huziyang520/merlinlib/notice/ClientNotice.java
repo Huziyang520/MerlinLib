@@ -3,6 +3,7 @@ package com.huziyang520.merlinlib.notice;
 import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.api.NoticeMode;
 import com.huziyang520.merlinlib.config.ConfigManager;
+import com.huziyang520.merlinlib.config.NoticeSettings;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
@@ -19,9 +20,9 @@ import java.util.Set;
  * <p>Every other notice is sent by the server, because it is the server that decides what its players are told
  * and its switches live in the common file. This notice is different: it is about this computer's own
  * configuration screen, it has to appear on every server (including one that runs no mods at all), and its
- * switch is {@code general.notice_enabled} in the client file - the same file the player opens when they want
- * to silence it. Sending it from the server would mean the one player who turned it off still saw it, because
- * a dedicated server never reads a player's client file.
+ * switch is MerlinLib's own row of {@code config/MerlinLib/notices.toml} - the same page the player opens when
+ * they want to silence it. Sending it from the server would mean the one player who turned it off still saw
+ * it, because a dedicated server never reads a player's client file.
  *
  * <p>It still uses the notices feature's own vocabulary - a {@link NoticeEntry} with an id in the
  * {@code merlinlib} namespace and a {@link NoticeMode} - so it is described, and behaves, like every other
@@ -50,13 +51,15 @@ public final class ClientNotice {
     /**
      * Shows the library's own notices to a player who has just joined, if they are switched on.
      *
-     * <p>The switch is read at the moment of sending, so turning it off takes effect on the next join instead
-     * of on the next restart.
+     * <p>The switches are read at the moment of sending, so turning them off takes effect on the next join
+     * instead of on the next restart: the global {@code notices.enabled} of the shared file and
+     * MerlinLib's own row of the join notice page, exactly like a business mod's notice.
      *
      * @param player the local player
      */
     public static synchronized void showOnJoin(Player player) {
-        if (player == null || !ConfigManager.client().noticeEnabled()) {
+        if (player == null || !ConfigManager.server().noticesEnabled()
+                || !NoticeSettings.isEnabled(Constants.MOD_ID, true)) {
             return;
         }
         NoticeEntry entry = configUi();

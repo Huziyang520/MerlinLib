@@ -9,7 +9,7 @@ import com.huziyang520.merlinlib.tools.ui.vanilla.PanelLayout;
 import com.huziyang520.merlinlib.tools.ui.vanilla.VanillaScreen;
 import com.huziyang520.merlinlib.tools.ui.vanilla.VanillaUi;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.CycleButton;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * The join notice switches: one global switch, then one switch per mod that registered a notice,
@@ -47,6 +48,8 @@ public class NoticesScreen extends VanillaScreen {
 
     private boolean enabled;
     private int hintY;
+    /** The y the label of the global row is drawn at; the control itself says only on or off. */
+    private int globalLabelY;
     private int hidden;
     /** Whether no business mod registered a notice, so only MerlinLib's own row is listed. */
     private boolean noBusinessMods;
@@ -126,10 +129,9 @@ public class NoticesScreen extends VanillaScreen {
 
         // The global switch: everything below it is a choice about which notices it lets through.
         int globalY = layout.row();
-        this.addRenderableWidget(CycleButton.onOffBuilder(this.enabled)
-                .create(controlX, globalY, CONTROL_WIDTH, VanillaUi.WIDGET_HEIGHT,
-                        Component.translatable("gui.merlinlib.notices.enabled"),
-                        (button, value) -> this.enabled = value));
+        this.globalLabelY = globalY + 6;
+        this.addRenderableWidget(toggle(controlX, globalY, CONTROL_WIDTH, this.enabled,
+                value -> this.enabled = value));
         layout.gap(ROW - VanillaUi.WIDGET_HEIGHT);
 
         int shown = visible();
@@ -139,9 +141,8 @@ public class NoticesScreen extends VanillaScreen {
         for (int index = 0; index < shown; index++) {
             String owner = this.owners.get(index);
             int y = layout.row();
-            this.addRenderableWidget(CycleButton.onOffBuilder(Boolean.TRUE.equals(this.perMod.get(owner)))
-                    .create(controlX, y, CONTROL_WIDTH, VanillaUi.WIDGET_HEIGHT, label(owner),
-                            (button, value) -> this.perMod.put(owner, value)));
+            this.addRenderableWidget(toggle(controlX, y, CONTROL_WIDTH,
+                    Boolean.TRUE.equals(this.perMod.get(owner)), value -> this.perMod.put(owner, value)));
             this.rowLabels.add(owner);
             this.rowYs.add(y + 6);
             layout.gap(ROW - VanillaUi.WIDGET_HEIGHT);
@@ -172,6 +173,39 @@ public class NoticesScreen extends VanillaScreen {
     }
 
     /**
+     * Builds the on/off control of one row.
+     *
+     * <p>The control holds the state alone: the row's own label is drawn beside it, so a long mod id is not
+     * squeezed into a button that also has to spell out on and off.
+     *
+     * @param x     its left edge
+     * @param y     its top edge
+     * @param width its width
+     * @param value the state it starts in
+     * @param sink  receives the state after every click
+     * @return the button
+     */
+    private static Button toggle(int x, int y, int width, boolean value, Consumer<Boolean> sink) {
+        final boolean[] state = {value};
+        final Button[] holder = new Button[1];
+        Button button = Button.builder(stateLabel(state[0]), pressed -> {
+            state[0] = !state[0];
+            holder[0].setMessage(stateLabel(state[0]));
+            sink.accept(state[0]);
+        }).bounds(x, y, width, VanillaUi.WIDGET_HEIGHT).build();
+        holder[0] = button;
+        return button;
+    }
+
+    /**
+     * @param on the state of a row
+     * @return the text of its control
+     */
+    private static Component stateLabel(boolean on) {
+        return Component.translatable(on ? "gui.merlinlib.notices.on" : "gui.merlinlib.notices.off");
+    }
+
+    /**
      * The label of one mod's row.
      *
      * <p>MerlinLib names itself with its display spelling; every other row keeps the mod id, which is the
@@ -192,6 +226,9 @@ public class NoticesScreen extends VanillaScreen {
 
         VanillaUi.text(graphics, this.font, this.title, left, layout.top(), VanillaUi.TEXT, content);
         VanillaUi.separator(graphics, left, layout.right(), layout.top() + 24);
+
+        VanillaUi.text(graphics, this.font, Component.translatable("gui.merlinlib.notices.enabled"),
+                left, this.globalLabelY, VanillaUi.TEXT, content - CONTROL_WIDTH - VanillaUi.GAP);
 
         for (int index = 0; index < this.rowYs.size(); index++) {
             VanillaUi.text(graphics, this.font, label(this.rowLabels.get(index)),
