@@ -63,7 +63,7 @@ soon as the file is saved.
 | `macros.enabled` | `true` | the macro toolkit (its screen and running macros from their keys) |
 | `particles.limit_enabled` / `particles.limit` | `true` / `512` | cap on how many particles this client draws per 1/20 second and how many one server send may carry |
 | `general.notice_enabled` | `true` | show the join notice that explains where the configuration screen comes from |
-| `general.config_version` | current | file layout marker, written by the mod; not meant to be edited |
+| `general.config_version` | current | file layout marker, written by the mod; not meant to be edited, and never part of the server file |
 
 ### `server.toml`
 
@@ -201,6 +201,9 @@ does not resolve matches nothing and says so once in the log rather than quietly
 | `/merlinlib macro` | opens the command macro screen |
 | `/merlinlib notices` | opens the join notice switches: one row for MerlinLib and one for every mod that registered a notice |
 
+The same page is reachable from the configuration screen itself: the native screen, the Cloth screen and the
+Jupiter screen each carry an entry that opens it.
+
 ### The configuration screen
 
 The screen is the loader's, not MerlinLib's:
@@ -260,7 +263,7 @@ is lost except the window.
 | `macros.enabled` | `true` | 命令宏总开关（宏界面与按键触发） |
 | `particles.limit_enabled` / `particles.limit` | `true` / `512` | 粒子上限：既是客户端每 1/20 秒的绘制上限，也是服务端单次发送上限 |
 | `general.notice_enabled` | `true` | 是否显示说明「配置界面从哪来」的那条进服提示 |
-| `general.config_version` | 当前值 | 文件布局标记，由模组写入，不必手改 |
+| `general.config_version` | 当前值 | 文件布局标记，由模组写入，不必手改；它只存在于客户端文件 |
 
 ### `server.toml`
 
@@ -325,6 +328,8 @@ is lost except the window.
 | `/merlinlib health` | 打开血量编辑器 |
 | `/merlinlib macro` | 打开指令宏界面 |
 | `/merlinlib notices` | 打开进服提示开关页：MerlinLib 一行，每个登记过提示的模组各一行 |
+
+这一页也能从配置界面本身进入：原生界面、Cloth 界面、Jupiter 界面各有一个入口。
 
 ### 配置界面
 
