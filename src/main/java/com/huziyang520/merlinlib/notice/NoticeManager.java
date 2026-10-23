@@ -14,13 +14,6 @@ import java.util.List;
 
 /**
  * Sends join notices.
- *
- * <p>Installed once at startup; from then on every player who joins is offered every notice they have not
- * already seen, in registration order for code notices and resource order for pack notices.
- *
- * <p>Every switch is read at the moment of sending - the global one, the per mod one, and the recorded ones
- * in the save - which is what makes a settings change take effect on the next join instead of on the next
- * restart.
  */
 public final class NoticeManager {
 

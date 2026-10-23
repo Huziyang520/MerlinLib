@@ -8,32 +8,6 @@ import java.util.List;
 
 /**
  * Join notices, reached through {@link MerlinApi#notices()}.
- *
- * <h2>What it is for</h2>
- *
- * <p>A message a mod wants to show in the chat when a player arrives - a warning, an announcement, a note
- * about something that changed. The mod says what to show and when, and the library handles the rest: the
- * three once/every modes and the switches that silence it - one for all notices together, one per mod.
- *
- * <pre>{@code
- * MerlinApi.notices().register(
- *         ResourceLocation.fromNamespaceAndPath("mymod", "dependency_change"),
- *         NoticeMode.ONCE_PER_SAVE,
- *         Component.translatable("mymod.notice.dependency_change"));
- * }</pre>
- *
- * <h2>The rules that make it work</h2>
- *
- * <ul>
- *   <li>The <b>id's namespace is the owning mod</b>. The per mod switch is stored under it, so registering
- *       under someone else's namespace would put your notice in their group.</li>
- *   <li>Registration happens <b>before a player joins</b>. Registering from {@code onServerStarting} is the
- *       usual place, because that is where a mod has usually read its own configuration and knows what its
- *       default should be.</li>
- *   <li>Colours come from the component. One line may carry as many colours as it has styles, so a message
- *       can highlight its own first words - see the README for the data pack form, which spells segments
- *       out in JSON instead.</li>
- * </ul>
  */
 public final class NoticeApi {
 

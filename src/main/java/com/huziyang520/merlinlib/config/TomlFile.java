@@ -13,21 +13,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Tiny reader for the flat TOML file MerlinLib used before the loader stored its switches.
- *
- * <p>The switches themselves are declared in a {@link NeoSpecBackend} specification now, so the loader owns
- * their file, writes the comments and repairs whatever no longer matches. This reader survives for one job:
- * reading a file left behind by an older build so its values can be carried over once - see
- * {@link NeoSpecBackend#importLegacy()}. It understands the subset the old writer produced: comments, blank
- * lines, {@code [section]} headers and {@code key = value} pairs of booleans, integers, floats and quoted
- * strings.
- *
- * <p>It is also an implementation of {@link ConfigReader}, so the reader used for the import and the one used
- * for the live file answer exactly the same questions - a value read from an old file means the same thing as
- * a value read from the new one.
- *
- * <p>A missing or unreadable file is never fatal: reading problems are collected as {@link ContentError}s and
- * the affected key falls back to its default.
+ * Reader and writer of the small, commented TOML subset MerlinLib keeps its switches in: comments,
+ * blank lines, {@code [section]} headers and {@code key = value} pairs of booleans, integers, floats
+ * and strings.
  */
 public final class TomlFile implements ConfigReader {
 

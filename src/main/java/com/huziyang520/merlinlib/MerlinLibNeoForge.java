@@ -3,7 +3,7 @@ package com.huziyang520.merlinlib;
 import com.huziyang520.merlinlib.command.MerlinCommand;
 import com.huziyang520.merlinlib.config.ConfigManager;
 import com.huziyang520.merlinlib.config.ConfigScope;
-import com.huziyang520.merlinlib.config.NeoSpecBackend;
+import com.huziyang520.merlinlib.config.NeoConfigs;
 import com.huziyang520.merlinlib.config.NoticeSettings;
 import com.huziyang520.merlinlib.impl.PermissionGate;
 import com.huziyang520.merlinlib.network.DamageFeedbackPayload;
@@ -47,19 +47,13 @@ public class MerlinLibNeoForge {
         // therefore has to happen here: the loader rewrites a configuration file whose entries do not match
         // the specification while it loads that file, which would drop the old key before any listener could
         // see it. Calling it first also covers a fresh install, where notices.toml is simply created.
-        NoticeSettings.captureLegacy();
+        NoticeSettings.init();
 
         // The switches are declared as loader specifications, which is what makes the mod list show the
-        // "Config" button and the game build the screen from them. The two files are registered here rather
-        // than in a client-only class on purpose: the client one is a CLIENT type, so a dedicated server never
-        // loads it, and registering it unconditionally keeps the command that writes a client switch working
-        // in single player, where the integrated server shares this process.
-        NeoSpecBackend clientSpec = NeoSpecBackend.client();
-        NeoSpecBackend serverSpec = NeoSpecBackend.server();
-        modContainer.registerConfig(ModConfig.Type.CLIENT, clientSpec.spec(), clientSpec.name());
-        modContainer.registerConfig(ModConfig.Type.COMMON, serverSpec.spec(), serverSpec.name());
-        ConfigManager.setBackend(ConfigScope.CLIENT, clientSpec);
-        ConfigManager.setBackend(ConfigScope.SERVER, serverSpec);
+        // "Config" button and the game build the screen from them.
+        NeoConfigs.register(modContainer);
+        ConfigManager.setBackend(ConfigScope.CLIENT, NeoConfigs.clientBackend());
+        ConfigManager.setBackend(ConfigScope.SERVER, NeoConfigs.commonBackend());
         // The files are read after this constructor returns, so the values are picked up from these events:
         // without them the mod would run on the declared defaults until the next /reload.
         eventBus.addListener(this::onConfigLoading);

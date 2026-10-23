@@ -5,14 +5,6 @@ import net.minecraft.world.item.enchantment.Enchantment;
 
 /**
  * The handle a dependent mod registers its callbacks through.
- *
- * <p>It exists so that the registration call has a name: a mod's own {@code registerCallbacks(registrar,
- * registries)} method can take one of these and hand it to a per enchantment class, exactly as it takes the
- * registries to resolve its own ids against. The work is done by {@link EnchantmentEventDispatcher}; this is
- * the door in front of it.
- *
- * <p>One instance is shared and stateless, so passing it around is free:
- * {@link com.huziyang520.merlinlib.api.MerlinApi#events()} hands out the same one.
  */
 public final class EnchantmentEventRegistrar {
 

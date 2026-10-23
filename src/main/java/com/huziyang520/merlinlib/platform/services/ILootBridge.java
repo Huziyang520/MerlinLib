@@ -6,19 +6,6 @@ import net.minecraft.world.level.storage.loot.LootPool;
 
 /**
  * Loader specific bridge for touching loot tables while they load.
- *
- * <h2>Why a bridge rather than one shared hook</h2>
- *
- * <p>The two loaders hand out the table in different shapes: Fabric's {@code LootTableEvents.MODIFY} passes a
- * builder that pools can be added to, while NeoForge's {@code LootTableLoadEvent} passes an already built
- * table, which NeoForge patched with an {@code addPool} method. The shape a caller cares about is the same
- * either way - "here is a table id, put these pools in it" - so that is what this interface offers, and the
- * difference stays behind it.
- *
- * <h2>When the listener runs</h2>
- *
- * <p>Once per table, while the table is being loaded: on world load, and again after {@code /reload}. A
- * listener therefore must not assume it runs exactly once; it must be a pure function of the registered rules.
  */
 public interface ILootBridge extends ILoaderBridge {
 

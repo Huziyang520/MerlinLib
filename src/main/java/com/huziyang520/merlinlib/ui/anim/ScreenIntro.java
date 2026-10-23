@@ -1,34 +1,8 @@
 package com.huziyang520.merlinlib.ui.anim;
 
 /**
- * The opening animation of a screen: where it is, how big it is and how visible it is, over a short moment.
- *
- * <p>A mod may drive one itself, or ignore the whole thing. It knows nothing about which screen it belongs to,
- * so the same object animates any of them:
- *
- * <pre>{@code
- * ScreenIntro intro = UiAnimation.intro();
- * graphics.pose().translate(intro.offsetX(width), intro.offsetY(height));
- * graphics.pose().scale((float) intro.scale(), (float) intro.scale());
- * }</pre>
- *
- * <h2>Why it is driven by the clock, not by ticks</h2>
- *
- * <p>The first version advanced once per tick and could only be started from a place that ticks. Screens do not
- * tick, and drawing runs many times per tick, so it counted frames and finished several times too fast. Reading
- * the wall clock in {@link #progress()} makes the animation independent of both: a caller asks for the current
- * value whenever it draws, and nothing has to be pumped.
- *
- * <h2>Why it returns offsets rather than drawing</h2>
- *
- * <p>A screen already knows how to draw itself; asking it for its width and height and giving back a
- * translation keeps the animation out of the drawing code, and lets a mod that wants a different effect use the
- * same object with its own transform.
- *
- * <p><b>What changed / 1.20.1 note:</b> nothing in this class. It is a direct port: it never touches a
- * Minecraft type. The one place the 1.20.1 rewrite is visible is the caller - the pose stack on this version is
- * pushed with {@code pushPose()} and popped with {@code popPose()}, where 1.21 called them
- * {@code pushPose()} and {@code popPose()} - and that imbalance lives in {@code VanillaScreen}, not here.
+ * The opening animation of a screen: where it is, how big it is and how visible it is, over a short
+ * moment.
  */
 public final class ScreenIntro {
 

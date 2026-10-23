@@ -5,16 +5,7 @@ import com.huziyang520.merlinlib.content.ContentError;
 import java.util.List;
 
 /**
- * A read only view of one configuration file, addressed by {@code section.key}.
- *
- * <p>The switches are read through this interface so the storage behind them stays replaceable: the
- * {@link TomlFile} reader used before MerlinLib moved to the loader's own configuration system, and the
- * {@link NeoSpecBackend} view built on the loader's specification. Both answer the same questions, so
- * {@link ClientConfig} and {@link ServerConfig} do not have to know which one they are talking to.
- *
- * <p>Every getter takes the value to use when the key is missing or cannot be understood, which is what
- * keeps one typo from stopping the game: the affected option falls back to its default and the problem is
- * reported through {@link #errors()}.
+ * A read only view of MerlinLib's switches.
  */
 public interface ConfigReader {
 

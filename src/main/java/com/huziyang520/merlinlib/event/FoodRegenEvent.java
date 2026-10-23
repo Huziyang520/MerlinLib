@@ -6,12 +6,6 @@ import net.minecraft.world.entity.LivingEntity;
 
 /**
  * A player was about to regenerate health from having a full hunger bar.
- *
- * <p>Cancellable, because the natural shape of the enchantment using it is "you no longer heal on your own, and
- * something else happens instead". Note that this is the <em>food</em> regeneration only: healing from a potion,
- * a beacon or another mod's effect never passes through here, so cancelling it cannot silently break those.
- *
- * @see GlobalEvents#FOOD_REGEN
  */
 public final class FoodRegenEvent implements EnchantmentEvent {
 

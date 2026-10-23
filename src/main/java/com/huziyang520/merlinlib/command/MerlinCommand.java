@@ -40,23 +40,6 @@ import java.util.stream.Collectors;
 
 /**
  * {@code /merlinlib} diagnostics and helpers.
- *
- * <p>Purpose: make it possible to tell, from inside the game, whether the generated enchantments
- * actually reached the enchantment registry. That distinguishes "the content pipeline is broken" from
- * "the enchantment exists but has no way to be obtained yet", which is otherwise very hard to see.
- *
- * <ul>
- *     <li>{@code /merlinlib list} - every MerlinLib managed enchantment that is really in the registry</li>
- *     <li>{@code /merlinlib info <id>} - effective source, enabled flag, level and weight</li>
- *     <li>{@code /merlinlib book <id> [level]} - hands out the enchanted book, operator only</li>
- *     <li>{@code /merlinlib editorhotkey on|off} - switches the item editor hotkey, operator only</li>
- * </ul>
- *
- * <p>The three commands that open a toolkit screen - {@code /merlinlib editor}, {@code /merlinlib health} and
- * {@code /merlinlib macro} - are registered on the client, beside this class in
- * {@code MerlinLibNeoForgeClient}: a screen can only be opened on the client, so a server command that claims
- * to open one would have nothing to run. NeoForge merges the two trees under the same name, and an argument
- * only the server knows still reaches the server.
  */
 public final class MerlinCommand {
 

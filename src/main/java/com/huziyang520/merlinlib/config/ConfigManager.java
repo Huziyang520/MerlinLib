@@ -9,15 +9,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Owns the two configuration files and their lifecycle.
- *
- * <p>The values themselves are declared by {@link NeoSpecBackend} and stored by the loader, which also builds
- * the configuration screen from them. This class is the one place the rest of the mod asks for the current
- * values: it keeps one parsed {@link ClientConfig} and one parsed {@link ServerConfig}, and replaces them
- * whenever the files change.
- *
- * <p>Both are re-read on startup and on every content reload (startup and {@code /reload}), so editing the
- * common file by hand and running {@code /reload} is enough to change server behaviour.
+ * Owns the two switch stores: both are read on startup and re-read on every content reload. A loader
+ * that has a configuration system of its own installs a {@link ConfigBackend}, whose previous TOML
+ * file is imported once and then renamed to {@code *.imported}.
  */
 public final class ConfigManager {
 
@@ -88,12 +82,30 @@ public final class ConfigManager {
      * @param config the file the loader has just read
      */
     public static synchronized void onConfigLoaded(ModConfig config) {
-        for (ConfigBackend backend : new ConfigBackend[]{clientBackend, serverBackend}) {
-            if (backend instanceof NeoSpecBackend spec && spec.name().equals(config.getFileName())) {
+        for (NeoSpecBackend spec : new NeoSpecBackend[]{NeoConfigs.clientSpec(), NeoConfigs.commonSpec()}) {
+            if (spec.fileName().equals(config.getFileName())) {
                 spec.importLegacy();
             }
         }
         reload();
+    }
+
+    /**
+     * Writes client switches and re-reads both files.
+     *
+     * @param overrides the values to write, keyed by {@code section.key}
+     */
+    public static void saveClient(Map<String, String> overrides) {
+        write(ConfigScope.CLIENT, overrides);
+    }
+
+    /**
+     * Writes authoritative server switches and re-reads both files.
+     *
+     * @param overrides the values to write, keyed by {@code section.key}
+     */
+    public static void saveServer(Map<String, String> overrides) {
+        write(ConfigScope.SERVER, overrides);
     }
 
     /**

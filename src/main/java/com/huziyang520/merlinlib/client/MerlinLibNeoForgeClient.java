@@ -6,6 +6,7 @@ import com.huziyang520.merlinlib.network.ServerSender;
 import com.huziyang520.merlinlib.notice.ClientNotice;
 import com.huziyang520.merlinlib.tools.hud.CombatFeedback;
 import com.huziyang520.merlinlib.tools.macro.MacroStorage;
+import com.huziyang520.merlinlib.tools.ui.ConfigScreens;
 import com.huziyang520.merlinlib.tools.ui.MerlinScreens;
 import com.huziyang520.merlinlib.tools.ui.MerlinUi;
 import com.mojang.brigadier.CommandDispatcher;
@@ -31,10 +32,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 /**
  * NeoForge client only entrypoint, declared with {@code dist = CLIENT} so a dedicated server never
  * even loads this class and the client types it uses cannot break server startup.
- *
- * <p>Everything client specific is registered here: the configuration screen the mod list opens, the two key
- * bindings, the {@code /merlinlib} sub commands that open a toolkit screen, the combat overlay and the
- * library's own join notice.
  */
 @Mod(value = Constants.MOD_ID, dist = Dist.CLIENT)
 public class MerlinLibNeoForgeClient {
@@ -57,14 +54,17 @@ public class MerlinLibNeoForgeClient {
 
         // The mod list's "Config" button, answered by the screen the loader already has. Handing the button to
         // ConfigurationScreen instead of a screen of our own is the whole point of declaring the switches in a
-        // specification: the layout, the tooltips (the comments of the specification), the reset button and the
-        // undo history all come from the loader.
+        // specification: the layout, the tooltips, the reset button and the undo history all come from the
+        // loader. The section screen is MerlinLib's own subclass, so the join notice page has a row on it.
         //
         // Registered from the CLIENT entrypoint on purpose: a lambda implementing IConfigScreenFactory names
         // Screen in its signature, so creating one on a dedicated server trips RuntimeDistCleaner before the
         // screen is ever opened.
-        IConfigScreenFactory factory = ConfigurationScreen::new;
+        IConfigScreenFactory factory =
+                (mod, parent) -> new ConfigurationScreen(mod, parent, MerlinConfigSectionScreen::new);
         modContainer.<IConfigScreenFactory>registerExtensionPoint(IConfigScreenFactory.class, () -> factory);
+        ConfigScreens.install(parent ->
+                new ConfigurationScreen(modContainer, parent, MerlinConfigSectionScreen::new));
 
         modBus.addListener(this::onRegisterKeyMappings);
         modBus.addListener(this::onRegisterGuiLayers);
@@ -111,6 +111,8 @@ public class MerlinLibNeoForgeClient {
                         .executes(MerlinLibNeoForgeClient::openHealth))
                 .then(Commands.literal("macro")
                         .executes(MerlinLibNeoForgeClient::openMacros))
+                .then(Commands.literal("config")
+                        .executes(MerlinLibNeoForgeClient::openConfig))
                 .then(Commands.literal("notices")
                         .executes(MerlinLibNeoForgeClient::openNotices)));
     }
@@ -142,6 +144,18 @@ public class MerlinLibNeoForgeClient {
     private static int openMacros(CommandContext<CommandSourceStack> context) {
 
         MerlinScreens.openMacroScreen(null);
+        return 1;
+    }
+
+    /**
+     * Opens the loader's configuration screen, the same one the mod list opens.
+     *
+     * @param context the command context, unused
+     * @return 1, the standard success code
+     */
+    private static int openConfig(CommandContext<CommandSourceStack> context) {
+
+        MerlinScreens.openConfigScreen(null);
         return 1;
     }
 

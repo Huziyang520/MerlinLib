@@ -9,24 +9,6 @@ import net.minecraft.world.entity.LivingEntity;
 
 /**
  * The concrete effect type every MerlinLib registered effect uses.
- *
- * <p>It exists for three reasons:
- * <ul>
- *     <li>{@link MobEffect} has a protected constructor, so a subclass is required anyway</li>
- *     <li>it makes both the colour and the tick behaviour overridable at runtime, which is what lets a
- *     config file recolour or neutralise an already registered effect without a restart</li>
- *     <li>it remembers the id it was registered under, which the 26.3 line got from the holder and
- *     1.20.1 cannot: {@code MobEffect} has no {@code builtInRegistryHolder()} lookup here that is
- *     cheap enough to call per tick</li>
- * </ul>
- *
- * <h2>The two signatures that changed</h2>
- *
- * <p>1.20.1's effect tick is
- * {@code applyEffectTick(LivingEntity, int)} and its "does this level do anything" question is
- * {@code isDurationEffectTick(int, int)}. The 26.3 line, being 1.21+, had the merged
- * {@code applyEffectTick(ServerLevel, LivingEntity, int)} form. Both are implemented below so a
- * behaviour written for either shape works, and {@link #isInstantaneous()} keeps its 1.20.1 name.
  */
 public class MerlinMobEffect extends MobEffect {
 

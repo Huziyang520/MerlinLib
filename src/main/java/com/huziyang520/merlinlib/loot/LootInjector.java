@@ -23,18 +23,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Turns the registered {@link LootInjection} rules into loot pools.
- *
- * <p>The rules are kept as data and read when a table loads, so registering one from a mod constructor works
- * for the very first world. Each rule becomes one pool whose entries are the enchantments it lists, each with
- * its own chance condition, weight and quality - the same shape a datapack author would write by hand, which
- * is what keeps the behaviour recognisable to anyone who knows vanilla loot tables.
- *
- * <p>A rule whose enchantment does not exist (a typo, or a mod that is not installed) is logged and skipped
- * instead of stopping the table from loading: a missing entry is a small problem, a broken table is a big one.
- *
- * <p>The registries argument is the narrow {@link HolderGetter.Provider} rather than
- * {@link HolderLookup.Provider}, because that is what the NeoForge event hands out; the Fabric event's wider
- * provider satisfies it, so one signature covers both.
  */
 public final class LootInjector {
 
@@ -85,13 +73,14 @@ public final class LootInjector {
      */
     private static void inject(ResourceLocation tableId, ILootBridge.PoolSink sink, HolderGetter.Provider registries) {
         boolean isServerTable = tableId.getNamespace().equals(ResourceLocation.DEFAULT_NAMESPACE);
-        if (!isServerTable) {
-            // Vanilla tables only: a datapack of another mod owns its own tables, and injecting into them from
-            // a rule that names them would surprise that mod's author rather than help them.
-            return;
-        }
         for (int index = 0; index < INJECTIONS.size(); index++) {
             LootInjection injection = INJECTIONS.get(index);
+            if (!isServerTable && !injection.allowsModdedTables()) {
+                // A datapack of another mod owns its own tables, and injecting into them from a rule that
+                // names them would surprise that mod's author rather than help them. Only a rule that asks
+                // for it explicitly gets through.
+                continue;
+            }
             if (!injection.getTargetTables().contains(tableId.toString())) {
                 continue;
             }

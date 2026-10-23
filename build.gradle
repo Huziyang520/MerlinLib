@@ -12,6 +12,7 @@
 
 plugins {
     id 'java'
+    id 'maven-publish'
     id 'net.neoforged.moddev' version '2.0.147'
 }
 
@@ -100,4 +101,14 @@ tasks.withType(JavaCompile).configureEach {
 tasks.withType(Javadoc).configureEach {
     options.encoding = 'UTF-8'
     options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+// publishToMavenLocal, for a dependent mod that wants the library from a local repository.
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            artifactId = "${mod_id}-neoforge-${minecraft_version}"
+            from components.java
+        }
+    }
 }

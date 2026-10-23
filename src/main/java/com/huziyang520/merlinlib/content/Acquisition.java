@@ -2,17 +2,6 @@ package com.huziyang520.merlinlib.content;
 
 /**
  * How an enchantment can be obtained in survival.
- *
- * <p>Vanilla has no such field on the enchantment itself; every channel is expressed through
- * {@code minecraft:tags/enchantment/*}. MerlinLib translates this record into tag entries inside the
- * generated datapack, which is why changing a channel only requires {@code /reload}.
- *
- * @param enchantingTable  can be offered by the enchanting table
- * @param villagerTrade    librarian trades may offer it
- * @param fishing          can be found while fishing
- * @param lootChest        can appear in generated loot chests
- * @param treasureOnly     excluded from enchanting tables and villager trades
- * @param curse            treated as a curse (red tooltip, removable only by grindstone/anvil)
  */
 public record Acquisition(
         boolean enchantingTable,

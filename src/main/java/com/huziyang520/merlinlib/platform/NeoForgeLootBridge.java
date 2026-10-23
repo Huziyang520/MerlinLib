@@ -10,11 +10,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * NeoForge implementation of {@link ILootBridge}, on top of {@code LootTableLoadEvent}.
- *
- * <p>The event hands out the built table rather than a builder, so the pool is added through the
- * {@code LootTable#addPool} method NeoForge adds to it. That method exists precisely for this: the table's own
- * pool list is private and immutable in vanilla, so a mod that wanted to add one would otherwise have to
- * rebuild a table it cannot fully read.
  */
 public class NeoForgeLootBridge implements ILootBridge {
 

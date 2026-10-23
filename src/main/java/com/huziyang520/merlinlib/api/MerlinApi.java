@@ -6,10 +6,6 @@ import com.huziyang520.merlinlib.impl.PotionRegistry;
 
 /**
  * Single entry point of the MerlinLib api. Everything a dependent mod needs hangs off here.
- *
- * <p>The api is safe to call from any mod constructor and from any loader; content is applied to the
- * game through the generated datapack, so registrations made before the first world load and before
- * every {@code /reload} are picked up automatically.
  */
 public final class MerlinApi {
 

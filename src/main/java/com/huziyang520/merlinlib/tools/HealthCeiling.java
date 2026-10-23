@@ -10,23 +10,6 @@ import net.minecraft.world.entity.player.Player;
 
 /**
  * The health ceiling the health editor writes, and how it survives a death.
- *
- * <h2>Why a permanent modifier is not enough on its own</h2>
- *
- * <p>{@code ServerPlayer#restoreFrom} copies attribute <em>base values</em> always, but copies the
- * <em>modifiers</em> only when it is called with {@code restoreAll = true} - and a death respawn calls it
- * with {@code false}. A permanent modifier is therefore saved to disk and survives a restart, yet is dropped
- * the moment the player dies and respawns, which is exactly the behaviour that looked like "the edit is not
- * kept". Both loaders hand us a clone/copy-from event on respawn, and {@link #copyTo} is what they call.
- *
- * <h2>Setting it to zero</h2>
- *
- * <p>A maximum of zero removes the modifier instead of writing it, and the zero current health then kills the
- * holder. Nothing is left to copy on respawn, so the player comes back with the default maximum - the safety
- * net this switch exists for. Any other value is written as a permanent modifier and copied across respawns.
- *
- * <p>One id is used for everything, so a second edit replaces the first and the modifier can always be found
- * again to remove it.
  */
 public final class HealthCeiling {
 

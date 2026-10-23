@@ -24,48 +24,6 @@ import java.util.function.Consumer;
 
 /**
  * Second level picker: every enchantment of the running game, one row per level.
- *
- * <p>The list is built when the screen opens and released when it closes, so a world with hundreds of
- * enchantments costs nothing while the player is not picking one.
- *
- * <p>Three behaviours are deliberate:
- * <ul>
- *     <li><b>the filter follows the server switch.</b> With mismatched enchantments disabled the picker only
- *     offers enchantments the target item can really carry, so the screen cannot add an enchantment that
- *     would silently do nothing. With it enabled every registry entry is offered.</li>
- *     <li><b>scrolling never recreates widgets.</b> The row buttons are bound to a slot and resolve their
- *     target at click time, which keeps typing in the search box from losing focus.</li>
- *     <li><b>the list area is painted before the widgets.</b> Painting it afterwards covered the "add"
- *     buttons of every row: they were clickable but invisible.</li>
- * </ul>
- *
- * <h2>What changed / 1.20.1 note</h2>
- *
- * <p>The registry walk survives almost unchanged - {@code RegistryAccess#lookup} and
- * {@code RegistryLookup#listElements()} exist on this version with the same shapes 26.3 used, because the
- * holder lookup layer was introduced before it - but four call sites had to move:
- *
- * <ul>
- *   <li><b>the four mouse methods lost their event object.</b> 26.3 received a {@code MouseButtonEvent}
- *       with {@code x()}, {@code y()} and {@code button()} accessors and hand-wrote the {@code doubleClick}
- *       flag. This version passes the coordinates and the button as separate arguments, and
- *       {@code mouseClicked(double, double, int)} has <b>no</b> double-click argument at all, so the flag
- *       is simply gone rather than reimplemented - the list does not use it. The forwarding into
- *       {@link ScrollArea} is direct, since that class was ported to the same unpacked shape;</li>
- *   <li><b>{@code mouseScrolled} is three arguments, not four.</b> 1.20.1 has no horizontal wheel, so
- *       {@code scrollX} does not exist and the single wheel delta is passed through as {@code scrollY} was
- *       on 26.3;</li>
- *   <li><b>the render pass</b> is {@link #render(GuiGraphics, int, int, float)} rather than
- *       {@code render(GuiGraphics, ...)}, and {@code drawContentBackground} takes a
- *       {@link GuiGraphics}. Both are pure renames of the parameter type;</li>
- *   <li><b>a registry key is addressed by {@code location()}.</b> 26.3's {@code ResourceKey#identifier()}
- *       is this version's {@code ResourceKey#location()}; the search's id matching therefore reads
- *       {@code key.location().toString()}. The values are identical.</li>
- * </ul>
- *
- * <p>One visible behaviour is version specific and worth naming: the enchantment registry is the plain
- * static one here, <em>not</em> a synced dynamic registry. Every enchantment that exists is therefore
- * visible from this side, which is what the filter below then narrows down.
  */
 public class EnchantSelectionScreen extends VanillaScreen {
 

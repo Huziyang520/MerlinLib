@@ -11,14 +11,6 @@ import java.util.List;
 
 /**
  * Fluent description of one potion.
- *
- * <p>Effects are declared as {@link ResourceLocation}s rather than {@code Holder}s on purpose: on NeoForge
- * the effect registry is only populated after every mod constructor has run, so the holder can only
- * be resolved when the potion itself is registered. Resolving late keeps the api call order
- * irrelevant.
- *
- * <p>The vanilla naming convention is {@code <effect>}, {@code long_<effect>} and
- * {@code strong_<effect>}; {@link #variants()} generates all three from a single declaration.
  */
 public final class PotionBuilder {
 

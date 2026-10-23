@@ -7,16 +7,6 @@ import java.util.function.Supplier;
 
 /**
  * Loader specific bridge for registering content into a plain (non datapack) game registry.
- *
- * <p>Enchantments are data driven and need no bridge at all, but {@code MobEffect} and {@code Potion}
- * are still code registries, and the moment they may be written to differs per loader:
- * <ul>
- *     <li>Fabric keeps the registries open for the whole mod initialisation phase, so the value is
- *     registered immediately</li>
- *     <li>NeoForge fires a mod bus event after every mod constructor, so registrations are queued and
- *     flushed there</li>
- * </ul>
- * Both behaviours are hidden behind this interface; callers just call {@link #register}.
  */
 public interface IRegistrationBridge extends ILoaderBridge {
 

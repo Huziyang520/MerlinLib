@@ -6,15 +6,8 @@ import com.huziyang520.merlinlib.util.MerlinColor;
 import java.util.List;
 
 /**
- * Client only switches: display options and interaction tuning. Nothing here is authoritative, so a
- * client may change any of it freely and the change is visible immediately.
- *
- * <p>The keys, their defaults and their ranges are declared once, in {@link NeoSpecBackend#client()}; the
- * loader writes the file and builds the configuration screen from that specification. This class only turns
- * the stored values into questions the mod can ask.
- *
- * <p>Every option here is read at the moment it is used, never cached in a field of a screen or of the
- * renderer. That is deliberate: a switch that only takes effect after a restart would be a lie.
+ * Client only switches: display options and interaction tuning, read at the moment they are used so a
+ * change is visible immediately.
  */
 public final class ClientConfig {
 

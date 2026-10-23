@@ -10,15 +10,6 @@ import java.util.Optional;
 
 /**
  * Fluent description of one mob effect.
- *
- * <pre>{@code
- * MerlinApi.effects()
- *         .register(ResourceLocation.fromNamespaceAndPath("mymod", "frostbite"))
- *         .category(MobEffectCategory.HARMFUL)
- *         .color(MerlinColor.CYAN)
- *         .onTick((level, entity, amplifier) -> { entity.hurtServer(level, level.damageSources().freeze(), 1.0F); return true; })
- *         .submit();
- * }</pre>
  */
 public final class EffectBuilder {
 

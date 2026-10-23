@@ -19,31 +19,6 @@ import java.util.Map;
 
 /**
  * The combat feedback overlay: the nominal damage above the crosshair and the floating damage numbers.
- *
- * <h2>Both are drawn in the HUD layer</h2>
- *
- * <p>Floating numbers over an entity look like world rendering, but drawing them in the HUD layer and
- * projecting the world position to screen space has three advantages: no world render event is needed
- * (the two loaders differ a lot there), the text always faces the player by construction, and one
- * renderer works on both loaders - Fabric's {@code HudElement} and NeoForge's {@code GuiLayer} hand out
- * the very same {@link GuiGraphics} plus a {@link DeltaTracker}.
- *
- * <h2>Where the numbers come from</h2>
- *
- * <ul>
- *   <li><b>Crosshair number</b>: the damage the server resolved for the swing, sent over the wire. The
- *       client cannot recompute it, because the enchantment pipeline needs a {@code ServerLevel}.</li>
- *   <li><b>Floating numbers</b>: the health drop of <i>every</i> living entity in render distance,
- *       sampled each client tick. Tracking only the local player's own targets missed damage dealt by
- *       other players and by the environment.</li>
- * </ul>
- *
- * <h2>Every switch is read where it is used</h2>
- *
- * <p>The two displays and all their parameters come from the client configuration file and are read at draw time,
- * not cached in fields. That is what makes the configuration screen honest: switching damage numbers off
- * takes effect on the next frame, without a restart, and switching the crosshair number on takes effect
- * on the next hit.
  */
 public final class CombatFeedback {
 

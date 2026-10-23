@@ -11,20 +11,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Collects the mods' AI hooks and answers the three questions for the mixins.
- *
- * <h2>Cost when nobody is listening</h2>
- *
- * <p>{@link #hasHooks()} is a plain boolean read and short circuits the whole path, so a server whose mods do
- * not use the feature never walks a mob list, and a mob that is not considering a player never asks anything.
- * The two questions that can be answered without a scan - targeting and avoiding - are asked directly; only
- * the "actively keep away" question needs to look at nearby players, and that is throttled to once a second
- * per mob so it cannot turn into a pathfinding cost of its own.
- *
- * <h2>Why a copy-on-write list</h2>
- *
- * <p>Registration happens while mods load, but a data pack or a late loader event can register later, and the
- * list is read from mob ticks on the server thread. Copy-on-write keeps a registration from ever being seen
- * half done, and removes nothing.
  */
 public final class AiRouter {
 

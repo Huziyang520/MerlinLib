@@ -23,42 +23,8 @@ import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.TridentItem;
 
 /**
- * Client side entry points for the MerlinLib screens, and the one place that decides whether a screen may
- * open on this side.
- *
- * <h2>Silence is deliberate</h2>
- *
- * <p>A refused open says nothing on screen. The reason is written to the log instead: a chat message that
- * repeats "no permission" while the player is already experimenting only adds noise, and the player asked
- * for exactly this. The log line names the switch and its current value, which is what actually helps.
- *
- * <h2>Why the client cannot ask for permissions</h2>
- *
- * <p>The operator question can only be answered on the server: on a client the local player carries no
- * permission set, so asking there locks out everybody including the operator. This class therefore never
- * checks permissions, and the server refuses the write where it happens, which is the only place that knows.
- *
- * <p>This class is only referenced from loader client code, so a dedicated server never loads it and the
- * client-only types it uses ({@code Minecraft}, {@code Screen}) can never break server startup.
- *
- * <h2>What changed / 1.20.1 note</h2>
- *
- * <p>Three API moves, none of which change what the class decides:
- *
- * <ul>
- *   <li>{@code Minecraft#setScreen(Screen)} is a 1.21 method; this version's is
- *       {@code Minecraft#setScreen(Screen)}. Every open below uses it;</li>
- *   <li>{@link #mayOpenEditorLocally} reports the refusal with
- *       {@code Player#displayClientMessage(Component, boolean)} and passes {@code actionBar = true}, which
- *       is exactly what 26.3's {@code sendOverlayMessage} meant - the message above the hotbar, not in chat.
- *       The method name changed; the behaviour did not, and the "refuse silently towards chat" rule above
- *       still holds;</li>
- *   <li>{@link #isEquippableToolOrWeapon} could ask about item <em>components</em> on 26.3
- *       ({@code DataComponents.ATTRIBUTE_MODIFIERS}, {@code TOOL}, {@code WEAPON},
- *       {@code KINETIC_WEAPON}, {@code PIERCING_WEAPON}). 1.20.1 has no data component system - components
- *       arrive in 1.20.5 - so the same question is asked of the item's <em>class</em> and of the vanilla
- *       attribute map instead. See that method for what replaced what.</li>
- * </ul>
+ * Client side entry points for the MerlinLib screens, and the one place that decides whether a screen
+ * may open on this side.
  */
 public final class MerlinScreens {
 
@@ -285,6 +251,21 @@ public final class MerlinScreens {
             return;
         }
         Minecraft.getInstance().setScreen(new MacroScreen(parent));
+    }
+
+    /**
+     * Opens the platform configuration screen, if this platform has one.
+     *
+     * @param parent the screen to return to, or {@code null} to resume the game
+     * @return {@code true} when a screen was opened
+     */
+    public static boolean openConfigScreen(Screen parent) {
+        return ConfigScreens.open(parent);
+    }
+
+    /** @return whether this platform can show a configuration screen at all */
+    public static boolean hasConfigScreen() {
+        return ConfigScreens.available();
     }
 
     /**

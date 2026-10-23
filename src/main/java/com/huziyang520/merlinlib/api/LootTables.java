@@ -2,11 +2,6 @@ package com.huziyang520.merlinlib.api;
 
 /**
  * The full ids of the vanilla loot tables a dependent mod is most likely to inject into.
- *
- * <p>They are plain strings, and every table in the game can be targeted by its id - these constants only
- * exist so that a typo becomes a compile error instead of a rule that silently never fires. The names are the
- * ones under {@code minecraft:chests/} and {@code minecraft:entities/}; a table that does not exist is never
- * loaded, so a misspelled id is invisible at runtime.
  */
 public final class LootTables {
 

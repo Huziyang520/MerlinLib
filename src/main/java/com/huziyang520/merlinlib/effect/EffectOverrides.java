@@ -10,17 +10,6 @@ import java.util.Optional;
 
 /**
  * Runtime overrides applied to effects.
- *
- * <p>A code registry cannot lose an entry, so "disabling" and "recolouring" are implemented as
- * read-time overrides: {@link MerlinMobEffect} consults this table instead of its declared values.
- *
- * <p>Two independent layers are kept so that neither side has to know about the other's bookkeeping:
- * <ul>
- *     <li>the <b>api layer</b>, written by {@code MerlinApi.effects()}</li>
- *     <li>the <b>config layer</b>, rebuilt from {@code config/MerlinLib/effects.json} on every reload</li>
- * </ul>
- * The config layer wins, matching the rule that a config file overrides code declarations. Layers are
- * replaced wholesale, never mutated in place, so a reload can never be observed half applied.
  */
 public final class EffectOverrides {
 

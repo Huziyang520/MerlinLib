@@ -14,31 +14,6 @@ import java.util.Set;
 
 /**
  * Watches key combinations and runs the action bound to each of them.
- *
- * <h2>How keys are read without a mixin</h2>
- *
- * <p>26.3 removed {@code InputConstants.isKeyDown}, and GLFW is on no compile class path here, so the one
- * usable source of key state is {@link KeyMapping} itself: the vanilla keyboard handler feeds every press
- * and release into every mapping it knows about - through the static map the constructor writes to,
- * registered with a loader or not - so a mapping created on the fly still reports {@link KeyMapping#isDown}
- * and still counts {@link KeyMapping#consumeClick clicks}. That is what this class builds on:
- *
- * <ul>
- *     <li>one lazily created mapping per key code, reused for every combination that mentions it;</li>
- *     <li>clicks are drained once per tick into a "just pressed" set, so a combination can be evaluated
- *     without consuming another action's click;</li>
- *     <li>a binding fires when all of its keys are held and one of them was pressed in this tick.</li>
- * </ul>
- *
- * <p>These mappings are deliberately <b>not</b> registered with the loader: they are an implementation
- * detail, the player binds them inside the macro screen, and leaving them out of the vanilla controls
- * screen keeps it readable.
- *
- * <h2>Overlapping combinations</h2>
- *
- * <p>A binding whose combination is a strict subset of one that already fired in the same tick is
- * suppressed, so {@code LEFT} does not also run when {@code LEFT + A} was the combination the player
- * completed.
  */
 public final class HotkeyRegistry {
 

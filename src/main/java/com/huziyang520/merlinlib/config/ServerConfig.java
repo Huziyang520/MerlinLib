@@ -5,16 +5,8 @@ import com.huziyang520.merlinlib.content.ContentError;
 import java.util.List;
 
 /**
- * Server side switches. This file is authoritative: the client only ever displays what the server allows, and
- * every toolkit action is validated against these values on the server.
- *
- * <p>The keys, their defaults and their ranges are declared once, in {@link NeoSpecBackend#server()}, and the
- * loader writes the file and builds the configuration screen from that specification. This class only turns
- * the stored values into questions the mod can ask.
- *
- * <p>Single player note: the integrated server shares this process, so a change made in the configuration
- * screen applies at once. On a dedicated server the file lives on that server and is applied with
- * {@code /reload}, which is why the switches are labelled as server owned.
+ * Server side switches. The server decides, the client only displays what it allows, and every toolkit
+ * action is validated against these values where it is applied.
  */
 public final class ServerConfig {
 

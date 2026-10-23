@@ -7,33 +7,6 @@ import net.minecraft.network.chat.Component;
 
 /**
  * Base class of the MerlinLib toolkit screens.
- *
- * <p>It owns the three things that are easy to get wrong:
- * <ul>
- *     <li><b>the panel is drawn at the right moment</b> - in the background pass, which vanilla runs after
- *     the world dimming and before the widgets. Drawing it in {@code render} would paint over the controls,
- *     and skipping the background pass would let the world show through the panel;</li>
- *     <li><b>the panel is sized from measured content</b> - see {@link #contentWidth()}, so a screen
- *     fits every language instead of one hard coded width;</li>
- *     <li><b>the screen pauses the game</b> - otherwise the world keeps animating behind the panel and
- *     the screen reads as flicker.</li>
- * </ul>
- *
- * <p><b>No entrance or exit animation.</b> These screens appear and disappear at once, like a vanilla one.
- * The helpers in {@code ui.anim} are still part of the library's api for mods that want them, but nothing
- * here calls them and no pose transform is applied to the content any more: a toolkit screen is a tool, and
- * waiting for it to slide into place made editing slower, not nicer.
- *
- * <h2>Render pass on this version</h2>
- *
- * <p>A screen has a single {@link #render(GuiGraphics, int, int, float)}, and the background has its own
- * method beside it ({@code renderBackground(GuiGraphics, int, int, float)}). {@code Screen#render} calls the
- * background pass itself, so this class calls it as the first line of {@link #render} and remembers that it
- * did: without the flag every frame painted the dimming and the panel twice.
- *
- * <p>The world dimming is vanilla's: {@code Screen#renderBackground} fills exactly the veil a MerlinLib screen
- * used to paint itself, so it is inherited rather than repeated - drawing a second one would make a
- * panel-less screen darker than every other screen in the game.
  */
 public abstract class VanillaScreen extends Screen {
 

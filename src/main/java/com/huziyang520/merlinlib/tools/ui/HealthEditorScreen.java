@@ -16,29 +16,6 @@ import net.minecraft.world.entity.player.Player;
 
 /**
  * The health editor: edits the current and maximum health of one living entity.
- *
- * <p>Opened by sneak-using an entity, or yourself while holding the health editor item when the server
- * asks for it. Values are whole numbers from 0 to the integer limit; a field that does not hold one is
- * outlined in red, its reason is printed under the fields, and the confirm button is switched off, so an
- * invalid edit cannot be sent at all. The write still happens on the server, which re-validates permission
- * and clamps the values before touching the entity.
- *
- * <h2>What changed / 1.20.1 note</h2>
- *
- * <ul>
- *   <li><b>the key event is unpacked.</b> 26.3 overrode {@code keyPressed(KeyEvent)} and asked
- *       {@code event.key()}. This version's override is
- *       {@code keyPressed(int keyCode, int scanCode, int modifiers)}, so the Enter test reads
- *       {@code keyCode} directly. The constants it is compared against come from {@link MerlinUi}, which
- *       now names the GLFW codes this version's events carry;</li>
- *   <li><b>the render pass is {@link #render(GuiGraphics, int, int, float)}</b> instead of
- *       {@code render(GuiGraphics, ...)}, and every {@link VanillaUi} call inside
- *       follows that rename. Nothing else in the drawing changed;</li>
- *   <li><b>{@code target.getHealth()} and {@code getMaxHealth()} are on {@code LivingEntity} on this
- *       version too</b>, and so are {@code Component.translatable} and
- *       {@code EditBox.DEFAULT_TEXT_COLOR}, so the validation, the tinting and the send path are direct
- *       ports.</li>
- * </ul>
  */
 public class HealthEditorScreen extends VanillaScreen {
 

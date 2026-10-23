@@ -1,12 +1,7 @@
 package com.huziyang520.merlinlib.config;
 
 /**
- * The storage behind one configuration file: a reader, a way to write single keys, and a way to flush.
- *
- * <p>MerlinLib keeps the switches behind this interface instead of talking to a file directly, so the
- * storage can be the loader's own specification ({@link NeoSpecBackend}) and the rest of the mod stays
- * unchanged. A backend never decides what a key means - it only moves text in and out - so the defaults
- * and the ranges live in exactly one place: the specification that declares the keys.
+ * A loader supplied store for MerlinLib's switches.
  */
 public interface ConfigBackend {
 

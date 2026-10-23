@@ -4,45 +4,6 @@ import net.minecraft.client.gui.GuiGraphics;
 
 /**
  * A scroll region with the vanilla scrollbar, including dragging.
- *
- * <p>Content is a stack of equal height rows, so the region never scrolls to a half row: the offset is
- * always a multiple of the row height, exactly like a vanilla list. Rows are drawn by the screen at
- * {@link #rowTop(int)}, while their widgets stay real widgets: the screen repositions them whenever the
- * scroll changes and hides the ones that scrolled out. That keeps clicking, hovering and Tab focus
- * working while the list scrolls, which a purely painted list would break.
- *
- * <p>The scrollbar itself is the same colours vanilla draws a list scrollbar with, so it looks and drags
- * like a vanilla list: click the track to jump, drag the handle with the left button, or use the wheel over
- * the region.
- *
- * <h2>What changed / 1.20.1 note</h2>
- *
- * <p>This is where the input rewrite lands, and it is a real signature change for callers. 26.3 delivered
- * a whole mouse event as one object ({@code MouseButtonEvent}, with {@code x()}, {@code y()} and
- * {@code button()} accessors) and a {@code GuiGraphics} for drawing. This version passes the three
- * pieces of a mouse event as separate arguments, so all four mouse methods below had to be rewritten:
- *
- * <table border="1">
- *   <caption>mouse method mapping</caption>
- *   <tr><th>26.3</th><th>1.20.1</th></tr>
- *   <tr><td>{@code mouseClicked(MouseButtonEvent)}</td>
- *       <td>{@code mouseClicked(double, double, int)}</td></tr>
- *   <tr><td>{@code mouseDragged(MouseButtonEvent)}</td>
- *       <td>{@code mouseDragged(double, double, int, double, double)}</td></tr>
- *   <tr><td>{@code mouseReleased(MouseButtonEvent)}</td>
- *       <td>{@code mouseReleased(double, double, int)}</td></tr>
- *   <tr><td>{@code render(GuiGraphics)}</td>
- *       <td>{@code render(GuiGraphics)}</td></tr>
- * </table>
- *
- * <p>{@link #mouseDragged} deliberately takes the full five argument vanilla shape - including the two
- * drag deltas it does not read - so that a screen can forward its own
- * {@code GuiEventListener#mouseDragged(double, double, int, double, double)} override straight into it
- * without unpacking anything. The two unused parameters are the price of that convenience.
- *
- * <p>{@link #mouseScrolled} needed <b>no</b> change: it already took three arguments on 26.3, and
- * {@code GuiEventListener#mouseScrolled(double, double, double)} is three arguments here. The "four
- * argument scroll" this project warns about is the 1.20.2+ shape and never applied to the 26.3 line.
  */
 public final class ScrollArea {
 

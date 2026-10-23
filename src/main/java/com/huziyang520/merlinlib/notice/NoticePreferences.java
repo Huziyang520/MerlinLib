@@ -18,7 +18,7 @@ import com.huziyang520.merlinlib.config.NoticeSettings;
  * text box on the configuration screen: the string was the only shape the loader's file could hold for keys
  * that exist only at runtime, and typing {@code modid=true;other=false} by hand was the price of that. The page
  * {@code /merlinlib notices} opens replaces both the string and the text box, and the old value is carried over
- * the first time this build starts - see {@link NoticeSettings#captureLegacy()}.
+ * the first time this build starts - see {@link NoticeSettings#init()}.
  *
  * <p>This class stays as the one question the notices feature asks, so the notice code itself does not have to
  * know where its switches came from.

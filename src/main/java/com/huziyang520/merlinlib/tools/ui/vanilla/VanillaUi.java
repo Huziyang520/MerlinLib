@@ -14,67 +14,6 @@ import java.util.List;
 /**
  * The vanilla look and feel of every MerlinLib screen, expressed as drawing primitives plus the few
  * measurements screens must not invent for themselves.
- *
- * <h2>Where every number comes from</h2>
- *
- * <p>Nothing here is invented. Each value is either a colour sampled from the vanilla texture that owns it
- * or copied from the vanilla class that owns it, so a MerlinLib screen cannot drift away from the game's own
- * look:
- *
- * <ul>
- *   <li><b>panel</b>: the container panel, drawn in its own colours (black frame, {@code #C6C6C6} body,
- *       white top and left edge, {@code #555555} bottom and right);</li>
- *   <li><b>slot</b>: the vanilla slot frame - {@code #373737} along the top and left, {@code #FFFFFF} along
- *       the bottom and right, {@code #8B8B8B} body - sampled from
- *       {@code textures/gui/container/inventory.png}, where a slot occupies an 18x18 square starting at
- *       (7, 83);</li>
- *   <li><b>list area</b>: opaque black with a one pixel outline, exactly what
- *       {@code AbstractSelectionList} draws ({@code -16777216} fill, {@code -8355712} outline, white when
- *       the list is focused). These two numbers were read out of that class's bytecode, not guessed;</li>
- *   <li><b>text</b>: always drawn with a shadow, which is what makes white text readable on a light
- *       panel - the same combination vanilla uses for its own dialogs.</li>
- * </ul>
- *
- * <h2>Layout is measured, never hard coded</h2>
- *
- * <p>Every helper that takes text also takes the width it may occupy, and {@link #measureWidth} derives a
- * panel width from the actual translated labels. A screen built from these helpers therefore fits Chinese,
- * English or any other language without a per-language constant.
- *
- * <p>This is library surface: other mods may build screens on it, so signatures change only for good
- * reason, and every rule encoded here was chosen to keep screens pixel aligned at GUI scale 1, 2 and 3.
- *
- * <h2>What changed / 1.20.1 note</h2>
- *
- * <p>The drawing type is {@link GuiGraphics}, not the 26.3 {@code GuiGraphics}: on this version
- * every fill, every string and the pose stack go through one class, and there is no separate "extract"
- * pass. That rename touches the first parameter of nearly every method here and is the only systematic
- * difference.
- *
- * <p>Three things this file used to borrow from the game cannot be borrowed on 1.20.1, and all three are
- * <b>drawn by hand instead of blitted</b>:
- *
- * <ul>
- *   <li>{@code graphics.blitSprite(...)} <b>does not exist</b> - the sprite-atlas API for GUIs arrived in
- *       1.20.2 and every overload of it is absent from this version's {@code GuiGraphics}. The only blit
- *       overloads here take a whole {@code ResourceLocation} texture plus a u/v rectangle, so there is no
- *       nine slice to hand it;</li>
- *   <li>the sprites the 26.3 line named do not exist as files either. 1.20.1 has no
- *       {@code textures/gui/sprites/} tree at all (it appears in 1.20.4), so {@code popup/background},
- *       {@code widget/scroller} and {@code widget/scroller_background} have no 1.20.1 counterpart - the
- *       scrollbar is not even drawn from a texture on this version: {@code AbstractSelectionList} has no
- *       reference to any scroller texture, only to {@code Screen#BACKGROUND_LOCATION};</li>
- *   <li>{@code container/slot} is not a standalone texture on this version: the slot frame is baked into
- *       each container's own PNG, so sampling it is the only way to reproduce it.</li>
- * </ul>
- *
- * <p>Consequently the public sprite constants ({@code PANEL_SPRITE}, {@code SCROLLER_SPRITE},
- * {@code SCROLLER_TRACK_SPRITE}, {@code SLOT_SPRITE}) are gone. They were the resource locations of
- * sprites that do not resolve on this version, so keeping them would have handed callers a name that draws
- * nothing. Every method that consumed them now paints the same pixels with {@code fill}.
- *
- * <p>The 26.3 panel already painted itself with fills rather than a sprite, so {@link #panel} is a direct
- * port; only {@link #slot} and {@link #scroller} changed implementation.
  */
 public final class VanillaUi {
 

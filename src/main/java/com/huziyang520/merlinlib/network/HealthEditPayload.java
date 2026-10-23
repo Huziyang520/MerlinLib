@@ -8,13 +8,6 @@ import net.minecraft.resources.ResourceLocation;
 
 /**
  * Client to server health edit request from the health editor screen.
- *
- * <p>The server validates the request (toolkit enabled, permission, clamped values) before touching the
- * entity, so the screen is only ever a remote control.
- *
- * @param targetId the registry id of the entity to edit
- * @param current  the new current health
- * @param max      the new maximum health
  */
 public record HealthEditPayload(int targetId, int current, int max) implements CustomPacketPayload {
 

@@ -9,14 +9,6 @@ import net.minecraft.world.item.ItemStack;
 
 /**
  * Client to server item edit request from the item editor screen.
- *
- * <p>Why the edit travels to the server instead of being applied on the client: the client's copy of the
- * inventory is replaced by the next inventory sync, so an edit made only there is lost. Sending the stack
- * and letting the server apply it to the requesting player's main hand is also what gives the permission
- * switch something to enforce - the server refuses the request outright, so the screen really is only a
- * remote control.
- *
- * @param stack the edited item, as it should be placed in the player's main hand
  */
 public record ItemEditPayload(ItemStack stack) implements CustomPacketPayload {
 

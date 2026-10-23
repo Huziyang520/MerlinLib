@@ -32,20 +32,6 @@ import java.util.Set;
 
 /**
  * Reads {@code config/MerlinLib/*.json} into immutable enchantment drafts.
- *
- * <p>Design rules:
- * <ul>
- *     <li>one broken file never stops the others; failures are collected, not thrown</li>
- *     <li>every failure carries file + json path + expectation, never a bare "parse error"</li>
- *     <li>nothing is written to the log from here; the caller decides how loud to be</li>
- * </ul>
- *
- * <p>Accepted file shapes:
- * <pre>{@code
- * [ { "id": "unbreakable", ... } ]                       // plain array
- * { "enchantments": [ { "id": "unbreakable", ... } ] }    // keyed array (recommended)
- * { "id": "unbreakable", ... }                            // single entry
- * }</pre>
  */
 public final class ContentConfigLoader {
 

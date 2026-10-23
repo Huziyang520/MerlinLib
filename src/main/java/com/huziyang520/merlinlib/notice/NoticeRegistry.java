@@ -11,14 +11,6 @@ import java.util.Map;
 
 /**
  * The notices registered from code, keyed by id.
- *
- * <p>Registration is a plain map write, deliberately: it happens while mod constructors run, before any
- * server exists, and the notices are only read when a player joins. Registering the same id twice replaces
- * the earlier entry, so a mod that re-registers on every server start does not end up with duplicates.
- *
- * <p>The mod the notice belongs to is never passed in by hand - it is the id's namespace. A mod therefore
- * cannot accidentally claim another mod's notices, and the per mod switch can be keyed by owner without
- * keeping a second list in step with this one.
  */
 public final class NoticeRegistry {
 

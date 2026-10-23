@@ -22,11 +22,6 @@ import java.util.Set;
 
 /**
  * Single source of truth for "what content exists right now".
- *
- * <p>The snapshot is rebuilt lazily whenever the config files change or the java api registers
- * something new. That removes any ordering requirement between the datapack reader, the resource
- * reload listener and the registry loader: whoever asks first builds the snapshot and everybody else
- * reuses it.
  */
 public final class ContentManager {
 

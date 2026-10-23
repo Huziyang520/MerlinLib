@@ -16,16 +16,6 @@ import java.util.function.UnaryOperator;
 
 /**
  * The event types the library fires on its own, and the event classes that go with them.
- *
- * <p>A dependent mod reads these and registers callbacks; the library fires them from the triggers it installs
- * on both loaders. A mod that needs a trigger nobody has - an inventory click, a fishing cast - can create its
- * own {@link EnchantmentEventType} and dispatch it itself; nothing here is privileged.
- *
- * <h2>Which entity each event belongs to</h2>
- *
- * <p>An event is delivered to the enchantments of {@link EnchantmentEvent#getEntity()}. That is the attacker
- * for an attack, the victim for a hurt, the breaker for a block. The other side of the interaction is on the
- * event under its own name, so a callback never has to guess which one it got.
  */
 public final class BuiltInEvents {
 
@@ -78,16 +68,6 @@ public final class BuiltInEvents {
         return ResourceLocation.fromNamespaceAndPath("merlinlib", path);
     }
 
-    /**
-     * An attack that landed.
-     *
-     * @param level    the level
-     * @param attacker the entity that attacked; the event is delivered to its equipment
-     * @param target   the entity that was hit
-     * @param charge   how fully the weapon was charged, 0.0 to 1.0
-     * @param critical whether the hit was a critical hit
-     * @param sweep    whether the hit was a sweeping attack
-     */
     public record PostAttackEvent(ServerLevel level, LivingEntity attacker, LivingEntity target,
                                   float charge, boolean critical, boolean sweep) implements EnchantmentEvent {
 
@@ -102,16 +82,6 @@ public final class BuiltInEvents {
         }
     }
 
-    /**
-     * Damage about to be applied.
-     *
-     * @param level          the level
-     * @param attacker       the attacking entity, or {@code null} when the source has none
-     * @param target         the entity about to be hurt
-     * @param source         the damage source
-     * @param originalDamage the amount before any enchantment touched it
-     * @param damage         the amount that will be applied; write to it to change the outcome
-     */
     public record ModifyDamageEvent(ServerLevel level, LivingEntity attacker, LivingEntity target,
                                     DamageSource source, float originalDamage,
                                     MutableFloat damage) implements EnchantmentEvent {
@@ -127,17 +97,6 @@ public final class BuiltInEvents {
         }
     }
 
-    /**
-     * Damage that was applied.
-     *
-     * @param level         the level
-     * @param target        the entity that was hurt; the event is delivered to its equipment
-     * @param attacker      the attacking entity, or {@code null} when the source has none
-     * @param source        the damage source
-     * @param amount        the amount that went through
-     * @param blockedDamage how much was blocked by a shield
-     * @param blocked       whether a shield blocked at all
-     */
     public record PostHurtEvent(ServerLevel level, LivingEntity target, LivingEntity attacker,
                                 DamageSource source, float amount, float blockedDamage,
                                 boolean blocked) implements EnchantmentEvent {
@@ -153,14 +112,6 @@ public final class BuiltInEvents {
         }
     }
 
-    /**
-     * A living entity died.
-     *
-     * @param level  the level
-     * @param killer the entity that dealt the killing blow; the event is delivered to its equipment
-     * @param victim the entity that died
-     * @param source the damage source that killed it
-     */
     public record PostKillEvent(ServerLevel level, LivingEntity killer, LivingEntity victim,
                                 DamageSource source) implements EnchantmentEvent {
 
@@ -175,17 +126,6 @@ public final class BuiltInEvents {
         }
     }
 
-    /**
-     * A projectile hit something.
-     *
-     * @param level       the level
-     * @param attacker    the entity that fired it; the event is delivered to the weapon snapshot, not to its
-     *                    equipment, because the weapon is in flight
-     * @param target      the entity that was hit
-     * @param weapon      the weapon as it was when the projectile was fired
-     * @param critArrow   whether the shot was a critical one
-     * @param drawStrength how far the bow was drawn, 0.0 to 1.0
-     */
     public record ProjectileHitEvent(ServerLevel level, LivingEntity attacker, LivingEntity target,
                                      ItemStack weapon, boolean critArrow,
                                      float drawStrength) implements EnchantmentEvent {
@@ -201,13 +141,6 @@ public final class BuiltInEvents {
         }
     }
 
-    /**
-     * A living entity ticked.
-     *
-     * @param level     the level
-     * @param entity    the entity; the event is delivered to its equipment
-     * @param tickCount its age in ticks
-     */
     public record EntityTickEvent(ServerLevel level, LivingEntity entity,
                                   int tickCount) implements EnchantmentEvent {
 
@@ -222,17 +155,6 @@ public final class BuiltInEvents {
         }
     }
 
-    /**
-     * A block was broken and its drops are about to be produced.
-     *
-     * @param level      the level
-     * @param player     the player that broke it; the event is delivered to their equipment
-     * @param pos        where the block was
-     * @param blockState the block before it broke
-     * @param tool       the tool that broke it
-     * @param drops      the drops, mutable so a callback can add, remove or replace them
-     * @param bonusXp    extra experience to drop, on top of what the block gives
-     */
     public record ModifyBlockDropsEvent(ServerLevel level, ServerPlayer player, BlockPos pos,
                                         BlockState blockState, ItemStack tool, List<ItemStack> drops,
                                         MutableInt bonusXp) implements EnchantmentEvent {
@@ -273,15 +195,6 @@ public final class BuiltInEvents {
         }
     }
 
-    /**
-     * A block was broken and its drops were already handed out.
-     *
-     * @param level      the level
-     * @param player     the player that broke it; the event is delivered to their equipment
-     * @param pos        where the block was
-     * @param blockState the block before it broke
-     * @param tool       the tool that broke it
-     */
     public record PostBlockBreakEvent(ServerLevel level, ServerPlayer player, BlockPos pos,
                                       BlockState blockState, ItemStack tool) implements EnchantmentEvent {
 
