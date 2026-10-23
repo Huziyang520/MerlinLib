@@ -11,19 +11,6 @@ import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
 /**
  * Raises the upper bound of an enchantment level from 255 to the integer limit.
- *
- * <h2>Why 255 is a wall that has to be moved this early</h2>
- *
- * <p>Vanilla builds the level codec as {@code Codec.intRange(1, 255)} and then captures it into
- * {@code ItemEnchantments.CODEC}, which in turn is captured by the item component that stores
- * enchantments. Anything above 255 therefore survives in memory and on the network (that path uses
- * {@code VAR_INT}, so it has no bound) but fails when the world is written: the codec refuses the value
- * and the enchantment is lost on the next load. That is the "vanilla cannot save it" wall.
- *
- * <p>Because both codecs are built in the static initialiser, replacing a field afterwards is too late -
- * the wider range has to be in place while the initialiser runs. That is exactly what this injection does:
- * it rewrites the upper bound of the {@code intRange} call inside {@code <clinit>}, so every codec built
- * from it - and every component that captured it - is widened by construction.
  */
 @Mixin(ItemEnchantments.class)
 public class MixinItemEnchantments {

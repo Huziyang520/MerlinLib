@@ -7,8 +7,6 @@ import java.util.Set;
 
 /**
  * Registration and inspection entry point for enchantments.
- *
- * <p>Prefer {@link MerlinApi#enchantments()} over caching an implementation.
  */
 public interface EnchantmentApi {
 

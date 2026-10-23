@@ -14,7 +14,7 @@ dependencies {
     compileOnly("com.terraformersmc:modmenu:20.0.3")
     // Cloth Config is optional: it only provides the configuration screen. It is compiled against, never
     // bundled (no include), and declared as a suggestion rather than a dependency, so the mod still starts
-    // without it - see ClothSupport, which loads it by name and falls back to the TOML files.
+    // without it - see FabricConfig, which loads it by name and falls back to the TOML file.
     // 26.2.155 is the build of the 26.1-26.2 line that is already in the local Gradle cache.
     // Cloth's colour entry overloads mention its maths types, so those have to be on the compile class path too.
     compileOnly("me.shedaniel.cloth:basic-math:0.6.1")

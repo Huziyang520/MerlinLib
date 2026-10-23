@@ -10,24 +10,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Asks the mods' AI hooks the two questions that live on the mob itself: may it target that entity, and should
- * it keep away from this player.
- *
- * <h2>Targeting</h2>
- *
- * <p>{@code setTarget} is the one place every "I want to attack that" decision ends up in, whatever goal asked
- * for it, so refusing there covers the targeting goal, retaliation, and everything a mod adds later. Vanilla
- * sets a target for reasons other than aggression too, which is why the hook is handed the mob and the
- * candidate rather than being told why it is being asked.
- *
- * <p>The tick also clears a target that has become forbidden - a mob that had already noticed the player
- * before the disguise went on - because refusing a new target alone would leave the old one standing.
- *
- * <h2>Keeping away</h2>
- *
- * <p>Steering is throttled to once a second per mob: pathfinding is not cheap, and re-issuing the same
- * instruction every tick would have a fleeing mob recomputing its path twenty times a second for no gain.
- * Nothing here runs at all unless a mod registered a hook, and nothing runs on the client.
+ * Asks the mods' AI hooks the two questions that live on the mob itself: may it target that entity,
+ * and should it keep away from this player.
  */
 @Mixin(Mob.class)
 public class MixinMobAi {

@@ -1,210 +1,265 @@
 package com.huziyang520.merlinlib.config;
 
 import com.huziyang520.merlinlib.Constants;
-import com.huziyang520.merlinlib.notice.NoticeEntry;
-import com.huziyang520.merlinlib.notice.NoticePreferences;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 /**
- * Per mod switches for the join notices, in {@code config/MerlinLib/notices.toml}.
- *
- * <h2>Why a file of its own</h2>
- *
- * <p>The mods that send a notice are only known at runtime, so the switches cannot be declared one by one in
- * {@code server.toml} - and the configuration writers of both loaders can only put a value back into a key they
- * were told about in advance. An earlier build therefore kept every choice inside one string,
- * {@code notices.per_mod = "modid=true;other=false"}, which worked but could only be edited by hand and showed
- * up in every settings screen as an opaque text field.
- *
- * <p>Here the keys are the mods themselves, and the file is written whole on every change: the set of keys is
- * only ever as large as the set of installed mods, the order is alphabetical, and nothing in the file is hand
- * written enough to be worth preserving. Reading goes through {@link TomlFile}, which is the TOML reader this
- * mod already ships, so no new dependency is pulled in.
- *
- * <h2>Migration</h2>
- *
- * <p>The old string is imported once, guarded by the {@code imported_legacy} marker in this same file: the first
- * read merges it in and writes the marker as {@code true}, and every later read is a plain file read. The old
- * {@code notices.per_mod} line is removed from {@code server.toml} when this happens, because a value that two
- * places disagree about is worse than no value at all.
+ * The per mod switches of the join notices, stored in {@code config/MerlinLib/notices.toml}.
  */
 public final class NoticeSettings {
 
-    /** The section the per mod switches live in. */
-    public static final String SECTION = "mods";
+    /** The file every per mod switch lives in. */
+    private static final Path FILE = Path.of("config", Constants.CONFIG_DIRECTORY, "notices.toml");
 
-    /** The retired key in {@code server.toml} that the first read imports and then removes. */
-    public static final String LEGACY_KEY = "notices.per_mod";
+    /** The table the switches are written under. */
+    private static final String SECTION = "mods";
 
-    /** Marker that makes the import a one-off. */
-    private static final String MARKER = "imported_legacy";
-
-    /** Comments written above the marker, shared by the template and by every whole file write. */
-    private static final String HEADER = """
-            # MerlinLib join notice switches, one per mod.
-            # A mod that is not listed here uses the default it declared when it registered its notice.
-            # `true` sends that mod's notices when a player joins, `false` keeps them quiet.
-            # The master switch for all of them is notices.enabled in server.toml, and the same switches can be
-            # changed in game with /merlinlib notices.
-
+    /**
+     * The template written on the first save; also the documentation of the file.
+     *
+     * <p>The header is written by {@link #save(Map)}, which appends one line per mod below it.
+     */
+    private static final String DEFAULTS = """
+            # MerlinLib join notice switches, one line per business mod.
+            # The mods that register a join notice through MerlinLib are listed here, in this order:
+            # the key is the mod id and the value is whether its notices are sent.
+            # A mod that is not listed uses the default it declared when it registered.
+            # The global switch is notices.enabled in server.toml; this file adds the per mod choices.
             """;
 
-    /** Template written when the file does not exist yet; the marker starts as {@code false}. */
-    private static final String DEFAULTS = HEADER + MARKER + " = false\n\n[" + SECTION + "]\n";
+    /** The {@code server.toml} file the old string was written to. */
+    private static final Path LEGACY_FILE = Path.of("config", Constants.CONFIG_DIRECTORY, "server.toml");
+
+    /** The copy the old string ends up in when a backend imported that file on an earlier launch. */
+    private static final Path LEGACY_IMPORTED = Path.of("config", Constants.CONFIG_DIRECTORY, "server.toml.imported");
+
+    /** The section and key the old string was stored under. */
+    private static final String LEGACY_SECTION = "notices";
+    private static final String LEGACY_KEY = "per_mod";
+
+    /** Guards the one-off import; also the reason it never runs twice in a process. */
+    private static boolean imported;
 
     private NoticeSettings() {
     }
 
-    /** @return {@code config/MerlinLib/notices.toml} */
+    /** @return the file the switches are read from and written to */
     public static Path path() {
-        return ConfigDirectory.root().resolve("notices.toml");
+        return FILE;
     }
 
     /**
-     * Reads the stored switches, importing the retired string on the first read.
+     * Runs the one-off import of the old {@code notices.per_mod} string.
      *
-     * @return mod id to whether its notices are sent, in file order
+     * <p>Called from the shared bootstrap, which runs while the mod is still being constructed - before
+     * NeoForge loads and rewrites {@code server.toml} from its spec. Safe to call more than once.
      */
-    public static synchronized Map<String, Boolean> snapshot() {
-        TomlFile file = TomlFile.read(path(), DEFAULTS);
-        Map<String, Boolean> values = parse(file.keys(SECTION));
-        if (!file.getBoolean(MARKER, false)) {
-            Map<String, Boolean> imported = legacyValues();
-            if (!imported.isEmpty()) {
-                // A switch this file already holds wins: it was chosen after the file existed, and the string in
-                // server.toml may have been left behind by an earlier build.
-                for (Map.Entry<String, Boolean> entry : imported.entrySet()) {
-                    values.putIfAbsent(entry.getKey(), entry.getValue());
-                }
-                Constants.LOG.info("[MerlinLib] imported {} per mod notice switch(es) from {} into {}",
-                        imported.size(), LEGACY_KEY, path().getFileName());
-            }
-            writeAll(values, true);
-            dropLegacyKey();
-        }
-        return values;
-    }
-
-    /**
-     * @param owner    the mod id
-     * @param fallback the value to use when nothing is stored for that mod
-     * @return whether that mod's notices are sent
-     */
-    public static boolean isEnabled(String owner, boolean fallback) {
-        return snapshot().getOrDefault(owner, fallback);
-    }
-
-    /**
-     * @param overrides the switches, read once with {@link #snapshot()}
-     * @param entry     the notice
-     * @return whether that notice is allowed to be sent
-     */
-    public static boolean isEnabled(Map<String, Boolean> overrides, NoticeEntry entry) {
-        return overrides.getOrDefault(entry.owner(), entry.enabledByDefault());
-    }
-
-    /**
-     * Stores one switch and rewrites the whole file.
-     *
-     * @param owner   the mod id
-     * @param enabled whether that mod's notices are sent
-     */
-    public static synchronized void set(String owner, boolean enabled) {
-        Map<String, Boolean> values = snapshot();
-        values.put(owner, enabled);
-        writeAll(values, true);
-    }
-
-    /**
-     * Rewrites the file from the given switches.
-     *
-     * <p>The whole file is written rather than one line patched: the keys are runtime mod ids, the file carries no
-     * comments a player would miss, and a full write is what keeps a removed switch from lingering as a line
-     * nothing reads any more.
-     *
-     * @param values          mod id to whether its notices are sent
-     * @param importedLegacy  the state of the migration marker
-     */
-    private static void writeAll(Map<String, Boolean> values, boolean importedLegacy) {
-        StringBuilder text = new StringBuilder(HEADER);
-        text.append(MARKER).append(" = ").append(importedLegacy).append("\n\n");
-        text.append('[').append(SECTION).append("]\n");
-        for (Map.Entry<String, Boolean> entry : new TreeMap<>(values).entrySet()) {
-            text.append(entry.getKey()).append(" = ").append(entry.getValue()).append('\n');
-        }
-        Path file = path();
-        try {
-            Files.createDirectories(file.getParent());
-            Files.writeString(file, text, StandardCharsets.UTF_8);
-        } catch (IOException exception) {
-            // A read only directory must not break a settings screen: the switches simply stay as they were.
-            Constants.LOG.warn("[MerlinLib] could not write {}: {}", file, exception.getMessage());
-        }
-    }
-
-    /**
-     * Removes the retired {@code notices.per_mod} line from {@code server.toml}.
-     *
-     * <p>Removed whether or not a loader store is installed: the key is retired from the declared options, so
-     * nothing writes it back, and a line that no screen and no code reads any more is only misleading
-     * documentation. When NeoForge has already renamed the file to {@code server.toml.imported} there is no line
-     * to remove here - that copy is kept on purpose, as the record of what the player had set up.
-     */
-    private static void dropLegacyKey() {
-        TomlFile.removeKey(ServerConfig.path(), LEGACY_KEY);
-    }
-
-    /**
-     * Reads the retired {@code notices.per_mod} string from wherever it may still be.
-     *
-     * <p>Three places, because a switch made under the old layout can be in any of them: the live server
-     * configuration (which on Fabric is the TOML file itself), that file as it is on disk, and the copy NeoForge
-     * renames an imported file to. Only the first one that has a value per mod matters - they are merged, and the
-     * first mention of a mod wins.
-     *
-     * @return mod id to the choice the old string held
-     */
-    private static Map<String, Boolean> legacyValues() {
-        Map<String, Boolean> found = new LinkedHashMap<>();
-        collect(found, ConfigManager.server().noticePerMod());
-        for (Path file : List.of(ServerConfig.path(),
-                ServerConfig.path().resolveSibling("server.toml.imported"))) {
-            if (!Files.isRegularFile(file)) {
-                continue;
-            }
-            collect(found, TomlFile.read(file, ServerConfig.defaults()).getString(LEGACY_KEY, ""));
-        }
-        return found;
-    }
-
-    private static void collect(Map<String, Boolean> into, String raw) {
-        if (raw == null || raw.isBlank()) {
+    public static synchronized void init() {
+        if (imported) {
             return;
         }
-        for (Map.Entry<String, String> entry : NoticePreferences.parseLegacy(raw).entrySet()) {
-            String value = entry.getValue();
-            if ("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)) {
-                into.putIfAbsent(entry.getKey(), Boolean.parseBoolean(value));
-            }
+        imported = true;
+        if (Files.exists(FILE)) {
+            return;
         }
+        Map<String, Boolean> values = legacy();
+        if (values.isEmpty()) {
+            return;
+        }
+        save(values);
+        Constants.LOG.info("[MerlinLib] imported {} per mod join notice switch(es) from notices.per_mod "
+                + "into {}", values.size(), FILE.getFileName());
     }
 
-    private static Map<String, Boolean> parse(Map<String, String> raw) {
+    /**
+     * Reads every switch.
+     *
+     * <p>Read fresh on every call rather than cached: the file is small, it is only read when a player
+     * joins or when the screen opens, and a hand edit then takes effect on the next join instead of on the
+     * next launch.
+     *
+     * @return the switches, keyed by mod id, in file order
+     */
+    public static Map<String, Boolean> values() {
+        init();
         Map<String, Boolean> values = new LinkedHashMap<>();
-        for (Map.Entry<String, String> entry : raw.entrySet()) {
-            String value = entry.getValue();
-            if ("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)) {
-                values.put(entry.getKey(), Boolean.parseBoolean(value));
+        if (!Files.isRegularFile(FILE)) {
+            return values;
+        }
+        String section = "";
+        List<String> lines;
+        try {
+            lines = Files.readAllLines(FILE, StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            Constants.LOG.warn("[MerlinLib] could not read {}: {}", FILE, exception.getMessage());
+            return values;
+        }
+        for (String raw : lines) {
+            String line = raw.trim();
+            if (line.isEmpty() || line.startsWith("#")) {
+                continue;
+            }
+            if (line.startsWith("[") && line.endsWith("]")) {
+                section = line.substring(1, line.length() - 1).trim();
+                continue;
+            }
+            if (!SECTION.equals(section)) {
+                continue;
+            }
+            int equals = line.indexOf('=');
+            if (equals <= 0) {
+                continue;
+            }
+            String key = line.substring(0, equals).trim();
+            String value = unquote(line.substring(equals + 1).trim());
+            if (!key.isEmpty()) {
+                values.put(key, Boolean.parseBoolean(value));
             }
         }
         return values;
+    }
+
+    /**
+     * @param owner         the mod id
+     * @param enabledByDefault the default the mod declared when it registered its notice
+     * @return whether that mod's notices are sent
+     */
+    public static boolean isEnabled(String owner, boolean enabledByDefault) {
+        Boolean stored = values().get(owner);
+        return stored == null ? enabledByDefault : stored;
+    }
+
+    /**
+     * Rewrites the whole file from the given switches.
+     *
+     * <p>Whole file on purpose: the set of keys is the set of installed mods, which changes when a mod is
+     * added or removed, and a rewrite is the only way to drop the line of a mod that is gone. The file
+     * carries one comment block and nothing else, so nothing hand written is lost that mattered.
+     *
+     * @param values the switches to store, keyed by mod id
+     */
+    public static synchronized void save(Map<String, Boolean> values) {
+        StringBuilder content = new StringBuilder(DEFAULTS);
+        content.append('\n').append('[').append(SECTION).append(']').append('\n');
+        for (Map.Entry<String, Boolean> entry : values.entrySet()) {
+            content.append(entry.getKey()).append(" = ").append(entry.getValue()).append('\n');
+        }
+        try {
+            Files.createDirectories(FILE.getParent());
+            Files.writeString(FILE, content.toString(), StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            Constants.LOG.warn("[MerlinLib] could not write {}: {}", FILE, exception.getMessage());
+        }
+        // The file was just written, so the import must never run over it even if it had not run yet.
+        imported = true;
+    }
+
+    /**
+     * Reads the old {@code notices.per_mod} string, which held {@code modid=true;other=false}.
+     *
+     * @return the switches it named, empty when there was no old value
+     */
+    private static Map<String, Boolean> legacy() {
+        String raw = legacyRaw();
+        if (raw.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, Boolean> values = new LinkedHashMap<>();
+        for (String part : raw.split("[;,]")) {
+            int equals = part.indexOf('=');
+            if (equals <= 0) {
+                continue;
+            }
+            String owner = part.substring(0, equals).trim();
+            String value = part.substring(equals + 1).trim();
+            if (!owner.isEmpty() && !value.isEmpty()) {
+                values.put(owner, Boolean.parseBoolean(value));
+            }
+        }
+        return values;
+    }
+
+    /**
+     * The raw value of the old key, read from the text of the files it could be in.
+     *
+     * @return the value as written, or an empty string when it is not there
+     */
+    private static String legacyRaw() {
+        for (Path candidate : List.of(LEGACY_FILE, LEGACY_IMPORTED)) {
+            String value = legacyRaw(candidate);
+            if (!value.isEmpty()) {
+                return value;
+            }
+        }
+        return "";
+    }
+
+    /**
+     * Finds one key in one file by reading it as text, so the answer does not depend on which store the
+     * loader currently answers configuration reads from.
+     *
+     * @param file the file to scan
+     * @return the value as written, or an empty string
+     */
+    private static String legacyRaw(Path file) {
+        if (!Files.isRegularFile(file)) {
+            return "";
+        }
+        List<String> lines = new ArrayList<>();
+        try {
+            lines.addAll(Files.readAllLines(file, StandardCharsets.UTF_8));
+        } catch (IOException exception) {
+            return "";
+        }
+        String section = "";
+        for (String raw : lines) {
+            String line = stripComment(raw).trim();
+            if (line.isEmpty()) {
+                continue;
+            }
+            if (line.startsWith("[") && line.endsWith("]")) {
+                section = line.substring(1, line.length() - 1).trim();
+                continue;
+            }
+            if (!LEGACY_SECTION.equals(section)) {
+                continue;
+            }
+            int equals = line.indexOf('=');
+            if (equals <= 0) {
+                continue;
+            }
+            if (LEGACY_KEY.equals(line.substring(0, equals).trim())) {
+                return unquote(line.substring(equals + 1).trim());
+            }
+        }
+        return "";
+    }
+
+    private static String stripComment(String line) {
+        boolean quoted = false;
+        for (int index = 0; index < line.length(); index++) {
+            char current = line.charAt(index);
+            if (current == '"') {
+                quoted = !quoted;
+            } else if (current == '#' && !quoted) {
+                return line.substring(0, index);
+            }
+        }
+        return line;
+    }
+
+    private static String unquote(String value) {
+        if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
+            return value.substring(1, value.length() - 1);
+        }
+        return value;
     }
 }

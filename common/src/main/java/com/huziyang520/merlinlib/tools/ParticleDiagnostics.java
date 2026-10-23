@@ -4,25 +4,6 @@ import com.huziyang520.merlinlib.Constants;
 
 /**
  * Records how many particles the cap has dropped, and says so in the log.
- *
- * <h2>Why it lives outside the mixin package</h2>
- *
- * <p>It is a plain helper, not a mixin. A class in the package named by {@code merlinlib.mixins.json} is
- * treated as part of the mixin configuration, and referencing one of those directly from game code fails at
- * the worst possible moment - the first time the game loads it - with
- * {@code is in a defined mixin package ... and cannot be referenced directly}. A mixin may reference other
- * classes freely; what it may not do is live next to a class that the mixin config owns.
- *
- * <h2>Why a log line at all</h2>
- *
- * <p>The cap lives in client side code, which a headless smoke test never loads, so "it is registered" was
- * the most that could be said about it - and that is not the same as "it actually dropped something". The
- * first drop is therefore logged once at {@code INFO}, and later drops are summarised at most once a second so
- * a pathological hit cannot flood the log. A run that never logs means the cap never had to do anything.
- *
- * <p>Deliberately reached from both ends: the server side cap stops an absurd count from being put on the
- * wire, and the client side caps stop whatever arrives. Both report through here, so one line in the log
- * tells which of the two was needed.
  */
 public final class ParticleDiagnostics {
 

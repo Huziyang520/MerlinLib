@@ -12,17 +12,9 @@ import net.minecraft.server.level.ServerPlayer;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Sends join notices.
- *
- * <p>Installed once at startup; from then on every player who joins is offered every notice they have not
- * already seen, in registration order for code notices and resource order for pack notices.
- *
- * <p>Every switch is read at the moment of sending - the global one, the per mod one, and the recorded ones
- * in the save - which is what makes a settings change take effect on the next join instead of on the next
- * restart.
  */
 public final class NoticeManager {
 
@@ -49,8 +41,8 @@ public final class NoticeManager {
     /**
      * The notices registered from code, which both sides can see, because the same mods run on both.
      *
-     * <p>What a client can list on a dedicated server: it cannot ask that server what its packs contain, so the
-     * switches are named by the mods rather than by the packs, and they still work.
+     * <p>What is listed on a dedicated server: a client cannot ask that server what its packs contain, so
+     * the switches are named by the mods rather than by the packs, and they still work.
      *
      * @return the code notices
      */
@@ -75,12 +67,9 @@ public final class NoticeManager {
         if (!config.noticesEnabled()) {
             return;
         }
-        // Read once per join: the switches live in notices.toml, one key per mod, and a join is the only moment
-        // they matter.
-        Map<String, Boolean> overrides = NoticeSettings.snapshot();
         int sent = 0;
         for (NoticeEntry entry : all(server)) {
-            if (!NoticeSettings.isEnabled(overrides, entry)) {
+            if (!NoticeSettings.isEnabled(entry.owner(), entry.enabledByDefault())) {
                 continue;
             }
             if (!shouldSend(level, player, entry)) {

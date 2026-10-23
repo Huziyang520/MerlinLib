@@ -10,34 +10,6 @@ import java.util.WeakHashMap;
 
 /**
  * Small numbers kept on an entity, under ids the caller chooses.
- *
- * <h2>What it is for</h2>
- *
- * <p>The recurring problem this solves is <em>granting something and later taking back exactly what you
- * granted</em>. An enchantment that gives a player flight, night vision or slow falling cannot simply remove
- * those when it stops: the player may have them from creative mode, from a potion, or from another mod, and
- * revoking those is a defect the player experiences as "this enchantment ate my night vision".
- *
- * <p>The way out is to write down that the ability came from you. {@code set(player, GRANTED, 1)} when it is
- * granted, and only revoke when {@code get(player, GRANTED) > 0}. The counter is the note to yourself.
- *
- * <pre>{@code
- * if (!player.getAbilities().mayfly) {
- *     player.getAbilities().mayfly = true;
- *     EntityCounter.set(player, GRANTED, 1);
- *     player.onUpdateAbilities();
- * } else if (player.getAbilities().mayfly && EntityCounter.get(player, GRANTED) > 0) {
- *     player.getAbilities().mayfly = false;
- *     EntityCounter.set(player, GRANTED, 0);
- *     player.onUpdateAbilities();
- * }
- * }</pre>
- *
- * <h2>How the values are kept</h2>
- *
- * <p>In a map keyed weakly by the entity, so nothing has to be cleaned up when an entity is unloaded or dies:
- * the entry goes away with the entity. Values are not saved to disk - a marker that says "this session granted
- * you flight" is meaningless after the server stops, and every ability it guards is granted again on load.
  */
 public final class EntityCounter {
 

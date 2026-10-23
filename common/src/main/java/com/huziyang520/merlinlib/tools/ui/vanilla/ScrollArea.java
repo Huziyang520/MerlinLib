@@ -5,16 +5,6 @@ import net.minecraft.client.input.MouseButtonEvent;
 
 /**
  * A scroll region with the vanilla scrollbar, including dragging.
- *
- * <p>Content is a stack of equal height rows, so the region never scrolls to a half row: the offset is
- * always a multiple of the row height, exactly like a vanilla list. Rows are drawn by the screen at
- * {@link #rowTop(int)}, while their widgets stay real widgets: the screen repositions them whenever the
- * scroll changes and hides the ones that scrolled out. That keeps clicking, hovering and Tab focus
- * working while the list scrolls, which a purely painted list would break.
- *
- * <p>The scrollbar itself is drawn by {@link VanillaUi#scroller} in the colours vanilla uses for a list
- * scrollbar, with the same rounded corners as the panel around it, so it looks and drags like a vanilla list:
- * click the track to jump, drag the handle with the left button, or use the wheel over the region.
  */
 public final class ScrollArea {
 

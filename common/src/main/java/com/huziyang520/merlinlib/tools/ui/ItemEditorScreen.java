@@ -1,5 +1,6 @@
 package com.huziyang520.merlinlib.tools.ui;
 
+import com.huziyang520.merlinlib.client.ScreenSwitcher;
 import com.huziyang520.merlinlib.config.ConfigManager;
 import com.huziyang520.merlinlib.network.ItemEditPayload;
 import com.huziyang520.merlinlib.network.ServerSender;
@@ -33,30 +34,8 @@ import java.util.List;
 /**
  * The item editor: rename any item, edit the enchantments of any item, and edit the base damage of a
  * MerlinLib test weapon.
- *
- * <h2>How a row is laid out</h2>
- *
- * <p>Every enchantment row is the same four things, left to right: the enchantment name, a number field
- * holding its level, a {@code -} and a {@code +} button, and an {@code X} that removes the row. The name is
- * clipped to the room that is actually left, so a long translation cannot push the controls off the panel.
- *
- * <p>The level can be changed four ways, which is what players expect from a number in a game:
- * <ul>
- *     <li>type a number into the field;</li>
- *     <li>click {@code -} / {@code +} (with shift, by the configured step);</li>
- *     <li>put the wheel over a row's name, which changes that row by {@code editor.scroll_step}, or by
- *     {@code editor.scroll_step_fast} while control is held;</li>
- *     <li>shift and wheel to scroll the list instead, or drag the scrollbar, or wheel over the scrollbar.</li>
- * </ul>
- *
- * <h2>Why nothing is rebuilt while editing</h2>
- *
- * <p>The visible rows are a fixed set of widgets; a click resolves its target from the row index at click
- * time. Rebuilding the screen on every change made the - / + buttons act on the wrong row and reset the
- * order, so that never happens now.
  */
 public class ItemEditorScreen extends VanillaScreen {
-
 
     /** Enchantment rows visible at once on a window tall enough; the rest is reached by scrolling. */
     private static final int MAX_ROWS = 5;
@@ -70,15 +49,6 @@ public class ItemEditorScreen extends VanillaScreen {
     private static final int LABEL = 12;
     /** Width of the level number field in a row. */
     private static final int LEVEL_FIELD = 34;
-    /**
-     * Width and height of the compact {@code -}, {@code +} and {@code X} buttons of a row.
-     *
-     * <p>16, the value the 1.20.1 line uses, rather than the 18 of {@link VanillaUi#STEP_BUTTON}: the row is
-     * twenty pixels tall, and the smaller square leaves the two pixel margin above and below that makes the
-     * field, the two step buttons and the delete button read as one line instead of as three boxes crowding the
-     * row's frame.
-     */
-    private static final int ROW_BUTTON = 16;
     /** Width of the damage number field. */
     private static final int DAMAGE_FIELD = 64;
     /** Narrowest content that still lays out sensibly. */
@@ -146,7 +116,7 @@ public class ItemEditorScreen extends VanillaScreen {
 
     /** @return the width the right hand controls of an enchantment row need. */
     private static int rowControlsWidth() {
-        return LEVEL_FIELD + VanillaUi.GAP + (ROW_BUTTON + 2) * 3;
+        return LEVEL_FIELD + VanillaUi.GAP + (VanillaUi.STEP_BUTTON + 2) * 3;
     }
 
     @Override
@@ -247,31 +217,30 @@ public class ItemEditorScreen extends VanillaScreen {
         // which the screen answers to directly anyway, and it cost a row of height on every layout. The buttons
         // stay anchored to the panel's own bottom edge and the list takes the room above them.
         int bottom = layout.contentBottom() - VanillaUi.WIDGET_HEIGHT;
-        int actionY = bottom - VanillaUi.GAP - VanillaUi.WIDGET_HEIGHT;
+        int actionY = bottom - 6 - VanillaUi.WIDGET_HEIGHT;
         int listTop = layout.cursor();
-        int listHeight = Math.max(LIST_ROW, Math.min(visibleRows() * LIST_ROW, actionY - VanillaUi.GAP - listTop));
+        int listHeight = Math.max(LIST_ROW, Math.min(visibleRows() * LIST_ROW, actionY - 6 - listTop));
 
         this.list = new ScrollArea(left, listTop, content, listHeight, LIST_ROW);
         this.list.setContentHeight(this.rows.size() * LIST_ROW);
 
-        // Two rows of two buttons on one grid: half the content width each, the left button on the content's
-        // left edge and the right one exactly one gap after it. Four buttons of the same width and height, so
-        // the block reads as one control cluster instead of two pairs of small buttons with a hole between them.
+        // Two full width rows of two buttons each: the pair spans the content width and the 6 pixel gap
+        // between the rows is the same gap that separates the buttons of a row, so the four of them read as
+        // one block instead of two small buttons with a hole beside them.
         int half = layout.sliceWidth(2);
-        int right = layout.sliceX(1, 2);
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.editor.add_enchant"),
-                button -> MerlinScreens.show(new EnchantSelectionScreen(this,
+                button -> ScreenSwitcher.show(Minecraft.getInstance(), new EnchantSelectionScreen(this,
                         this::addEnchantment, this.working)),
                 left, actionY, half));
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.editor.clear_enchant"),
-                button -> MerlinScreens.show(new DeleteEnchantsConfirmScreen(this,
+                button -> ScreenSwitcher.show(Minecraft.getInstance(), new DeleteEnchantsConfirmScreen(this,
                         this::clearEnchantments)),
-                right, actionY, half));
+                layout.sliceX(1, 2), actionY, half));
 
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.done"), button -> this.save(),
                 left, bottom, half));
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.cancel"), button -> this.onClose(),
-                right, bottom, half));
+                layout.sliceX(1, 2), bottom, half));
 
         buildRowControls();
         layoutRows();
@@ -295,31 +264,15 @@ public class ItemEditorScreen extends VanillaScreen {
             this.levelFields.add(this.addRenderableWidget(field));
 
             int buttonX = fieldX + LEVEL_FIELD + VanillaUi.GAP;
-            this.rowButtons.add(this.addRenderableWidget(rowButton("-",
+            this.rowButtons.add(this.addRenderableWidget(VanillaUi.compact(Component.literal("-"),
                     button -> stepLevel(index, -1, Minecraft.getInstance().hasShiftDown()), buttonX, 0)));
-            this.rowButtons.add(this.addRenderableWidget(rowButton("+",
+            this.rowButtons.add(this.addRenderableWidget(VanillaUi.compact(Component.literal("+"),
                     button -> stepLevel(index, 1, Minecraft.getInstance().hasShiftDown()),
-                    buttonX + ROW_BUTTON + 2, 0)));
-            this.rowButtons.add(this.addRenderableWidget(rowButton("X",
+                    buttonX + VanillaUi.STEP_BUTTON + 2, 0)));
+            this.rowButtons.add(this.addRenderableWidget(VanillaUi.compact(Component.literal("X"),
                     button -> deleteRow(index),
-                    buttonX + (ROW_BUTTON + 2) * 2, 0)));
+                    buttonX + (VanillaUi.STEP_BUTTON + 2) * 2, 0)));
         }
-    }
-
-    /**
-     * Builds one of the three compact buttons of a row.
-     *
-     * <p>{@link VanillaUi#compact} sizes its button with {@link VanillaUi#STEP_BUTTON}, which this row does not
-     * use: see {@link #ROW_BUTTON}. The bounds are the only difference, so the rest is the same one-liner.
-     *
-     * @param label   the button text
-     * @param onPress the press handler
-     * @param x       left edge
-     * @param y       top edge
-     * @return the button
-     */
-    private static Button rowButton(String label, Button.OnPress onPress, int x, int y) {
-        return Button.builder(Component.literal(label), onPress).bounds(x, y, ROW_BUTTON, ROW_BUTTON).build();
     }
 
     /** Moves the row controls to follow the scroll position and hides the rows beyond the viewport. */
@@ -354,7 +307,7 @@ public class ItemEditorScreen extends VanillaScreen {
             }
             for (int column = 0; column < 3; column++) {
                 Button button = this.rowButtons.get(slot * 3 + column);
-                button.setY(rowY + (LIST_ROW - ROW_BUTTON) / 2);
+                button.setY(rowY + (LIST_ROW - VanillaUi.STEP_BUTTON) / 2);
                 button.visible = visible;
                 button.active = visible;
             }
@@ -553,7 +506,7 @@ public class ItemEditorScreen extends VanillaScreen {
         // only side that can persist it: a client side change alone is replaced by the next inventory sync.
         player.setItemInHand(InteractionHand.MAIN_HAND, this.working);
         ServerSender.send(new ItemEditPayload(this.working));
-        MerlinScreens.show(this.parent);
+        ScreenSwitcher.show(minecraft, this.parent);
     }
 
     // ---------------------------------------------------------------- input

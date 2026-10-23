@@ -2,13 +2,13 @@ package com.huziyang520.merlinlib;
 
 import com.huziyang520.merlinlib.command.MerlinCommand;
 import com.huziyang520.merlinlib.config.ConfigManager;
+import com.huziyang520.merlinlib.config.NeoConfigs;
 import com.huziyang520.merlinlib.impl.PermissionGate;
 import com.huziyang520.merlinlib.network.DamageFeedbackPayload;
 import com.huziyang520.merlinlib.network.DamageFeedbackSink;
 import com.huziyang520.merlinlib.network.HealthEditPayload;
 import com.huziyang520.merlinlib.network.ItemEditPayload;
 import com.huziyang520.merlinlib.tools.MerlinCreativeEntries;
-import com.huziyang520.merlinlib.platform.config.NeoSpecBackend;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
@@ -40,9 +40,6 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 @Mod(Constants.MOD_ID)
 public class MerlinLibNeoForge {
 
-    /** The configuration store, kept for the config event: the import runs when FML reports a load. */
-    private final NeoSpecBackend configBackend;
-
     public MerlinLibNeoForge(IEventBus eventBus, ModContainer modContainer) {
 
         eventBus.addListener(this::onBuildCreativeTab);
@@ -52,42 +49,52 @@ public class MerlinLibNeoForge {
         // A death respawn rebuilds the player and copies attribute base values only (restoreFrom calls
         // assignPermanentModifiers solely when restoreAll is true), so the ceiling is carried over here.
         NeoForge.EVENT_BUS.addListener(this::onPlayerClone);
-        // The configuration store: two ModConfigSpec files, CLIENT for the client switches and COMMON for the
-        // authoritative server ones. SERVER is deliberately not used - it is written per world and only exists
-        // while a save is open, so every switch would read as its default on the title screen.
-        NeoSpecBackend configBackend = NeoSpecBackend.create();
-        this.configBackend = configBackend;
-        modContainer.registerConfig(ModConfig.Type.CLIENT, configBackend.clientSpec());
-        modContainer.registerConfig(ModConfig.Type.COMMON, configBackend.serverSpec());
-        ConfigManager.setBackend(configBackend);
-        // The specs hold no values until FML loads the files, so every load and reload is another chance to read
-        // the real ones; without this the mod would keep the defaults it saw during construction.
-        eventBus.addListener(this::onConfigChanged);
-        // The native screen NeoForge builds from those specs. The factory lambda only references the client side
-        // screen class inside its body, so a dedicated server never loads it. The named local resolves the
-        // registerExtensionPoint overload ambiguity: a bare lambda matches both Supplier<T> and the functional
-        // interface itself.
+        // The mods list screen picks this up and shows the config button for MerlinLib, which opens
+        // NeoForge's own configuration screen over the specs declared in NeoConfigs. The factory lambda only
+        // references the client side screen class inside its body, so a dedicated server never loads it. The
+        // named local resolves the registerExtensionPoint overload ambiguity: a bare lambda matches both
+        // Supplier<T> and the functional interface itself.
+        NeoConfigs.register(modContainer);
+        eventBus.addListener(this::onConfigLoading);
+        eventBus.addListener(this::onConfigReloading);
         IConfigScreenFactory factory = (mod, parent) -> new ConfigurationScreen(mod, parent);
         modContainer.<IConfigScreenFactory>registerExtensionPoint(IConfigScreenFactory.class, () -> factory);
         MerlinLib.init(eventBus);
     }
 
     /**
-     * Re-reads the configuration whenever FML (re)loads one of the two spec files.
+     * Hands the client switches to the configuration that has just been loaded.
      *
-     * <p>The mod is constructed before FML reads its configuration files, so the first read only sees the
-     * declared defaults. This is the moment the real values arrive, and every later edit made in the native
-     * screen or by hand ends the same way, which is why a single listener covers both.
+     * <p>Said explicitly because the two halves are not interchangeable: the client switches come from the
+     * {@code CLIENT} configuration, the authoritative ones from {@code COMMON}, and a backend installed for
+     * the wrong half would silently answer every question with a default.
      *
-     * @param event the configuration event
+     * @param event the load event
      */
-    private void onConfigChanged(ModConfigEvent event) {
-        // An older installation kept its values in client.toml / server.toml. The first successful load is the
-        // only moment they can be moved across, and the import renames those files so it happens exactly once.
-        if (event instanceof ModConfigEvent.Loading) {
-            this.configBackend.importLegacyFiles();
+    private void onConfigLoading(ModConfigEvent.Loading event) {
+        adopt(event.getConfig());
+    }
+
+    /**
+     * Re-reads after {@code /reload} reloaded the configuration on disk.
+     *
+     * @param event the reload event
+     */
+    private void onConfigReloading(ModConfigEvent.Reloading event) {
+        adopt(event.getConfig());
+    }
+
+    /**
+     * Installs the backend of the half that has just become readable.
+     *
+     * @param config the configuration that was loaded
+     */
+    private static void adopt(ModConfig config) {
+        if (config.getType() == ModConfig.Type.CLIENT) {
+            ConfigManager.setBackend(NeoConfigs.clientBackend());
+        } else if (config.getType() == NeoConfigs.sharedType()) {
+            ConfigManager.setServerBackend(NeoConfigs.commonBackend());
         }
-        ConfigManager.reload();
     }
 
     /**

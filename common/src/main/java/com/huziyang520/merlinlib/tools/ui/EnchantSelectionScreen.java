@@ -1,5 +1,6 @@
 package com.huziyang520.merlinlib.tools.ui;
 
+import com.huziyang520.merlinlib.client.ScreenSwitcher;
 import com.huziyang520.merlinlib.config.ConfigManager;
 import com.huziyang520.merlinlib.tools.ui.vanilla.PanelLayout;
 import com.huziyang520.merlinlib.tools.ui.vanilla.ScrollArea;
@@ -24,23 +25,8 @@ import java.util.function.Consumer;
 
 /**
  * Second level picker: every enchantment of the running game, one row per level.
- *
- * <p>The list is built when the screen opens and released when it closes, so a world with hundreds of
- * enchantments costs nothing while the player is not picking one.
- *
- * <p>Three behaviours are deliberate:
- * <ul>
- *     <li><b>the filter follows the server switch.</b> With mismatched enchantments disabled the picker only
- *     offers enchantments the target item can really carry, so the screen cannot add an enchantment that
- *     would silently do nothing. With it enabled every registry entry is offered.</li>
- *     <li><b>scrolling never recreates widgets.</b> The row buttons are bound to a slot and resolve their
- *     target at click time, which keeps typing in the search box from losing focus.</li>
- *     <li><b>the list area is painted before the widgets.</b> Painting it afterwards covered the "add"
- *     buttons of every row: they were clickable but invisible.</li>
- * </ul>
  */
 public class EnchantSelectionScreen extends VanillaScreen {
-
 
     /** Rows visible at once on a window tall enough. */
     private static final int MAX_ROWS = 6;
@@ -149,9 +135,8 @@ public class EnchantSelectionScreen extends VanillaScreen {
         layout.gap(10 + 6);
 
         int bottom = layout.row(VanillaUi.WIDGET_HEIGHT);
-        // The same two-column grid the other tool screens use, with only its right cell filled: the dialog has one
-        // action, and a long button on the right half reads as the confirm side of the panel rather than as a
-        // small button floating at the edge.
+        // A single button, placed in the right half of the same two column split the other screens use, so
+        // "cancel" always lands where the right hand button of those screens is.
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.cancel"), button -> this.onClose(),
                 layout.sliceX(1, 2), bottom, layout.sliceWidth(2)));
 
@@ -186,7 +171,7 @@ public class EnchantSelectionScreen extends VanillaScreen {
             return;
         }
         this.onPick.accept(this.filtered.get(index));
-        MerlinScreens.show(this.parent);
+        ScreenSwitcher.show(Minecraft.getInstance(), this.parent);
     }
 
     /**

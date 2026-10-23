@@ -14,22 +14,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
 /**
- * Fires {@link BuiltInEvents#MODIFY_DAMAGE} before and {@link BuiltInEvents#POST_HURT} after damage is applied.
- *
- * <h2>Why these two methods</h2>
- *
- * <p>{@code hurtServer} is the gate every server side hit passes through, and it receives the damage before
- * armour, enchantments and effects have had their say - exactly the number a "change the damage" event has to
- * be handed. {@code actuallyHurt} is the method that finally subtracts health, and its argument is what really
- * went through; a dependent mod that scales an effect off the damage the victim took needs that number, not the
- * requested one.
- *
- * <h2>What the events do not carry</h2>
- *
- * <p>Shield blocking is decided inside {@code hurtServer}: a blocked hit returns before {@code actuallyHurt}
- * and therefore never produces a hurt event, and the blocked amount is not visible here either. The two fields
- * are reported as {@code false} and {@code 0} for that reason. A dependent mod that needs them should say so,
- * because getting them means moving the trigger to a loader event with a different shape on each side.
+ * Fires {@link BuiltInEvents#MODIFY_DAMAGE} before and {@link BuiltInEvents#POST_HURT} after damage is
+ * applied.
  */
 @Mixin(LivingEntity.class)
 public class MixinLivingEntityHurt {

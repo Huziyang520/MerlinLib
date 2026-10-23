@@ -9,9 +9,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Fabric implementation of {@link ILootBridge}, on top of {@code LootTableEvents.MODIFY}.
- *
- * <p>Fabric hands out the table's builder, so a pool is simply added to it. Listeners are kept in a list
- * because MerlinLib's own rules are installed during initialisation and a dependent mod may add more later.
  */
 public class FabricLootBridge implements ILootBridge {
 

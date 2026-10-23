@@ -20,28 +20,6 @@ import java.util.Deque;
 
 /**
  * Fires {@link BuiltInEvents#POST_BLOCK_BREAK} after a player breaks a block.
- *
- * <h2>Why {@code ServerPlayerGameMode} and not {@code Player}</h2>
- *
- * <p>{@code Player} has a {@code destroyBlock} on one loader's view of the game and not on the other's - the
- * two patched versions of the class differ - so a mixin aimed at it applies on one side and refuses to apply
- * on the other. The game mode object exists in both, and is the server's own break path, which is the side
- * where an event that changes the world belongs.
- *
- * <h2>Why the state has to be remembered</h2>
- *
- * <p>The event means "the block is gone and the player did it", and by the time the method returns the block
- * at that position is air - so reading it then would hand a listener air, which is useful to nobody. The state
- * is therefore read on the way in and kept until the way out.
- *
- * <p>A stack rather than one field, because breaking a block can break more blocks: a chain logging
- * enchantment responds to this very event by breaking the neighbours, and a single field would have the inner
- * break overwrite the outer one's state. Nested breaks pop in the order they were pushed.
- *
- * <h2>Only successful breaks</h2>
- *
- * <p>The method returns whether the block was actually removed. A protected block, a wrong tool or a cancelled
- * break returns without one, and firing the event for those would be a lie the listener could not detect.
  */
 @Mixin(ServerPlayerGameMode.class)
 public class MixinPlayerDestroyBlock {

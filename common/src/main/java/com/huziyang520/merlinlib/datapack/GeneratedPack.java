@@ -25,39 +25,25 @@ import java.util.Set;
 
 /**
  * In-memory datapack holding everything MerlinLib derives from the configuration files.
- *
- * <p>The content is built lazily on the first read and cached for the lifetime of this instance. A new
- * instance is created for every {@code Pack#open()} call, which is exactly what happens on startup and
- * on every {@code /reload}, so the pack always serves the newest configuration without any reload
- * ordering requirement.
  */
 public final class GeneratedPack implements PackResources {
 
-    /**
-     * Datapack format of the compile base (26.1.2 = 101.1). 26.2 asks for 107.1, so the range below
-     * has to span both; otherwise the pack is rejected as out of date and the generated
-     * enchantments never load on one of the two versions.
-     */
-    private static final int PACK_FORMAT = 101;
+    /** Datapack format of the target version (26.3 = 121 in the official templates). */
+    private static final int PACK_FORMAT = 121;
 
     /**
-     * Resource format of the compile base (26.1.2 = 84.0; 26.2 = 88.0).
+     * Resource format of the same version (26.3 = 97).
      *
      * <p>The same pack is asked for its metadata once per pack type, and a pack that answers with the data
      * format only looks like a pack from the future on the resource side. That is why the generated pack used
-     * to appear in the resource pack list as an incompatible pack, with a format far ahead of what the
+     * to appear in the resource pack list as an incompatible pack, with a format 24 versions ahead of what the
      * client expects. Declaring the range covers both readings while the pack itself stays data only.
      */
-    private static final int RESOURCE_FORMAT = 84;
-
-    /** Highest format the range supports (26.2 data format), so the range covers 26.1-26.2. */
-    private static final int MAX_FORMAT = 107;
+    private static final int RESOURCE_FORMAT = 97;
 
     private static final String PACK_META = "{\"pack\":{\"description\":\"MerlinLib generated content\","
             + "\"pack_format\":" + PACK_FORMAT
-            + ",\"min_format\":" + RESOURCE_FORMAT
-            + ",\"max_format\":" + MAX_FORMAT
-            + ",\"supported_formats\":[" + RESOURCE_FORMAT + "," + MAX_FORMAT + "]}}";
+            + ",\"supported_formats\":[" + RESOURCE_FORMAT + "," + PACK_FORMAT + "]}}";
 
     private final PackLocationInfo location;
     private Map<String, byte[]> files;

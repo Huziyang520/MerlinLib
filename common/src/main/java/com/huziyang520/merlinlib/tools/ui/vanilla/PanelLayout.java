@@ -8,13 +8,6 @@ import java.util.List;
 
 /**
  * A screen's panel rectangle plus the row cursor used to lay its content out.
- *
- * <p>A panel is defined by the size of its <em>content</em>: the frame, the padding and the centring
- * are derived from it. That is the whole point, because it lets a screen size itself from measured
- * text (see {@link VanillaUi#measureWidth}) rather than from a constant that only fits one language.
- *
- * <p>Rows are handed out by {@link #row(int)} in the order they are requested, so a screen never
- * computes a y coordinate itself and rows can never overlap.
  */
 public final class PanelLayout {
 
@@ -164,6 +157,10 @@ public final class PanelLayout {
 
     /**
      * The width of one button in an evenly split row.
+     *
+     * <p>This is what a footer uses: two buttons that together span the content width, so a four button
+     * footer reads as two full width rows instead of a pair of small buttons pushed against the right
+     * edge with a hole beside them.
      *
      * @param count how many buttons share the content width
      * @return the width of each button

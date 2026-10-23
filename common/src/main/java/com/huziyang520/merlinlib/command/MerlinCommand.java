@@ -39,21 +39,6 @@ import java.util.stream.Collectors;
 
 /**
  * {@code /merlinlib} diagnostics and helpers.
- *
- * <p>Purpose: make it possible to tell, from inside the game, whether the generated enchantments
- * actually reached the enchantment registry. That distinguishes "the content pipeline is broken" from
- * "the enchantment exists but has no way to be obtained yet", which is otherwise very hard to see.
- *
- * <ul>
- *     <li>{@code /merlinlib list} - every MerlinLib managed enchantment that is really in the registry</li>
- *     <li>{@code /merlinlib info <id>} - effective source, enabled flag, level and weight</li>
- *     <li>{@code /merlinlib book <id> [level]} - hands out the enchanted book, operator only</li>
- * </ul>
- *
- * <p>The three screen entry points - {@code /merlinlib editor}, {@code /merlinlib health} and
- * {@code /merlinlib macro} - are client commands, registered by each loader's client entrypoint: a screen can
- * only be shown where it exists, so a server command could not open one. Their literals share this root and do
- * not collide with the ones registered here.
  */
 public final class MerlinCommand {
 
@@ -100,8 +85,7 @@ public final class MerlinCommand {
      * takes effect immediately: the client reads that value when the key is pressed, not at startup.
      *
      * <p>On a dedicated server the file that is written is the one next to the server, which belongs to
-     * the machine running the command; a player's own hotkey is their own file and their own configuration
-     * screen.
+     * the machine running the command; a player's own hotkey is their own file on their own computer.
      *
      * @param context the command context
      * @param enabled the value to write

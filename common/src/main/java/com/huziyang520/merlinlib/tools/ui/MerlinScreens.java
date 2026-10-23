@@ -1,5 +1,6 @@
 package com.huziyang520.merlinlib.tools.ui;
 
+import com.huziyang520.merlinlib.client.ScreenSwitcher;
 import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.config.ConfigManager;
 import com.huziyang520.merlinlib.impl.PermissionGate;
@@ -15,39 +16,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Client side entry points for the MerlinLib screens, and the one place that decides whether a screen may
- * open on this side.
- *
- * <h2>Silence is deliberate</h2>
- *
- * <p>A refused open says nothing on screen. The reason is written to the log instead: a chat message that
- * repeats "no permission" while the player is already experimenting only adds noise, and the player asked
- * for exactly this. The log line names the switch and its current value, which is what actually helps.
- *
- * <h2>Why the client cannot ask for permissions</h2>
- *
- * <p>The operator question can only be answered on the server: on a client the local player carries no
- * permission set, so asking there locks out everybody including the operator. This class therefore never
- * checks permissions, and the server refuses the write where it happens, which is the only place that knows.
- *
- * <p>This class is only referenced from loader client code, so a dedicated server never loads it and the
- * client-only types it uses ({@code Minecraft}, {@code Screen}) can never break server startup.
+ * Client side entry points for the MerlinLib screens, and the one place that decides whether a screen
+ * may open on this side.
  */
 public final class MerlinScreens {
-
-    /**
-     * Opens a screen, or closes the current one when {@code screen} is {@code null}.
-     *
-     * <p>Every screen switch in this line goes through here: the method that does it moved between 26.1 and
-     * 26.2 and only exists on one side, see {@link com.huziyang520.merlinlib.client.ScreenSwitcher}.
-     *
-     * @param screen the screen to show, or {@code null} to go back to the world
-     */
-    public static void show(net.minecraft.client.gui.screens.Screen screen) {
-        com.huziyang520.merlinlib.client.ScreenSwitcher.show(
-                net.minecraft.client.Minecraft.getInstance(), screen);
-    }
-
 
     private MerlinScreens() {
     }
@@ -151,20 +123,6 @@ public final class MerlinScreens {
     }
 
     /**
-     * Opens the health editor for the local player.
-     *
-     * <p>Used by {@code /merlinlib health}: the command has no target argument, because the editor is a client
-     * side screen and an entity id in a command would mean nothing on the client that has to open it.
-     */
-    public static void openOwnHealthEditor() {
-        Player player = Minecraft.getInstance().player;
-        if (player == null) {
-            return;
-        }
-        openHealthEditor(null, player);
-    }
-
-    /**
      * Opens the item editor for the item in the main hand, when it is allowed.
      */
     public static void openItemEditor() {
@@ -184,19 +142,15 @@ public final class MerlinScreens {
         if (!mayOpenEditorLocally(player, false)) {
             return;
         }
-        // Deferred to the client task queue rather than opened inline. These openers run from hooks that sit
-        // inside a tick (the item use hook and the entity interaction hook), and on this line a screen set from
-        // there is not shown until something forces a frame; queueing the call both guarantees it is shown on
-        // the next client tick and avoids the extra render frame that made the dimming flicker.
-        minecraft.execute(() -> MerlinScreens.show(new ItemEditorScreen(null, held)));
+        ScreenSwitcher.show(minecraft, new ItemEditorScreen(null, held));
     }
 
     /**
      * Opens the item editor from the key binding.
      *
      * <p>The binding ships switched off ({@code editor.hotkey_enabled}), so the library can be installed
-     * without claiming a key. It can be switched on in the configuration file or with
-     * {@code /merlinlib editorhotkey on}.
+     * without claiming a key. It can be switched on with {@code /merlinlib editorhotkey on} or by editing
+     * {@code client.toml}.
      */
     public static void openItemEditorFromHotkey() {
         if (!ConfigManager.client().editorHotkeyEnabled()) {
@@ -224,24 +178,39 @@ public final class MerlinScreens {
                     + "(client.toml: macros.enabled = false)");
             return;
         }
-        Minecraft.getInstance().execute(() -> MerlinScreens.show(new MacroScreen(parent)));
+        ScreenSwitcher.show(Minecraft.getInstance(), new MacroScreen(parent));
+    }
+
+    /**
+     * Opens the platform configuration screen, if this platform has one.
+     *
+     * <p>MerlinLib has no configuration interface of its own any more: NeoForge shows its native
+     * configuration screen, Fabric shows a Cloth Config screen when that mod is installed. This method
+     * answers {@code false} when neither is available, so the caller can say what is missing.
+     *
+     * @param parent the screen to return to, or {@code null} to resume the game
+     * @return {@code true} when a screen was opened
+     */
+    public static boolean openConfigScreen(Screen parent) {
+        return ConfigScreens.open(parent);
+    }
+
+    /** @return whether this platform can show a configuration screen at all */
+    public static boolean hasConfigScreen() {
+        return ConfigScreens.available();
     }
 
     /**
      * Opens the join notice switches.
      *
-     * <p>The same gate as the other tool screens - the toolkit master switch - and no permission check, for the
-     * reason in the class comment: the switches it edits are this installation's own configuration, and on a
-     * dedicated server the server keeps the last word anyway.
+     * <p>A page of MerlinLib's own rather than a platform configuration screen, because the switches are per
+     * mod and the mods are only known at runtime. Every entry point - {@code /merlinlib notices} and the
+     * button in the NeoForge, Cloth Config and Jupiter screens - goes through here.
      *
      * @param parent the screen to return to, or {@code null} to resume the game
      */
     public static void openNoticesScreen(Screen parent) {
-        Player player = Minecraft.getInstance().player;
-        if (!mayUseToolsLocally(player)) {
-            return;
-        }
-        Minecraft.getInstance().execute(() -> MerlinScreens.show(new NoticesScreen(parent)));
+        ScreenSwitcher.show(Minecraft.getInstance(), new NoticesScreen(parent));
     }
 
     /**
@@ -275,9 +244,9 @@ public final class MerlinScreens {
             // right click into a self edit, which also made the item look pointless.
             //
             // Both refusals are silent towards the player on purpose: the requirement is already stated in the
-            // item's own tooltip and in the configuration file, and repeating it in the middle of the screen on
-            // every stray right click is noise. The log lines stay, because "why does nothing happen" is a
-            // question the log can answer and the screen cannot.
+            // item's own tooltip, and repeating it in the middle of the screen on every stray right click is
+            // noise. The log lines stay, because "why does nothing happen" is a question the log can answer and
+            // the screen cannot.
             Constants.LOG.info("[MerlinLib] a self edit was refused: the health editor item must be held to "
                     + "edit yourself");
             return false;
@@ -292,7 +261,27 @@ public final class MerlinScreens {
         if (!mayOpenEditorLocally(player, true)) {
             return false;
         }
-        minecraft.execute(() -> MerlinScreens.show(new HealthEditorScreen(parent, target)));
+        ScreenSwitcher.show(minecraft, new HealthEditorScreen(parent, target));
         return true;
+    }
+
+    /**
+     * Opens the health editor for the player themself, from {@code /merlinlib health}.
+     *
+     * <p>The item requirement is deliberately not applied here: a command is an explicit request, not a
+     * stray right click, and the only caller is the player typing it. Everything that matters is still
+     * checked - the toolkit master switch and the command permission switch - and the server re-validates
+     * permission and clamps the values where the edit is applied.
+     */
+    public static void openHealthEditorSelf() {
+        Minecraft minecraft = Minecraft.getInstance();
+        Player player = minecraft.player;
+        if (player == null || !mayUseToolsLocally(player)) {
+            return;
+        }
+        if (!mayOpenEditorLocally(player, true)) {
+            return;
+        }
+        ScreenSwitcher.show(minecraft, new HealthEditorScreen(null, player));
     }
 }

@@ -12,13 +12,8 @@ import java.util.List;
 
 /**
  * Confirmation dialog for "remove every enchantment".
- *
- * <p>Small on purpose: one warning line and two buttons. The destructive button is on the left and the
- * cancel button is on the right <em>and</em> focused, so the default action of a stray Enter or Escape is
- * always the harmless one.
  */
 public class DeleteEnchantsConfirmScreen extends VanillaScreen {
-
 
     private static final int MIN_CONTENT_WIDTH = 200;
 
@@ -43,8 +38,6 @@ public class DeleteEnchantsConfirmScreen extends VanillaScreen {
     @Override
     protected int contentWidth() {
         List<Component> labels = List.of(this.title, Component.translatable("gui.merlinlib.confirm.warning"));
-        // Only the text decides the width now: the two buttons take half the content each (see build()), so they
-        // cannot be what makes the panel too narrow for its own warning line.
         return Math.max(MIN_CONTENT_WIDTH, VanillaUi.labelWidth(this.font, labels) + VanillaUi.PADDING);
     }
 
@@ -57,17 +50,15 @@ public class DeleteEnchantsConfirmScreen extends VanillaScreen {
     protected void build(PanelLayout layout) {
         layout.gap(12 + 4 + 12 + 10);
         int y = layout.row(VanillaUi.WIDGET_HEIGHT);
-        // Half the content width each, one gap between them, exactly like every other tool screen: the
-        // destructive button stays on the left and the harmless one on the right, both the same size so neither
-        // looks like the recommended choice.
-        int width = layout.sliceWidth(2);
+        // Full width pair, the same split every other toolkit screen uses.
+        int half = layout.sliceWidth(2);
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.confirm.delete"),
                 button -> {
                     this.onConfirm.run();
                     this.onClose();
-                }, layout.left(), y, width));
+                }, layout.left(), y, half));
         Button cancel = this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.cancel"),
-                button -> this.onClose(), layout.sliceX(1, 2), y, width));
+                button -> this.onClose(), layout.sliceX(1, 2), y, half));
         this.setInitialFocus(cancel);
     }
 

@@ -16,19 +16,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Fires {@link BuiltInEvents#PROJECTILE_HIT} when a projectile hits a living entity.
- *
- * <h2>Why the trigger sits after vanilla handled the hit</h2>
- *
- * <p>A dependent mod that adds extra damage on a thrown trident has to do it after the throw's own damage has
- * been dealt - otherwise the target's damage cooldown swallows the extra hit and the enchantment looks dead.
- * Injecting at the end of {@code onHitEntity} is what puts the event on the correct side of that.
- *
- * <h2>Why the event carries a weapon snapshot</h2>
- *
- * <p>By the time the projectile lands, the weapon is not in the thrower's hand any more: a thrown trident is
- * travelling, a fired bow is still held but the arrow is not. Scanning equipment here would therefore find
- * nothing at all - the failure mode that made ranged enchantments silently do nothing - so the event carries
- * the weapon taken from the projectile itself, and the dispatcher is called through the stack path.
  */
 @Mixin(Projectile.class)
 public class MixinProjectileHit {

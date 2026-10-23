@@ -1,15 +1,19 @@
 package com.huziyang520.merlinlib;
 
 import com.huziyang520.merlinlib.config.ConfigManager;
+import com.huziyang520.merlinlib.config.NoticeSettings;
 import com.huziyang520.merlinlib.content.BuiltInContent;
 import com.huziyang520.merlinlib.impl.ContentManager;
 import com.huziyang520.merlinlib.tools.HealthEditorItem;
 import com.huziyang520.merlinlib.tools.TestWeapons;
 import com.huziyang520.merlinlib.mixin.RangedAttributeAccessor;
 import com.huziyang520.merlinlib.api.MerlinApi;
+import com.huziyang520.merlinlib.api.NoticeMode;
 import com.huziyang520.merlinlib.loot.LootInjector;
 import com.huziyang520.merlinlib.notice.NoticeManager;
 import com.mojang.serialization.Lifecycle;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.flag.FeatureFlagSet;
 import net.minecraft.world.flag.FeatureFlags;
 import com.huziyang520.merlinlib.platform.Services;
@@ -20,13 +24,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 
 /**
  * Loader independent bootstrap of MerlinLib.
- *
- * <p>This class lives in the common project, so it may only touch vanilla code, libraries bundled
- * with vanilla and optional third party libraries that ship loader independent binaries. Anything
- * that needs loader concepts (events, networking, datapack mounting, permissions, key bindings)
- * has to go through the {@code platform.services} interfaces.
- *
- * <p>Every loader entrypoint calls {@link #init(Object)} exactly once when the loader is ready.
  */
 public class MerlinLib {
 
@@ -61,6 +58,11 @@ public class MerlinLib {
         LootInjector.install();
         // Join notices: registered from here, so a business mod may have registered its own before or after.
         NoticeManager.install();
+        // Reads the per mod notice switches, and imports the old notices.per_mod string the first time it
+        // runs. This happens while the mod is still being constructed on purpose: NeoForge rewrites
+        // server.toml from its own spec right after the construction phase, and the old key is no longer
+        // declared there, so a read that waited until after the load would find nothing to import.
+        NoticeSettings.init();
         // Says which feature flags put a world in the "experimental settings" category. The generated datapack
         // declares none, so when this line appears the flag came from a data pack the world has selected - and
         // the log names it, instead of leaving it to be guessed.
@@ -96,12 +98,32 @@ public class MerlinLib {
             }
         });
         ConfigManager.reload();
+        registerOwnNotices();
         widenAttributeCeilings();
         MerlinApi.lifecycle().onServerStarting(SmeltingLookup::initialize);
         BuiltInContent.register();
         TestWeapons.register();
         HealthEditorItem.register();
         ContentManager.refresh();
+    }
+
+    /**
+     * Registers MerlinLib's own join notice about the rebuilt configuration screen.
+     *
+     * <p>Sent once per save and per player, and switched off by {@code general.notice_enabled} in
+     * {@code client.toml}: the switch is read here, right after the configuration has been read, so turning
+     * it off takes effect on the next launch. Registered as a notice rather than as a plain chat message so
+     * that the server's notice switches - the global one in {@code server.toml} and the per mod one in
+     * {@code notices.toml} - apply to it exactly like they apply to a business mod's notice.
+     */
+    private static void registerOwnNotices() {
+        if (!ConfigManager.client().noticeEnabled()) {
+            return;
+        }
+        MerlinApi.notices().register(
+                Identifier.fromNamespaceAndPath(Constants.MOD_ID, "config_ui"),
+                NoticeMode.ONCE_PER_SAVE,
+                Component.translatable("merlinlib.notice.config_ui"));
     }
 
     /**

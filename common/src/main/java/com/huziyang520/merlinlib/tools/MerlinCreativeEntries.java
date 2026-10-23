@@ -21,16 +21,6 @@ import java.util.Optional;
 
 /**
  * Supplies the creative inventory entries for MerlinLib content.
- *
- * <p>Why the entries are built from a {@link HolderLookup.Provider} instead of a plain registry: the
- * enchantment registry is data driven, so on the client it only exists once the server has sent it.
- * The creative screen is built while a world is loaded, which is exactly the moment the provider is
- * available; asking earlier would silently produce nothing.
- *
- * <p>Which switches matter here: only the toolkit master switch. The other switches decide how a screen
- * behaves once it is open - whether the health editor item must be held, for instance - and none of them
- * may make an item vanish from the inventory, because an item that cannot be found is indistinguishable
- * from a broken registration.
  */
 public final class MerlinCreativeEntries {
 

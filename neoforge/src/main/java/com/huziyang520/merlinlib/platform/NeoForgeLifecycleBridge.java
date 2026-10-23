@@ -16,10 +16,6 @@ import java.util.function.Consumer;
 
 /**
  * NeoForge implementation of {@link ILifecycleBridge}, on top of the game bus.
- *
- * <p>The server events live on the game bus rather than on the mod bus that the mod constructor receives, so
- * they are installed from here rather than from the entrypoint. Callbacks are buffered until then, which is
- * what makes the registration order between mods irrelevant.
  */
 public class NeoForgeLifecycleBridge implements ILifecycleBridge {
 

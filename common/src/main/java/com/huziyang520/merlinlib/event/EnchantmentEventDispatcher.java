@@ -16,25 +16,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Delivers an event to the enchantments that care about it.
- *
- * <h2>How a dispatch is kept cheap</h2>
- *
- * <p>A dispatch first looks at a mask of the types that have at least one callback. When nobody listens to
- * attacks, an attack costs one bit test and nothing else - no scan of the equipment, no allocation. The mask
- * is read through a volatile field, so a registration during gameplay is visible to the next trigger without
- * locking the hot path.
- *
- * <h2>How one bad callback is kept harmless</h2>
- *
- * <p>Callbacks belong to other people's mods. A callback that throws is logged with its enchantment and the
- * remaining callbacks - and the caller's own logic - still run. A library that lets one listener take down an
- * attack calculation is worse than no library.
- *
- * <h2>What the key is</h2>
- *
- * <p>Callbacks are registered against a {@link Holder}, but stored against the enchantment's id, because
- * holders are recreated by every datapack reload while ids are stable. The context that reaches a callback
- * still carries the live holder, so a callback always sees the current definition.
  */
 public final class EnchantmentEventDispatcher {
 

@@ -9,100 +9,48 @@ import com.huziyang520.merlinlib.tools.ui.vanilla.PanelLayout;
 import com.huziyang520.merlinlib.tools.ui.vanilla.VanillaScreen;
 import com.huziyang520.merlinlib.tools.ui.vanilla.VanillaUi;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * The join notice switches: one master switch, then one row per mod that registered a notice.
- *
- * <h2>Where the rows come from</h2>
- *
- * <p>Not from a list written here. The mods are exactly the owners of the notices in
- * {@link NoticeRegistry#codeNotices()}, which is the same list the server offers on join, so the screen can never
- * fall behind the notices that actually exist - a mod that starts registering a notice appears here on its own,
- * and one that stops disappears. MerlinLib is listed first because its own notice is the one a player is most
- * likely to be looking for; the business mods follow alphabetically, which is the only order that stays stable
- * as mods are added.
- *
- * <h2>Where the switches are stored</h2>
- *
- * <p>The master switch is {@code notices.enabled} in {@code server.toml}, the same value the configuration screen
- * edits. The per mod switches are {@code config/MerlinLib/notices.toml}, one key per mod - see
- * {@link NoticeSettings}, which also imports the retired {@code notices.per_mod} string the first time it runs.
- * Both are read at the moment a player joins, so a change made here applies to the next join rather than to the
- * next launch.
- *
- * <p>No animation: like every other MerlinLib screen, it appears and disappears at once - see
- * {@link VanillaScreen}.
+ * The join notice switches: one global switch, then one switch per mod that registered a notice,
+ * MerlinLib first and the rest alphabetically.
  */
-public final class NoticesScreen extends VanillaScreen {
+public class NoticesScreen extends VanillaScreen {
 
-    /** Width of the on/off button on the right of every row. */
-    private static final int TOGGLE_WIDTH = 56;
+    /** Narrowest content that still lays out sensibly. */
+    private static final int MIN_CONTENT_WIDTH = 208;
+    /** Width of the on/off control on the right of a row. */
+    private static final int CONTROL_WIDTH = 96;
+    /** Height of the title and the separator under it. */
+    private static final int HEADER_HEIGHT = 28;
+    /** Height reserved for the two hint lines above the footer. */
+    private static final int HINT_HEIGHT = 20;
+    /** Height of one switch row: the widget plus the gap to the next one. */
+    private static final int ROW = VanillaUi.ROW_STEP;
 
-    /** A panel narrower than this pushes its labels and switches too far apart. */
-    private static final int MIN_CONTENT_WIDTH = 220;
-
-    /** Height of the title line. */
-    private static final int TITLE_LINE = 12;
-
-    /** Gap between the title and the first row. */
-    private static final int HEADER_GAP = 6;
-
-    /** Height of a note line, and of one line of the hint. */
-    private static final int NOTE_LINE = 12;
-    private static final int HINT_LINE = 10;
-
-    /** The hint is a footnote; more than this and it would push the switches off the panel. */
-    private static final int MAX_HINT_LINES = 3;
-
-    /** The screen to return to, or {@code null} to resume the game. */
     private final Screen parent;
-
-    /** Every mod that owns a code notice, MerlinLib first. */
+    /** The mods that registered a notice, MerlinLib first, the rest alphabetically. */
     private final List<String> owners = new ArrayList<>();
+    /** The switch of every mod, staged until save is pressed. */
+    private final Map<String, Boolean> perMod = new LinkedHashMap<>();
 
-    /** The default each owner declared, used when nothing is stored for it yet. */
-    private final Map<String, Boolean> defaults = new LinkedHashMap<>();
+    /** The labels drawn next to the rows, and the y of each of them. */
+    private final List<String> rowLabels = new ArrayList<>();
+    private final List<Integer> rowYs = new ArrayList<>();
 
-    /** The switch in effect for each owner. */
-    private final Map<String, Boolean> values = new LinkedHashMap<>();
-
-    /** Whether the master switch is on. */
-    private boolean masterOn;
-
-    /** The owners that actually fit on the panel. */
-    private final List<String> shown = new ArrayList<>();
-
-    /** The label and top edge of every row, recorded while the widgets are placed. */
-    private final List<Row> rows = new ArrayList<>();
-
-    /** The wrapped hint, as many lines as it needs. */
-    private List<String> hintLines = List.of();
-
-    /** Whether a note is drawn under the rows. */
-    private boolean noteShown;
-
-    /** Whether the note is the "some mods are not shown" line rather than the "no business mod" one. */
-    private boolean truncated;
-
-    /** Top edge of the note and of the hint, or {@code -1} when they are not drawn. */
-    private int noteY = -1;
-    private int hintY = -1;
-
-    /** Guard so a second layout pass does not re-plan from scratch. */
-    private boolean planned;
-
-    /** One row: the label of a switch and the top edge of the widget beside it. */
-    private record Row(Component label, int y) {
-    }
+    private boolean enabled;
+    private int hintY;
+    private int hidden;
+    /** Whether no business mod registered a notice, so only MerlinLib's own row is listed. */
+    private boolean noBusinessMods;
+    private int emptyY;
 
     /**
      * @param parent the screen to return to, or {@code null} to resume the game
@@ -110,8 +58,27 @@ public final class NoticesScreen extends VanillaScreen {
     public NoticesScreen(Screen parent) {
         super(Component.translatable("gui.merlinlib.notices.title"));
         this.parent = parent;
-        this.masterOn = ConfigManager.server().noticesEnabled();
-        collect();
+        this.enabled = ConfigManager.server().noticesEnabled();
+
+        Map<String, Boolean> defaults = new LinkedHashMap<>();
+        for (NoticeEntry entry : NoticeRegistry.codeNotices()) {
+            defaults.putIfAbsent(entry.owner(), entry.enabledByDefault());
+        }
+        this.owners.addAll(defaults.keySet());
+        this.owners.sort((left, right) -> {
+            boolean leftIsLibrary = Constants.MOD_ID.equals(left);
+            boolean rightIsLibrary = Constants.MOD_ID.equals(right);
+            if (leftIsLibrary != rightIsLibrary) {
+                return leftIsLibrary ? -1 : 1;
+            }
+            return left.compareTo(right);
+        });
+
+        Map<String, Boolean> stored = NoticeSettings.values();
+        for (String owner : this.owners) {
+            this.perMod.put(owner, stored.getOrDefault(owner, defaults.get(owner)));
+        }
+        this.noBusinessMods = this.owners.stream().allMatch(Constants.MOD_ID::equals);
     }
 
     @Override
@@ -119,181 +86,102 @@ public final class NoticesScreen extends VanillaScreen {
         return this.parent;
     }
 
-    /**
-     * Re-plans on every layout pass.
-     *
-     * <p>{@code init} runs again on a window resize and whenever a switch is flipped (the screen rebuilds its
-     * widgets to relabel the buttons), and how many rows fit depends on the window, so the plan cannot outlive a
-     * layout pass.
-     */
-    @Override
-    protected void init() {
-        this.planned = false;
-        this.noteY = -1;
-        this.hintY = -1;
-        super.init();
+    /** @return how many mod rows fit in the window, so the panel can never run off the bottom */
+    private int capacity() {
+        int reserved = HEADER_HEIGHT + ROW + HINT_HEIGHT + 6 + VanillaUi.WIDGET_HEIGHT
+                + (this.noBusinessMods ? ROW : 0);
+        return Math.max(0, (contentHeightLimit() - reserved) / ROW);
     }
 
-    /**
-     * Reads the owners and the switches in effect.
-     *
-     * <p>Done once in the constructor rather than in {@code init}: {@code init} runs again whenever a switch is
-     * flipped (the screen rebuilds its widgets to relabel the buttons), and re-reading there would also re-read
-     * the master switch from disk, which is fine - but re-reading the owners would drop a switch the player just
-     * changed for a mod whose notice was registered in the meantime.
-     */
-    private void collect() {
-        Map<String, Boolean> stored = NoticeSettings.snapshot();
-        Map<String, Boolean> declared = new LinkedHashMap<>();
-        for (NoticeEntry entry : NoticeRegistry.codeNotices()) {
-            // A mod may register several notices; the row is per mod, so its default is on when any of its
-            // notices asks to be on.
-            declared.merge(entry.owner(), entry.enabledByDefault(), (first, second) -> first || second);
-        }
-        if (declared.containsKey(Constants.MOD_ID)) {
-            this.owners.add(Constants.MOD_ID);
-        }
-        List<String> business = new ArrayList<>(declared.keySet());
-        business.remove(Constants.MOD_ID);
-        Collections.sort(business);
-        this.owners.addAll(business);
-        for (String owner : this.owners) {
-            boolean fallback = declared.getOrDefault(owner, true);
-            this.defaults.put(owner, fallback);
-            this.values.put(owner, stored.getOrDefault(owner, fallback));
-        }
+    /** @return the mod rows that are actually built */
+    private int visible() {
+        return Math.min(this.owners.size(), capacity());
     }
 
     @Override
     protected int contentWidth() {
         List<Component> labels = new ArrayList<>();
-        labels.add(Component.translatable("gui.merlinlib.notices.master"));
+        labels.add(this.title);
+        labels.add(Component.translatable("gui.merlinlib.notices.enabled"));
+        labels.add(Component.translatable("gui.merlinlib.notices.empty"));
         for (String owner : this.owners) {
             labels.add(label(owner));
         }
-        labels.add(Component.translatable("gui.merlinlib.notices.empty"));
         return Math.max(MIN_CONTENT_WIDTH,
-                VanillaUi.measureWidth(this.font, labels, TOGGLE_WIDTH + VanillaUi.GAP, MIN_CONTENT_WIDTH));
+                VanillaUi.measureWidth(this.font, labels, CONTROL_WIDTH, MIN_CONTENT_WIDTH));
     }
 
     @Override
     protected int contentHeight() {
-        plan();
-        int note = this.noteShown ? NOTE_LINE : 0;
-        return TITLE_LINE + HEADER_GAP + (1 + this.shown.size()) * VanillaUi.ROW_STEP + note + hintHeight()
-                + VanillaUi.GAP + VanillaUi.WIDGET_HEIGHT;
-    }
-
-    /**
-     * Decides what fits, once.
-     *
-     * <p>The row count depends on the height available and the height depends on the row count, so the fixed part
-     * of the panel - title, note, hint and the close button - is measured first and the remaining space is divided
-     * by the row step. A list too long for the window loses its tail rather than running off the bottom, and says
-     * so.
-     */
-    private void plan() {
-        if (this.planned) {
-            return;
-        }
-        this.planned = true;
-        this.hintLines = wrapHint();
-        boolean note = this.owners.size() <= 1;
-        int capacity = Math.max(1, (contentHeightLimit() - fixedHeight(note)) / VanillaUi.ROW_STEP);
-        int fit = Math.max(0, capacity - 1);
-        boolean cut = fit < this.owners.size();
-        if (cut && !note) {
-            // The note needs a line of its own, so the room for rows shrinks by one.
-            note = true;
-            capacity = Math.max(1, (contentHeightLimit() - fixedHeight(true)) / VanillaUi.ROW_STEP);
-            fit = Math.max(0, capacity - 1);
-            cut = fit < this.owners.size();
-        }
-        this.truncated = cut;
-        this.noteShown = note || cut;
-        this.shown.clear();
-        this.shown.addAll(this.owners.subList(0, Math.min(fit, this.owners.size())));
-    }
-
-    /** @return the height of everything that is not a switch row */
-    private int fixedHeight(boolean note) {
-        return TITLE_LINE + HEADER_GAP + (note ? NOTE_LINE : 0) + hintHeight() + VanillaUi.GAP
-                + VanillaUi.WIDGET_HEIGHT;
-    }
-
-    /** @return the height of the wrapped hint plus the gap above it */
-    private int hintHeight() {
-        return this.hintLines.size() * HINT_LINE + VanillaUi.GAP;
-    }
-
-    private List<String> wrapHint() {
-        int width = Math.max(120, panelWidth() - 2 * VanillaUi.PADDING);
-        List<String> lines = VanillaUi.wrap(this.font,
-                Component.translatable("gui.merlinlib.notices.hint").getString(), width);
-        return lines.size() > MAX_HINT_LINES ? lines.subList(0, MAX_HINT_LINES) : lines;
+        // The rows are the global switch plus every mod switch that fits, then the hint and the footer.
+        int rows = HEADER_HEIGHT + (1 + visible()) * ROW;
+        return rows + (this.noBusinessMods ? ROW : 0) + HINT_HEIGHT + 6 + VanillaUi.WIDGET_HEIGHT;
     }
 
     @Override
     protected void build(PanelLayout layout) {
-        plan();
-        this.rows.clear();
-        layout.gap(TITLE_LINE + HEADER_GAP);
+        int controlX = layout.right() - CONTROL_WIDTH;
 
-        int y = layout.row(VanillaUi.ROW_STEP);
-        this.rows.add(new Row(Component.translatable("gui.merlinlib.notices.master"), y));
-        this.addRenderableWidget(toggle(this.masterOn, layout, y, button -> {
-            this.masterOn = !this.masterOn;
-            ConfigManager.saveServer(Map.of("notices.enabled", Boolean.toString(this.masterOn)));
-            this.rebuildWidgets();
-        }));
+        layout.gap(HEADER_HEIGHT);
 
-        for (String owner : this.shown) {
-            y = layout.row(VanillaUi.ROW_STEP);
-            this.rows.add(new Row(label(owner), y));
-            boolean current = this.values.getOrDefault(owner, this.defaults.getOrDefault(owner, true));
-            this.addRenderableWidget(toggle(current, layout, y, button -> {
-                boolean next = !this.values.getOrDefault(owner, this.defaults.getOrDefault(owner, true));
-                NoticeSettings.set(owner, next);
-                this.values.put(owner, next);
-                this.rebuildWidgets();
-            }));
+        // The global switch: everything below it is a choice about which notices it lets through.
+        int globalY = layout.row();
+        this.addRenderableWidget(CycleButton.onOffBuilder(this.enabled)
+                .create(controlX, globalY, CONTROL_WIDTH, VanillaUi.WIDGET_HEIGHT,
+                        Component.translatable("gui.merlinlib.notices.enabled"),
+                        (button, value) -> this.enabled = value));
+        layout.gap(ROW - VanillaUi.WIDGET_HEIGHT);
+
+        int shown = visible();
+        this.hidden = this.owners.size() - shown;
+        this.rowLabels.clear();
+        this.rowYs.clear();
+        for (int index = 0; index < shown; index++) {
+            String owner = this.owners.get(index);
+            int y = layout.row();
+            this.addRenderableWidget(CycleButton.onOffBuilder(Boolean.TRUE.equals(this.perMod.get(owner)))
+                    .create(controlX, y, CONTROL_WIDTH, VanillaUi.WIDGET_HEIGHT, label(owner),
+                            (button, value) -> this.perMod.put(owner, value)));
+            this.rowLabels.add(owner);
+            this.rowYs.add(y + 6);
+            layout.gap(ROW - VanillaUi.WIDGET_HEIGHT);
         }
 
-        if (this.noteShown) {
-            this.noteY = layout.row(NOTE_LINE);
+        this.emptyY = layout.cursor();
+        if (this.noBusinessMods) {
+            layout.gap(ROW);
         }
-        if (!this.hintLines.isEmpty()) {
-            // The gap above the hint is part of hintHeight(), so the reserved height and the drawn height match.
-            layout.gap(VanillaUi.GAP);
-            this.hintY = layout.row(this.hintLines.size() * HINT_LINE);
-        }
-        layout.gap(VanillaUi.GAP);
-        int buttonY = layout.row(VanillaUi.WIDGET_HEIGHT);
-        int width = Math.min(160, layout.contentWidth());
-        int x = layout.left() + (layout.contentWidth() - width) / 2;
-        this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.done"),
-                button -> this.onClose(), x, buttonY, width));
+
+        this.hintY = layout.cursor();
+        layout.gap(HINT_HEIGHT);
+        layout.gap(6);
+
+        int footerY = layout.row(VanillaUi.WIDGET_HEIGHT);
+        int half = layout.sliceWidth(2);
+        this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.notices.save"),
+                button -> this.save(), layout.left(), footerY, half));
+        this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.cancel"),
+                button -> this.onClose(), layout.sliceX(1, 2), footerY, half));
+    }
+
+    /** Writes both stores: the global switch into {@code server.toml}, the per mod ones into their file. */
+    private void save() {
+        NoticeSettings.save(new LinkedHashMap<>(this.perMod));
+        ConfigManager.saveServer(Map.of("notices.enabled", Boolean.toString(this.enabled)));
+        this.onClose();
     }
 
     /**
-     * Builds the on/off button of one row.
+     * The label of one mod's row.
      *
-     * @param on      the value the button shows
-     * @param layout  the panel, for the right edge
-     * @param y       the top edge of the row
-     * @param onPress what a press does
-     * @return the button
+     * <p>MerlinLib names itself with its display spelling; every other row keeps the mod id, which is the
+     * key of the file and the one string a player can match against the log.
+     *
+     * @param owner the mod id
+     * @return the label
      */
-    private Button toggle(boolean on, PanelLayout layout, int y, Button.OnPress onPress) {
-        Component text = Component.translatable(on ? "gui.merlinlib.toggle.on" : "gui.merlinlib.toggle.off");
-        return VanillaUi.button(text, onPress, layout.right() - TOGGLE_WIDTH, y, TOGGLE_WIDTH);
-    }
-
-    /** @param owner a mod id @return the text shown for it, which is the mod id except for MerlinLib itself */
-    private Component label(String owner) {
-        return Constants.MOD_ID.equals(owner)
-                ? Component.literal("MerlinLib")
-                : Component.literal(owner);
+    private static Component label(String owner) {
+        return Constants.MOD_ID.equals(owner) ? Component.literal("MerlinLib") : Component.literal(owner);
     }
 
     @Override
@@ -303,26 +191,29 @@ public final class NoticesScreen extends VanillaScreen {
         int content = layout.contentWidth();
 
         VanillaUi.text(graphics, this.font, this.title, left, layout.top(), VanillaUi.TEXT, content);
-        VanillaUi.separator(graphics, left, layout.right(), layout.top() + TITLE_LINE);
+        VanillaUi.separator(graphics, left, layout.right(), layout.top() + 24);
 
-        for (Row row : this.rows) {
-            VanillaUi.text(graphics, this.font, row.label(), left, row.y() + 6,
-                    VanillaUi.TEXT, content - TOGGLE_WIDTH - VanillaUi.GAP);
+        for (int index = 0; index < this.rowYs.size(); index++) {
+            VanillaUi.text(graphics, this.font, label(this.rowLabels.get(index)),
+                    left, this.rowYs.get(index), VanillaUi.TEXT, content - CONTROL_WIDTH - VanillaUi.GAP);
+        }
+        if (this.noBusinessMods) {
+            // One grey line instead of an empty panel that would look broken.
+            VanillaUi.text(graphics, this.font, Component.translatable("gui.merlinlib.notices.empty"),
+                    left, this.emptyY, VanillaUi.TEXT_DISABLED, content);
         }
 
-        if (this.noteY >= 0) {
-            Component note = this.truncated
-                    ? Component.translatable("gui.merlinlib.notices.more", this.owners.size() - this.shown.size())
-                    : Component.translatable("gui.merlinlib.notices.empty");
-            VanillaUi.text(graphics, this.font, note, left, this.noteY, VanillaUi.TEXT_DISABLED, content);
+        int hintTop = this.hintY;
+        List<String> hint = VanillaUi.wrap(this.font,
+                Component.translatable("gui.merlinlib.notices.hint").getString(), content);
+        for (int index = 0; index < Math.min(2, hint.size()); index++) {
+            VanillaUi.text(graphics, this.font, Component.literal(hint.get(index)),
+                    left, hintTop + index * 10, VanillaUi.TEXT_HINT, content);
         }
-        if (this.hintY >= 0) {
-            int y = this.hintY;
-            for (String line : this.hintLines) {
-                VanillaUi.text(graphics, this.font, Component.literal(line), left, y,
-                        VanillaUi.TEXT_HINT, content);
-                y += HINT_LINE;
-            }
+        if (this.hidden > 0) {
+            VanillaUi.textRight(graphics, this.font,
+                    Component.translatable("gui.merlinlib.notices.more", this.hidden),
+                    layout.right(), hintTop, VanillaUi.TEXT_DISABLED, content);
         }
     }
 }

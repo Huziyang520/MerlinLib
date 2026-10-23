@@ -57,6 +57,21 @@ public class MerlinMobEffect extends MobEffect {
     }
 
     /**
+     * The same answer under the name 26.2 uses.
+     *
+     * <p>26.2 renamed this accessor: 26.1.2 spells it {@code isInstantenous} (vanilla's own typo) and 26.2
+     * spells it {@code isInstantaneous}. Declared without {@code @Override} on purpose, because the name does
+     * not exist on the 26.1.2 build this branch compiles against - the annotation would be a compile error
+     * here. On 26.2 the method overrides the game's own and the flag keeps working; on 26.1.2 it is simply
+     * never called, while {@link #isInstantenous()} above answers there.
+     *
+     * @return whether the effect is instantaneous
+     */
+    public boolean isInstantaneous() {
+        return this.instant;
+    }
+
+    /**
      * @return the colour in use, which is the declared colour unless a config file overrode it.
      */
     @Override

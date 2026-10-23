@@ -4,19 +4,16 @@ import com.huziyang520.merlinlib.network.DamageFeedbackPayload;
 import com.huziyang520.merlinlib.network.DamageFeedbackSink;
 import com.huziyang520.merlinlib.network.ServerSender;
 import com.huziyang520.merlinlib.Constants;
+import com.huziyang520.merlinlib.config.FabricConfig;
 import com.huziyang520.merlinlib.tools.hud.CombatFeedback;
 import com.huziyang520.merlinlib.tools.macro.MacroStorage;
 import com.huziyang520.merlinlib.tools.ui.HealthEditorScreen;
 import com.huziyang520.merlinlib.tools.ui.MacroScreen;
 import com.huziyang520.merlinlib.tools.ui.MerlinScreens;
-import com.mojang.brigadier.context.CommandContext;
-import com.huziyang520.merlinlib.platform.config.ClothSupport;
-import com.huziyang520.merlinlib.platform.config.JupiterSupport;
 import com.huziyang520.merlinlib.tools.ui.MerlinUi;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
-import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -26,16 +23,12 @@ import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 
 /**
  * Fabric client entrypoint: the single key binding and the editor opening.
- *
- * <p>Kept apart from the main entrypoint so a dedicated server never loads a class that mentions
- * {@code net.minecraft.client}.
  */
 public class MerlinLibFabricClient implements ClientModInitializer {
 
@@ -60,32 +53,6 @@ public class MerlinLibFabricClient implements ClientModInitializer {
 
         KeyMappingHelper.registerKeyMapping(OPEN_EDITOR);
         KeyMappingHelper.registerKeyMapping(OPEN_MACROS);
-
-        // Cloth Config and Jupiter are both optional, and either one is enough for a screen: Cloth gets the store
-        // first, Jupiter is always told about the settings so its own configuration list shows this mod, and with
-        // neither installed the TOML files stay the store and /merlinlib config says what to install.
-        ClothSupport.activate();
-        JupiterSupport.activate();
-
-        ClientCommandRegistrationCallback.EVENT.register((dispatcher, buildContext) ->
-                dispatcher.register(ClientCommands.literal("merlinlib")
-                        .then(ClientCommands.literal("editor").executes(context -> {
-                            MerlinScreens.openItemEditor();
-                            return 1;
-                        }))
-                        .then(ClientCommands.literal("health").executes(context -> {
-                            MerlinScreens.openOwnHealthEditor();
-                            return 1;
-                        }))
-                        .then(ClientCommands.literal("macro").executes(context -> {
-                            MerlinScreens.openMacroScreen(null);
-                            return 1;
-                        }))
-                        .then(ClientCommands.literal("notices").executes(context -> {
-                            MerlinScreens.openNoticesScreen(null);
-                            return 1;
-                        }))
-                        .then(ClientCommands.literal("config").executes(MerlinLibFabricClient::openConfig))));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (OPEN_EDITOR.consumeClick()) {
@@ -115,6 +82,43 @@ public class MerlinLibFabricClient implements ClientModInitializer {
                 MerlinScreens.openHealthEditor(null, target));
         MacroStorage.load();
 
+        // Cloth Config, when it is installed: the client switches get a screen and the file stays the store.
+        FabricConfig.install();
+
+        // /merlinlib editor | health | macro | config. Client side on purpose: these only ever open a screen
+        // on this computer, and a server side version would need one payload per screen to say so.
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, buildContext) -> dispatcher.register(
+                ClientCommands.literal(Constants.MOD_ID)
+                        .then(ClientCommands.literal("editor")
+                                .executes(context -> {
+                                    MerlinScreens.openItemEditor();
+                                    return 1;
+                                }))
+                        .then(ClientCommands.literal("health")
+                                .executes(context -> {
+                                    MerlinScreens.openHealthEditorSelf();
+                                    return 1;
+                                }))
+                        .then(ClientCommands.literal("macro")
+                                .executes(context -> {
+                                    MerlinScreens.openMacroScreen(null);
+                                    return 1;
+                                }))
+                        .then(ClientCommands.literal("config")
+                                .executes(context -> {
+                                    if (MerlinScreens.openConfigScreen(null)) {
+                                        return 1;
+                                    }
+                                    context.getSource().sendError(
+                                            Component.translatable("message.merlinlib.config.needs_screen"));
+                                    return 0;
+                                }))
+                        .then(ClientCommands.literal("notices")
+                                .executes(context -> {
+                                    MerlinScreens.openNoticesScreen(null);
+                                    return 1;
+                                }))));
+
         // Sneak using an entity opens the health editor for it.
         UseEntityCallback.EVENT.register((player, level, hand, entity, hitResult) -> {
             // No switch is consulted here: openHealthEditor answers "may this open, and is the item held"
@@ -134,31 +138,5 @@ public class MerlinLibFabricClient implements ClientModInitializer {
             }
             return net.minecraft.world.InteractionResult.PASS;
         });
-    }
-
-    /**
-     * Opens the configuration screen, whichever optional mod can provide one.
-     *
-     * <p>Cloth Config first, then Jupiter: a player who has both gets the Cloth screen from the command, and
-     * Jupiter's own configuration list carries the same switches under its own entries. A client command rather
-     * than a server one, because the screen is a client object the server cannot show. When neither mod is
-     * installed the command says so instead of failing silently, because a player who typed it is asking where
-     * the screen went.
-     *
-     * @param source the command source, used for the message when no screen can be shown
-     * @return 1 when the screen was opened, 0 otherwise
-     */
-    private static int openConfig(CommandContext<FabricClientCommandSource> context) {
-        FabricClientCommandSource source = context.getSource();
-        Screen screen = ClothSupport.openScreen(null);
-        if (screen == null) {
-            screen = JupiterSupport.openScreen(null);
-        }
-        if (screen == null) {
-            source.sendError(Component.translatable("command.merlinlib.config.no_screen"));
-            return 0;
-        }
-        ScreenSwitcher.show(Minecraft.getInstance(), screen);
-        return 1;
     }
 }

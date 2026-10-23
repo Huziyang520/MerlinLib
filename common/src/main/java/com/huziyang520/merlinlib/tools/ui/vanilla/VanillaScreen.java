@@ -1,31 +1,13 @@
 package com.huziyang520.merlinlib.tools.ui.vanilla;
 
-import com.huziyang520.merlinlib.tools.ui.MerlinScreens;
+import com.huziyang520.merlinlib.client.ScreenSwitcher;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * Base class of the MerlinLib screens.
- *
- * <p>It owns the three things that are easy to get wrong:
- * <ul>
- *     <li><b>the panel is drawn at the right moment</b> - in {@code extractBackground}, which vanilla
- *     calls after the world dimming and before the widgets. Drawing it in {@code extractRenderState}
- *     would paint over the controls, and skipping the background pass would let the world show
- *     through the panel;</li>
- *     <li><b>the panel is sized from measured content</b> - see {@link #contentWidth()}, so a screen
- *     fits every language instead of one hard coded width;</li>
- *     <li><b>the screen pauses the game</b> - otherwise the world keeps animating behind the panel and
- *     the screen reads as flicker.</li>
- * </ul>
- *
- * <h2>No opening or closing animation</h2>
- *
- * <p>These screens appear and disappear at once. The animation helpers in
- * {@code com.huziyang520.merlinlib.ui.anim} are still shipped for other mods, but nothing in this mod calls
- * them: an opening transform also had to be paired with a delayed handover on close, and a screen that waited
- * for frames before showing its parent could be left half open by a single dropped frame.
+ * Base class of the MerlinLib toolkit screens.
  */
 public abstract class VanillaScreen extends Screen {
 
@@ -95,9 +77,9 @@ public abstract class VanillaScreen extends Screen {
     /**
      * Draws the content backdrop, then the widgets and the content the screen paints itself.
      *
-     * <p>A subclass adds its own text and overlays by overriding {@link #renderContent}, which is called after
-     * the widgets. It must not call {@code super.extractRenderState} for that: this method already draws the
-     * widgets, once.
+     * <p>A subclass adds its own text and overlays by overriding {@link #renderContent}, which is called
+     * after the widgets. It must not call {@code super.extractRenderState} for that: this method already
+     * draws the widgets, once.
      *
      * @param graphics    the render state extractor
      * @param mouseX      the cursor x
@@ -106,8 +88,8 @@ public abstract class VanillaScreen extends Screen {
      */
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        // The recessed list areas belong to the content and have to sit behind the rows they contain; drawn in
-        // the background pass they would cover the buttons of those rows.
+        // Before the widgets on purpose: the recessed list areas belong to the content and have to sit
+        // behind the rows they frame, or the frame paints over the - / + / X buttons of every row.
         drawContentBackground(graphics);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
         renderContent(graphics, mouseX, mouseY, partialTick);
@@ -149,7 +131,8 @@ public abstract class VanillaScreen extends Screen {
      *
      * <p>This exists because of a real bug: a list area drawn in {@code extractRenderState} covers the
      * widgets of the rows it contains, which made the - / + / X and "add" buttons of a list invisible while
-     * still being clickable.
+     * still being clickable. The background pass is the only place where a fill can safely go underneath
+     * the widgets.
      *
      * @param graphics the render state extractor
      */
@@ -158,6 +141,10 @@ public abstract class VanillaScreen extends Screen {
 
     /**
      * Whether the vanilla panel is drawn behind the content.
+     *
+     * <p>A screen that is nothing but a column of vanilla buttons reads better with the panel switched off,
+     * because the buttons already carry the vanilla frame. Such a screen draws its text with a shadow
+     * instead, so it stays readable over any world.
      *
      * @return {@code true} to draw the panel
      */
@@ -176,9 +163,7 @@ public abstract class VanillaScreen extends Screen {
 
     @Override
     public void onClose() {
-        // The handover goes through the shared switcher: the method that shows a screen moved between 26.1 and
-        // 26.2, and only one of the two exists on either side.
-        MerlinScreens.show(parentScreen());
+        ScreenSwitcher.show(Minecraft.getInstance(), parentScreen());
     }
 
     @Override

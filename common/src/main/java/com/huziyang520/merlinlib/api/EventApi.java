@@ -9,19 +9,6 @@ import net.minecraft.world.item.enchantment.Enchantment;
 
 /**
  * The enchantment event api, reached through {@link MerlinApi#events()}.
- *
- * <p>A dependent mod registers one callback per enchantment and event type. The library then takes care of the
- * rest: scanning the equipment (or a weapon snapshot), matching by enchantment id, passing the level and the
- * item along, and keeping one broken listener from affecting the others.
- *
- * <pre>{@code
- * MerlinApi.events().register(venomHolder, BuiltInEvents.POST_ATTACK, (event, context) -> {
- *     event.target().addEffect(new MobEffectInstance(MobEffects.POISON, 100, context.level() - 1));
- * });
- * }</pre>
- *
- * <p>Registration may happen from a mod constructor: nothing is scanned until an event actually fires, and an
- * event whose type has no callbacks costs a single bit test.
  */
 public final class EventApi {
 

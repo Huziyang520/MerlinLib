@@ -18,9 +18,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Holds every enchantment declared through the java api and the ids that are disabled.
- *
- * <p>Only registration state lives here; the merged, finally effective content lives in
- * {@link ContentManager} because it also depends on the config files.
  */
 public final class EnchantmentRegistry implements EnchantmentApi {
 

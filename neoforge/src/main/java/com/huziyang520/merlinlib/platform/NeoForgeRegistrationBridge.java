@@ -15,9 +15,6 @@ import java.util.function.Supplier;
 
 /**
  * NeoForge implementation of {@link IRegistrationBridge}.
- *
- * <p>Registries are not writable while mod constructors run, so values are queued and written when
- * {@link RegisterEvent} fires for the matching registry.
  */
 public class NeoForgeRegistrationBridge implements IRegistrationBridge {
 

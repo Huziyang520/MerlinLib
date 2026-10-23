@@ -254,8 +254,9 @@ public final class CombatFeedback {
         if (minecraft.player == null || minecraft.level == null) {
             return;
         }
-        // 26.3 has neither Minecraft.screen nor Options.hideGui, so the overlay rides the vanilla HUD
-        // layer and lets the game decide when the HUD is hidden.
+        // No HUD-hiding check here: 26.1.2 keeps the flag on Options.hideGui, 26.2 removed it, and one jar
+        // cannot read a field that exists on only one of them. The overlay therefore rides the vanilla HUD
+        // layer and lets the game decide when the HUD is hidden, which is the same answer on both releases.
 
         int guiWidth = minecraft.getWindow().getGuiScaledWidth();
         int guiHeight = minecraft.getWindow().getGuiScaledHeight();
@@ -305,7 +306,11 @@ public final class CombatFeedback {
         int normalColour = ConfigManager.client().floatingTextNormalColor() & 0xFFFFFF;
         int criticalColour = ConfigManager.client().floatingTextCriticalColor() & 0xFFFFFF;
 
-        Camera camera = minecraft.gameRenderer.getMainCamera();
+        // Read through the helper: 26.1 calls the getter getMainCamera(), 26.2 renamed it mainCamera().
+        Camera camera = com.huziyang520.merlinlib.client.CameraAccess.camera(minecraft.gameRenderer);
+        if (camera == null) {
+            return;
+        }
         Vec3 eye = camera.position();
         float fov = camera.getFov();
         double aspect = (double) guiWidth / (double) guiHeight;

@@ -6,10 +6,6 @@ import net.minecraft.world.entity.player.Player;
 
 /**
  * Server authoritative gate for every testing toolkit action.
- *
- * <p>No loader bridge is needed here: 26.3 moved permissions into the game itself, and NeoForge
- * patches the permission set so third party permission mods keep working. Checking
- * {@link Permissions#COMMANDS_GAMEMASTER} is therefore the operator check on both loaders.
  */
 public final class PermissionGate {
 

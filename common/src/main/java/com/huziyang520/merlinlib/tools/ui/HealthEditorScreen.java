@@ -17,15 +17,8 @@ import net.minecraft.world.entity.player.Player;
 
 /**
  * The health editor: edits the current and maximum health of one living entity.
- *
- * <p>Opened by sneak-using an entity, or yourself while holding the health editor item when the server
- * asks for it. Values are whole numbers from 0 to the integer limit; a field that does not hold one is
- * outlined in red, its reason is printed under the fields, and the confirm button is switched off, so an
- * invalid edit cannot be sent at all. The write still happens on the server, which re-validates permission
- * and clamps the values before touching the entity.
  */
 public class HealthEditorScreen extends VanillaScreen {
-
 
     /** Narrowest content that still lays out sensibly. */
     private static final int MIN_CONTENT_WIDTH = 208;
@@ -116,8 +109,7 @@ public class HealthEditorScreen extends VanillaScreen {
         layout.gap(10 + 10 + 10);
 
         int bottom = layout.row(VanillaUi.WIDGET_HEIGHT);
-        // Two long buttons instead of two 120 px ones pushed to the right edge: half the content width each,
-        // with one gap between them, so the pair fills the panel the same way the rows above it do.
+        // Two full width buttons, the same split the item editor uses.
         int half = layout.sliceWidth(2);
         this.confirm = this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.health.confirm"),
                 button -> this.send(), left, bottom, half));

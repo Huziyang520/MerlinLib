@@ -5,15 +5,6 @@ import java.util.function.Function;
 
 /**
  * A tiny event with no context: listeners are simply called.
- *
- * <p>Not every trigger belongs to one enchantment. "A living entity ticked" and "food regenerated" happen to
- * whoever they happen to, and the listener decides which enchantments it cares about - chasing every one of
- * those through the per enchantment dispatcher would mean scanning equipment once per tick for no reason.
- *
- * <p>The listener array is copied on every registration and read without locking, so firing is just a loop
- * over an array that practically never changes after start up.
- *
- * @param <T> the listener type, a single method interface
  */
 public final class SimpleEvent<T> {
 
