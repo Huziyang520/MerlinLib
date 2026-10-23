@@ -46,6 +46,11 @@ mismatch between what you edited and what is running is one command away.
 The values in `client.toml` and `server.toml` are read as they are used, so a switch takes effect as
 soon as the file is saved.
 
+The configuration screen shows both files: the client sections first, then `security`, `tools`, `content`
+and `notices` from the server file, in the order this guide lists them. The join notice page is a page of
+its own - one switch per mod, all in `notices.toml` - reachable from the screen or from
+`/merlinlib notices`.
+
 ### `client.toml`
 
 | Key | Default | Meaning |
@@ -62,7 +67,6 @@ soon as the file is saved.
 | `editor.scroll_step` / `scroll_step_fast` | `1` / `10` | how much one wheel notch over a row changes its level, and the same with control held |
 | `macros.enabled` | `true` | the macro toolkit (its screen and running macros from their keys) |
 | `particles.limit_enabled` / `particles.limit` | `true` / `512` | cap on how many particles this client draws per 1/20 second and how many one server send may carry |
-| `general.notice_enabled` | `true` | show the join notice that explains where the configuration screen comes from |
 | `general.config_version` | current | file layout marker, written by the mod; not meant to be edited, and never part of the server file |
 
 ### `server.toml`
@@ -246,6 +250,10 @@ is lost except the window.
 
 `client.toml` 与 `server.toml` 的值是**用的时候才读**，所以开关一保存就生效。
 
+配置界面把两个文件都列出来：先是客户端各段，然后是服务端文件的 `security`、`tools`、`content`、`notices`，
+顺序与本文一致。进世界通知是单独一页——每个模组一个开关，全部存在 `notices.toml`，从配置界面或
+`/merlinlib notices` 进入。
+
 ### `client.toml`
 
 | 键 | 默认 | 说明 |
@@ -262,7 +270,6 @@ is lost except the window.
 | `editor.scroll_step` / `scroll_step_fast` | `1` / `10` | 鼠标停在某行上滚轮每格的变化量，以及按住 Ctrl 时的 |
 | `macros.enabled` | `true` | 命令宏总开关（宏界面与按键触发） |
 | `particles.limit_enabled` / `particles.limit` | `true` / `512` | 粒子上限：既是客户端每 1/20 秒的绘制上限，也是服务端单次发送上限 |
-| `general.notice_enabled` | `true` | 是否显示说明「配置界面从哪来」的那条进服提示 |
 | `general.config_version` | 当前值 | 文件布局标记，由模组写入，不必手改；它只存在于客户端文件 |
 
 ### `server.toml`
