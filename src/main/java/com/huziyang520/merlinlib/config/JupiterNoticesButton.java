@@ -6,13 +6,15 @@ import com.iafenvoy.jupiter.config.interfaces.ConfigMetaProvider;
 import com.iafenvoy.jupiter.config.interfaces.ValueChangeCallback;
 import com.iafenvoy.jupiter.config.type.ConfigType;
 import com.iafenvoy.jupiter.render.screen.WidgetBuilderManager;
-import com.iafenvoy.jupiter.render.widget.WidgetBuilder;
+import com.iafenvoy.jupiter.render.widget.builder.AbstractButtonWidgetBuilder;
 import com.mojang.serialization.Codec;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 
 /**
- * A Jupiter row that is one button instead of one value: the way into the join notice page.
+ * A Jupiter row that is one button instead of one value: the way into the join notice page. Built on
+ * Jupiter's own button row, so the widget follows the row it belongs to when the list is scrolled.
  */
 final class JupiterNoticesButton {
 
@@ -102,32 +104,25 @@ final class JupiterNoticesButton {
         }
     }
 
-    /** Draws the row as one full width button. */
-    private static final class ButtonBuilder extends WidgetBuilder<Boolean> {
+    /** Draws the row as one button that fills the value column. */
+    private static final class ButtonBuilder extends AbstractButtonWidgetBuilder<Boolean> {
 
         ButtonBuilder(ConfigMetaProvider provider, ConfigEntry<Boolean> config) {
-            super(provider, config);
+            super(provider, config, config::getName);
         }
 
         @Override
-        public void addCustomElements(Context context, int x, int y, int width, int height) {
+        protected Button createButton(Context context, int x, int y, int width, int height) {
             // The parent screen is what the button returns to, so the notice page closes back into Jupiter
             // instead of back into the world.
-            Button button = Button.builder(this.config.getName(),
+            Button.Builder builder = Button.builder(this.config.getName(),
                             pressed -> MerlinScreens.openNoticesScreen(context.parent()))
-                    .bounds(x, y, width, 20)
-                    .build();
-            context.addWidget(button);
-        }
-
-        @Override
-        public void updateCustom(boolean canSave, int width) {
-            // The button is always usable: it opens a screen and never depends on a staged value.
-        }
-
-        @Override
-        public void refresh() {
-            // Nothing is reloaded; the page reads the switches when it opens.
+                    .bounds(x, y, width, height);
+            Component tooltip = this.config.getTooltip();
+            if (tooltip != null) {
+                builder = builder.tooltip(Tooltip.create(tooltip));
+            }
+            return builder.build();
         }
     }
 }

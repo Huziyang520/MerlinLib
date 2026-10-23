@@ -77,7 +77,6 @@
   "merlinlib.notice.config_ui": "MerlinLib：配置项在模组列表的配置界面里，Forge 上需要安装 Cloth Config API 或 Jupiter。该通知可以在配置中关闭。",
   "message.merlinlib.config.needs_screen": "MerlinLib：可视化配置界面需要安装 Cloth Config API 或 Jupiter，当前两者都未安装。可改为编辑 config/MerlinLib/client.toml。",
   "merlinlib.configuration.title": "MerlinLib 设置",
-  "merlinlib.configuration.general": "通用",
   "merlinlib.configuration.hud": "HUD",
   "merlinlib.configuration.floating_text": "伤害飘字",
   "merlinlib.configuration.particles": "粒子",
@@ -87,8 +86,6 @@
   "merlinlib.configuration.tools": "测试工具",
   "merlinlib.configuration.content": "内容",
   "merlinlib.configuration.notices": "进世界通知",
-  "merlinlib.configuration.general.notice_enabled": "MerlinLib 自己的进世界通知",
-  "merlinlib.configuration.general.notice_enabled.tooltip": "在聊天栏显示 MerlinLib 自己的进世界通知；业务模组的通知在「进世界通知」页面里开关",
   "merlinlib.configuration.hud.crosshair_damage": "准星伤害数字",
   "merlinlib.configuration.hud.crosshair_damage.tooltip": "在准星附近显示刚使用的武器的面板伤害",
   "merlinlib.configuration.hud.crosshair_damage_ticks": "准星数字时长（tick）",
@@ -154,10 +151,11 @@
   "merlinlib.configuration.notices.open": "进世界通知…",
   "merlinlib.configuration.notices.open.tooltip": "哪些模组可以发送进世界通知",
   "gui.merlinlib.notices.title": "进世界通知",
-  "gui.merlinlib.notices.open": "进世界通知…",
   "gui.merlinlib.notices.enabled": "总开关",
   "gui.merlinlib.notices.empty": "没有需要配置进世界通知的业务模组",
   "gui.merlinlib.notices.save": "保存",
   "gui.merlinlib.notices.hint": "改动在下次进世界时生效；按模组的开关保存在 config/MerlinLib/notices.toml",
-  "gui.merlinlib.notices.more": "还有 %s 个模组未显示"
+  "gui.merlinlib.notices.more": "还有 %s 个模组未显示",
+  "gui.merlinlib.notices.on": "开启",
+  "gui.merlinlib.notices.off": "关闭"
 }

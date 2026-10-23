@@ -27,9 +27,6 @@ public final class ClientConfig {
             # File layout version. Written by the mod, read only to bring a file from an older build up to the
             # current layout. Client only: the server half carries no layout marker.
             config_version = 3
-            # Show MerlinLib's own join notice in chat. Business mods' notices have their own switches in
-            # server.toml and on the join notice page, because the server is what sends them.
-            notice_enabled = true
 
             [hud]
             # Show the damage of the weapon you just used near the crosshair. Off by default.
@@ -110,7 +107,6 @@ public final class ClientConfig {
     private boolean macrosEnabled = true;
     private boolean particleLimitEnabled = true;
     private int particleLimit = 512;
-    private boolean noticeEnabled = true;
     private List<ContentError> errors = List.of();
 
     /**
@@ -151,7 +147,6 @@ public final class ClientConfig {
         config.editorScrollStep = file.getInt("editor.scroll_step", 1, 1, 1000);
         config.editorScrollStepFast = file.getInt("editor.scroll_step_fast", 10, 1, 100000);
         config.macrosEnabled = file.getBoolean("macros.enabled", true);
-        config.noticeEnabled = file.getBoolean("general.notice_enabled", true);
         config.errors = file.errors();
         return config;
     }
@@ -272,11 +267,6 @@ public final class ClientConfig {
     /** @return how many particles may be drawn per 1/20 second. */
     public int particleLimit() {
         return this.particleLimit;
-    }
-
-    /** @return whether MerlinLib's own join notices are shown in chat */
-    public boolean noticeEnabled() {
-        return this.noticeEnabled;
     }
 
     /** @return whether a very large health bar is drawn as one heart plus the numbers */

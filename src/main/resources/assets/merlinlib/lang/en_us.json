@@ -77,7 +77,6 @@
   "merlinlib.notice.config_ui": "MerlinLib: the switches are in the mod configuration screen, which on Forge needs Cloth Config API or Jupiter. This notice can be switched off in the configuration.",
   "message.merlinlib.config.needs_screen": "MerlinLib: the visual configuration screen needs Cloth Config API or Jupiter, and neither is installed. Edit config/MerlinLib/client.toml instead.",
   "merlinlib.configuration.title": "MerlinLib settings",
-  "merlinlib.configuration.general": "General",
   "merlinlib.configuration.hud": "HUD",
   "merlinlib.configuration.floating_text": "Damage numbers",
   "merlinlib.configuration.particles": "Particles",
@@ -87,8 +86,6 @@
   "merlinlib.configuration.tools": "Toolkit",
   "merlinlib.configuration.content": "Content",
   "merlinlib.configuration.notices": "Join notice",
-  "merlinlib.configuration.general.notice_enabled": "MerlinLib's own join notice",
-  "merlinlib.configuration.general.notice_enabled.tooltip": "Show MerlinLib's own join notice in chat. Business mods' notices are switched on the join notice page.",
   "merlinlib.configuration.hud.crosshair_damage": "Damage number at the crosshair",
   "merlinlib.configuration.hud.crosshair_damage.tooltip": "Show the listed damage of the weapon you just used near the crosshair.",
   "merlinlib.configuration.hud.crosshair_damage_ticks": "Crosshair number duration (ticks)",
@@ -154,10 +151,11 @@
   "merlinlib.configuration.notices.open": "Join notice…",
   "merlinlib.configuration.notices.open.tooltip": "Which mods may send a join notice",
   "gui.merlinlib.notices.title": "Join notice",
-  "gui.merlinlib.notices.open": "Join notice…",
   "gui.merlinlib.notices.enabled": "All join notices",
   "gui.merlinlib.notices.empty": "No business mod has a join notice to configure",
   "gui.merlinlib.notices.save": "Save",
   "gui.merlinlib.notices.hint": "A change applies on the next join; the per mod switches live in config/MerlinLib/notices.toml",
-  "gui.merlinlib.notices.more": "%s more mod(s) are not shown"
+  "gui.merlinlib.notices.more": "%s more mod(s) are not shown",
+  "gui.merlinlib.notices.on": "On",
+  "gui.merlinlib.notices.off": "Off"
 }

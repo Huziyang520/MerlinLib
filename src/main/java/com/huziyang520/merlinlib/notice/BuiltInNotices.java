@@ -3,7 +3,6 @@ package com.huziyang520.merlinlib.notice;
 import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.api.MerlinApi;
 import com.huziyang520.merlinlib.api.NoticeMode;
-import com.huziyang520.merlinlib.config.ConfigManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
@@ -26,19 +25,16 @@ public final class BuiltInNotices {
     /**
      * Registers the library's own notices.
      *
-     * <p>Called from the mod constructor after the switches have been read, because the default it declares
-     * depends on them.
+     * <p>Registered as a notice rather than as a plain chat message, so the server's switches - the global
+     * one in {@code server.toml} and MerlinLib's own row in {@code notices.toml}, which the join notice
+     * page edits - apply to it exactly like they apply to a business mod's notice. Nothing is checked here:
+     * the switches are read when the notice would be sent, so a change takes effect on the next join.
  */
     public static void register() {
-        boolean enabled = ConfigManager.client().noticeEnabled();
         MerlinApi.notices().register(
                 CONFIG_UI,
                 NoticeMode.ONCE_PER_SAVE,
                 Component.translatable("merlinlib.notice.config_ui"),
-                enabled);
-        if (!enabled) {
-            Constants.LOG.info("[MerlinLib] the notice about the rebuilt configuration screen is switched "
-                    + "off (client.toml: general.notice_enabled = false)");
-        }
+                true);
     }
 }

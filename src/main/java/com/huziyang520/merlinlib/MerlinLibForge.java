@@ -64,7 +64,10 @@ public class MerlinLibForge {
         // The configuration has to be read before the content files are, because the server switches
         // decide whether the config file enchantments are registered at all.
         ConfigManager.reload();
-        // After the switches, not before: the notice's own default is the client side one.
+        // The one-off imports of the join notice switches run before the first notice is registered, so an
+        // old general.notice_enabled has already become MerlinLib's row of notices.toml by the time it counts.
+        com.huziyang520.merlinlib.config.NoticeSettings.init();
+        // After the switches, not before: the notice's switches are read when it would be sent.
         com.huziyang520.merlinlib.notice.BuiltInNotices.register();
         widenAttributeCeilings();
         MerlinApi.lifecycle().onServerStarting(SmeltingLookup::initialize);
