@@ -11,18 +11,6 @@ import java.util.List;
 
 /**
  * Fluent description of one potion.
- *
- * <p>Effects are declared as {@link ResourceLocation}s rather than {@code Holder}s on purpose: the
- * effect registry is only populated after every mod constructor has run, so the holder can only be
- * resolved when the potion itself is registered. Resolving late keeps the api call order irrelevant.
- *
- * <p>The vanilla naming convention is {@code <effect>}, {@code long_<effect>} and
- * {@code strong_<effect>}; {@link #variants()} generates all three from a single declaration.
- *
- * <p>1.20.1 note: {@code new Potion(String, MobEffectInstance...)} still exists and is deprecated in
- * favour of the holder based constructor that arrived with the holder based registry. The deprecated
- * one is used deliberately - it is the only one that works on this version, and using the registry
- * lookup instead would resolve the potion's own holder during the registry event, which is too early.
  */
 public final class PotionBuilder {
 
@@ -56,7 +44,7 @@ public final class PotionBuilder {
      * @param effectId      the effect to apply
      * @param durationTicks how long it lasts
      * @param amplifier     0 for level I, 1 for level II, and so on
-     */
+ */
     public PotionBuilder effect(ResourceLocation effectId, int durationTicks, int amplifier) {
         this.specs.add(new EffectSpec(effectId, null, durationTicks, amplifier));
         return this;
@@ -91,7 +79,7 @@ public final class PotionBuilder {
     /**
      * Also registers the {@code long_} and {@code strong_} variants of this potion, following vanilla
      * duration and amplifier conventions.
-     */
+ */
     public PotionBuilder variants() {
         this.variants = true;
         return this;
@@ -104,7 +92,7 @@ public final class PotionBuilder {
      * @param amplifierBonus   added to every amplifier, used by the {@code strong_} variant
      * @return the instances, in declaration order
      * @throws IllegalStateException when a declared effect id is not in the effect registry
-     */
+ */
     public List<MobEffectInstance> buildInstances(int durationOverride, int amplifierBonus) {
         List<MobEffectInstance> instances = new ArrayList<>(this.specs.size());
         for (EffectSpec spec : this.specs) {
@@ -146,7 +134,7 @@ public final class PotionBuilder {
 
     /**
      * @return the declared effects, for validation before registration.
-     */
+ */
     public List<ResourceLocation> declaredEffectIds() {
         return this.specs.stream().filter(spec -> spec.effectId() != null).map(EffectSpec::effectId).toList();
     }
@@ -155,7 +143,7 @@ public final class PotionBuilder {
      * Registers the potion, and the variants when {@link #variants()} was called.
      *
      * @return the id of the main potion
-     */
+ */
     public ResourceLocation submit() {
         return this.owner.submit(this);
     }

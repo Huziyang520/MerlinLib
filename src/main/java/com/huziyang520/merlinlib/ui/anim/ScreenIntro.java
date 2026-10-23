@@ -2,33 +2,6 @@ package com.huziyang520.merlinlib.ui.anim;
 
 /**
  * The opening animation of a screen: where it is, how big it is and how visible it is, over a short moment.
- *
- * <p>A mod may drive one itself, or ignore the whole thing. It knows nothing about which screen it belongs to,
- * so the same object animates any of them:
- *
- * <pre>{@code
- * ScreenIntro intro = UiAnimation.intro();
- * graphics.pose().translate(intro.offsetX(width), intro.offsetY(height));
- * graphics.pose().scale((float) intro.scale(), (float) intro.scale());
- * }</pre>
- *
- * <h2>Why it is driven by the clock, not by ticks</h2>
- *
- * <p>The first version advanced once per tick and could only be started from a place that ticks. Screens do not
- * tick, and drawing runs many times per tick, so it counted frames and finished several times too fast. Reading
- * the wall clock in {@link #progress()} makes the animation independent of both: a caller asks for the current
- * value whenever it draws, and nothing has to be pumped.
- *
- * <h2>Why it returns offsets rather than drawing</h2>
- *
- * <p>A screen already knows how to draw itself; asking it for its width and height and giving back a
- * translation keeps the animation out of the drawing code, and lets a mod that wants a different effect use the
- * same object with its own transform.
- *
- * <p><b>What changed / 1.20.1 note:</b> nothing in this class. It is a direct port: it never touches a
- * Minecraft type. The one place the 1.20.1 rewrite is visible is the caller - the pose stack on this version is
- * pushed with {@code pushPose()} and popped with {@code popPose()}, where 1.21 called them
- * {@code pushMatrix()} and {@code popMatrix()} - and that imbalance lives in {@code VanillaScreen}, not here.
  */
 public final class ScreenIntro {
 
@@ -55,7 +28,7 @@ public final class ScreenIntro {
      * @param transition     how the screen arrives
      * @param easing         the curve to use
      * @param durationMillis how long it lasts
-     */
+ */
     public ScreenIntro(Transition transition, Easing easing, long durationMillis) {
         this.transition = transition;
         this.easing = easing;
@@ -65,7 +38,7 @@ public final class ScreenIntro {
 
     /**
      * @return an animation that is already over, for a caller that has the feature switched off
-     */
+ */
     public static ScreenIntro finished() {
         // A one millisecond animation started now: by the time anything asks, progress is already 1, so the
         // caller draws the screen at its final size and position without a branch of its own.
@@ -75,7 +48,7 @@ public final class ScreenIntro {
     /**
      * @param kind the caller's choice; any number outside the known ones falls back to the first
      * @return the animation for that choice
-     */
+ */
     public static ScreenIntro of(int kind) {
         return switch (kind) {
             case 1 -> new ScreenIntro(Transition.SLIDE_UP, Easing.EASE_OUT_CUBIC, 220L);
@@ -93,7 +66,7 @@ public final class ScreenIntro {
      * screen silently changed what a tab switch looked like, and the two choices read as one.
      *
      * @return a sideways slide
-     */
+ */
     public static ScreenIntro sideSlide() {
         return new ScreenIntro(Transition.SLIDE_SIDE, Easing.EASE_OUT_CUBIC, 180L);
     }
@@ -116,9 +89,9 @@ public final class ScreenIntro {
 
     /**
      * How opaque the veil drawn over the screen should be, 1 hiding it completely.
-     *
+ *
      * <h2>Why it is a veil and not an alpha</h2>
-     *
+ *
      * <p>The interface is drawn over a graphics object that has no colour multiplier that reaches every
      * widget: every fill and every piece of text takes its own colour, and nothing can scale them all at once.
      * Vanilla widgets are the real problem - they draw themselves, in their own colours, from a place a screen
@@ -126,14 +99,9 @@ public final class ScreenIntro {
      * which is exactly the half-working fade this replaces. Painting a dark veil over the finished frame fades
      * everything that is on screen, the player's own widgets included, and it is the closest thing to a fade the
      * interface allows.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> the wording above only. On 1.21 the frame was drawn through a
-     * {@code GuiGraphicsExtractor}; on 1.20.1 everything goes through a {@code GuiGraphics}, which does have a
-     * {@code setColor} multiplier - but that multiplier is reset by every widget's own draw call and cannot
-     * survive a vanilla button, so the veil is still the only approach that fades the whole frame.
-     *
+ *
      * @return the veil opacity, 0 for a transition that does not fade
-     */
+ */
     public double veil() {
         return this.veil(this.progress());
     }
@@ -141,7 +109,7 @@ public final class ScreenIntro {
     /**
      * @param progress how far the animation has run, 0 to 1
      * @return the veil opacity at that moment
-     */
+ */
     public double veil(double progress) {
         return this.fades() ? 1.0D - progress : 0.0D;
     }
@@ -154,7 +122,7 @@ public final class ScreenIntro {
     /**
      * @param progress how far the animation has run, 0 to 1
      * @return the scale for that moment
-     */
+ */
     public double scale(double progress) {
         if (this.transition != Transition.SCALE_POP) {
             return 1.0D;
@@ -165,7 +133,7 @@ public final class ScreenIntro {
     /**
      * @param width the screen width, for transitions that move the whole screen
      * @return how far the screen is pushed to the right
-     */
+ */
     public int offsetX(int width) {
         return this.offsetX(width, this.progress());
     }
@@ -174,7 +142,7 @@ public final class ScreenIntro {
      * @param width    the screen width, for transitions that move the whole screen
      * @param progress how far the animation has run, 0 to 1
      * @return how far the screen is pushed to the right at that moment
-     */
+ */
     public int offsetX(int width, double progress) {
         if (this.transition != Transition.SLIDE_SIDE) {
             return 0;
@@ -185,7 +153,7 @@ public final class ScreenIntro {
     /**
      * @param height the screen height, for transitions that move the whole screen
      * @return how far the screen is pushed down
-     */
+ */
     public int offsetY(int height) {
         return this.offsetY(height, this.progress());
     }
@@ -194,7 +162,7 @@ public final class ScreenIntro {
      * @param height   the screen height, for transitions that move the whole screen
      * @param progress how far the animation has run, 0 to 1
      * @return how far the screen is pushed down at that moment
-     */
+ */
     public int offsetY(int height, double progress) {
         if (this.transition != Transition.SLIDE_UP) {
             return 0;

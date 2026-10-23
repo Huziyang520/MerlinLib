@@ -12,18 +12,6 @@ import java.util.function.Supplier;
 
 /**
  * Forge implementation of {@link IRegistrationBridge}.
- *
- * <p>Forge freezes its registries before mod constructors run and re-opens them for the length of
- * the registry events, so every value has to go through {@code DeferredRegister}: the supplier is
- * stored now and invoked by Forge while the registry is writable. Calling {@code new Enchantment(..)}
- * or {@code new MobEffect(..)} at mod construction time throws
- * {@code IllegalStateException: Registry is already frozen} - that failure mode was one of the three
- * crash layers documented for the 26.3 line and it is exactly why this bridge exists.
- *
- * <p>One {@code DeferredRegister} is kept per (registry, namespace) pair, because
- * {@code DeferredRegister.create(registry, namespace)} derives the final id from the namespace.
- * The namespace comes from the id the caller passed, so a downstream mod can register under its own
- * namespace through MerlinLib.
  */
 public final class ForgeRegistrationBridge implements IRegistrationBridge {
 
@@ -40,7 +28,7 @@ public final class ForgeRegistrationBridge implements IRegistrationBridge {
      * Remembers the mod event bus and flushes every register that was created before it arrived.
      *
      * @param loaderContext the Forge mod event bus
-     */
+ */
     @Override
     public void bootstrap(Object loaderContext) {
         if (!(loaderContext instanceof IEventBus bus)) {
@@ -63,7 +51,7 @@ public final class ForgeRegistrationBridge implements IRegistrationBridge {
      * @param registry  the target registry
      * @param namespace the namespace entries are created under
      * @param <T>       registry element type
-     */
+ */
     @SuppressWarnings("unchecked")
     private static <T> DeferredRegister<T> deferred(Registry<T> registry, String namespace) {
         String key = registry.key().location() + "@" + namespace;

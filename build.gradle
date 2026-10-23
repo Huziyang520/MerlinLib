@@ -12,6 +12,7 @@
 plugins {
     id 'eclipse'
     id 'idea'
+    id 'maven-publish'
     id 'net.minecraftforge.gradle' version '[6.0.24,6.2)'
 }
 
@@ -309,4 +310,14 @@ tasks.named('jar', Jar).configure {
     }
     // ForgeGradle 6 remaps the compiled jar from official names to SRG for the 1.20.1 runtime.
     finalizedBy 'reobfJar'
+}
+
+// publishToMavenLocal, for a dependent mod that wants the library from a local repository.
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            artifactId = "${mod_id}-forge-${minecraft_version}"
+            from components.java
+        }
+    }
 }

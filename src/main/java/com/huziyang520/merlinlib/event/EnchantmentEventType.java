@@ -9,22 +9,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A type safe key for one kind of enchantment event, and the switch that makes dispatch cheap.
- *
- * <h2>The bit</h2>
- *
- * <p>Every type owns one bit. The dispatcher keeps a mask of the types that have at least one callback, and a
- * trigger checks its own bit before doing anything else - building a scan of six slots on every attack when
- * nobody listens to attacks is exactly the kind of cost a library must not add. Types are created as the
- * library and its dependents are initialised, so the number of types is bounded by the mods installed, not by
- * gameplay.
- *
- * <h2>The relevant slots</h2>
- *
- * <p>A type also declares which equipment slots make sense for it. A mining event has no reason to look at a
- * chestplate, and a projectile event is dispatched from a weapon snapshot rather than from the wearer at all.
- * The scanner uses this to skip slots it would otherwise read.
- *
- * @param <E> the event type this key stands for
  */
 public final class EnchantmentEventType<E extends EnchantmentEvent> {
 
@@ -55,7 +39,7 @@ public final class EnchantmentEventType<E extends EnchantmentEvent> {
      * @param eventClass the event class, kept so a dispatch can be checked against it
      * @param <E>        the event type
      * @return the new type
-     */
+ */
     public static <E extends EnchantmentEvent> EnchantmentEventType<E> create(ResourceLocation id, Class<E> eventClass) {
         return new EnchantmentEventType<>(id, eventClass);
     }
@@ -70,7 +54,7 @@ public final class EnchantmentEventType<E extends EnchantmentEvent> {
      * @param id  the id
      * @param <E> the event type, unchecked on purpose
      * @return the new type
-     */
+ */
     @SuppressWarnings("unchecked")
     public static <E extends EnchantmentEvent> EnchantmentEventType<E> create(ResourceLocation id) {
         return (EnchantmentEventType<E>) new EnchantmentEventType<>(id, EnchantmentEvent.class);
@@ -105,7 +89,7 @@ public final class EnchantmentEventType<E extends EnchantmentEvent> {
      * Narrows the slots this type looks at.
      *
      * @param slots the slots to scan, must not be empty
-     */
+ */
     public void setRelevantSlots(EnumSet<EquipmentSlot> slots) {
         if (slots.isEmpty()) {
             throw new IllegalArgumentException("[MerlinLib] an event type cannot have an empty slot set");

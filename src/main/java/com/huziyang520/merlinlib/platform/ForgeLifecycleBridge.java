@@ -15,13 +15,6 @@ import java.util.function.Consumer;
 
 /**
  * Forge implementation of {@link ILifecycleBridge}.
- *
- * <p>EventBus is 6.2.x on 1.20.1, so the classic {@code MinecraftForge.EVENT_BUS.addListener(method
- * reference)} form is correct here. The EventBus 7 rule ("only one listener per class, use the
- * event class's own BUS") applies from 1.21.8 onwards and does not apply to this line.
- *
- * <p>Callbacks are collected in lists because several mods may register for the same moment, and
- * bootstrap installs the four Forge listeners exactly once.
  */
 public final class ForgeLifecycleBridge implements ILifecycleBridge {
 
@@ -74,9 +67,7 @@ public final class ForgeLifecycleBridge implements ILifecycleBridge {
     }
 
     /**
-     * {@code ServerAboutToStartEvent} is the earliest moment the server object exists, which is the
-     * 1.20.1 equivalent of 26.3's "before the data packs are read".
-     */
+ */
     private void handleServerAboutToStart(ServerAboutToStartEvent event) {
         MinecraftServer server = event.getServer();
         for (Consumer<MinecraftServer> callback : startingCallbacks) {

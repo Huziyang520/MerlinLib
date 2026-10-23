@@ -8,28 +8,17 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
- * Tiny reader for the TOML subset MerlinLib writes: comments, blank lines, {@code [section]} headers
- * and {@code key = value} pairs of booleans, integers, floats and quoted strings.
- *
- * <p>Why not a full TOML library: the 26.3 line could not use one because Fabric did not ship a TOML
- * parser. Forge 1.20.1 does ship night-config, and this project has it on the compile classpath for
- * exactly that reason, but the file format below is a strict subset of TOML and the writer has to be
- * able to insert a key into an existing section without rewriting the file, which is not something
- * night-config exposes. The self contained reader stayed.
- *
- * <p>Files are only ever written when missing, never rewritten wholesale: hand written comments are
- * never lost. Reading problems are collected as {@link ContentError}s and the affected key silently
- * falls back to its default, so one typo cannot stop the game from starting.
- *
- * <p>This class is the default {@link ConfigReader}: when the Jupiter config library is installed the
- * switches are read from its container instead (see {@link JupiterBackend}), and the files described
- * here are only ever touched once, to import them.
+ * Reader and writer of the small, commented TOML subset MerlinLib keeps its switches in: comments,
+ * blank lines, {@code [section]} headers and {@code key = value} pairs of booleans, integers, floats
+ * and strings.
  */
 public final class TomlFile implements ConfigReader {
 
@@ -48,7 +37,7 @@ public final class TomlFile implements ConfigReader {
      * @param path     file to read
      * @param defaults content written when the file is missing
      * @return the parsed view, never {@code null} even when the file is unreadable
-     */
+ */
     public static TomlFile read(Path path, String defaults) {
         TomlFile file = new TomlFile(path);
         if (!Files.exists(path)) {
@@ -70,9 +59,9 @@ public final class TomlFile implements ConfigReader {
      * Writes selected values back into an existing file, in place.
      *
      * <p>Only the values named in {@code overrides} are touched: every comment, blank line and order is
-     * kept, so a value can be stored without destroying the documentation the file exists to carry. A key
-     * that is not in the file yet is appended, under its section header, which is what makes a file written
-     * by an older version gain new options without being reset.
+     * kept, so saving one switch never destroys the documentation the file
+     * exists to carry. A key that is not in the file yet is appended, under its section header, which is
+     * what makes a file written by an older version gain new options without being reset.
      *
      * <p>Keys are addressed the same way as when reading: {@code section.key}, or just {@code key} for a
      * value before any section header.
@@ -80,7 +69,7 @@ public final class TomlFile implements ConfigReader {
      * @param path      the file to update, created from {@code defaults} when missing
      * @param defaults  the template written when the file does not exist yet
      * @param overrides the values to replace, keyed by {@code section.key}
-     */
+ */
     public static void rewrite(Path path, String defaults, Map<String, String> overrides) {
         if (overrides.isEmpty()) {
             return;
@@ -144,7 +133,7 @@ public final class TomlFile implements ConfigReader {
      * @param lines   the file's lines, modified in place
      * @param section the section name, empty for a key before any header
      * @param line    the complete {@code key = value} line to insert
-     */
+ */
     private static void insert(List<String> lines, String section, String line) {
         if (section.isEmpty()) {
             lines.add(0, line);
@@ -179,6 +168,107 @@ public final class TomlFile implements ConfigReader {
             insertAt = index + 1;
         }
         lines.add(insertAt, line);
+    }
+
+    /**
+     * Replaces a file with a fresh copy of a template, carrying the given values over.
+     *
+     * <p>Used by the layout migrations, which have to be able to drop a whole section: {@link #rewrite}
+     * only ever replaces or adds single keys and leaves everything else exactly as it was, which is right
+     * for a normal save but wrong when an option no longer exists.
+     *
+     * @param path     the file to replace, created when missing
+     * @param defaults the template to write
+     * @param values   the values to carry over, keyed by {@code section.key}; unknown keys are ignored
+ */
+    public static void rebuild(Path path, String defaults, Map<String, String> values) {
+        write(path, defaults);
+        rewrite(path, defaults, values);
+    }
+
+    /**
+     * Deletes keys from a file, together with the comment lines that introduce them.
+     *
+     * <p>Used for a value a build no longer has: {@link #rewrite} can only replace or add a line, so a key
+     * that must disappear would otherwise stay in the file for good. Everything else is left alone.
+     *
+     * @param path the file to edit, ignored when it is missing
+     * @param keys the keys to delete, as {@code section.key}
+ */
+    public static void remove(Path path, Set<String> keys) {
+        if (keys.isEmpty() || !Files.isRegularFile(path)) {
+            return;
+        }
+        List<String> lines;
+        try {
+            lines = new ArrayList<>(Files.readAllLines(path, StandardCharsets.UTF_8));
+        } catch (IOException exception) {
+            return;
+        }
+
+        List<Integer> doomed = new ArrayList<>();
+        String section = "";
+        for (int index = 0; index < lines.size(); index++) {
+            String trimmed = lines.get(index).trim();
+            if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+                section = trimmed.substring(1, trimmed.length() - 1).trim();
+                continue;
+            }
+            if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+                continue;
+            }
+            int equals = trimmed.indexOf('=');
+            if (equals < 0) {
+                continue;
+            }
+            String key = trimmed.substring(0, equals).trim();
+            String full = section.isEmpty() ? key : section + "." + key;
+            if (!keys.contains(full)) {
+                continue;
+            }
+            doomed.add(index);
+            for (int above = index - 1; above >= 0 && lines.get(above).trim().startsWith("#"); above--) {
+                doomed.add(above);
+            }
+        }
+        if (doomed.isEmpty()) {
+            return;
+        }
+        doomed.sort(Comparator.reverseOrder());
+        for (int index : doomed) {
+            lines.remove(index);
+        }
+        try {
+            Files.write(path, lines, StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            // A read only file must not break startup; the stale line simply stays.
+        }
+    }
+
+    /**
+     * @param template the commented template of a configuration file
+     * @return every key the template declares, as {@code section.key}
+ */
+    public static Set<String> keysOf(String template) {
+        Set<String> keys = new java.util.LinkedHashSet<>();
+        String section = "";
+        for (String raw : template.split("\\R")) {
+            String line = raw.trim();
+            if (line.isEmpty() || line.startsWith("#")) {
+                continue;
+            }
+            if (line.startsWith("[") && line.endsWith("]")) {
+                section = line.substring(1, line.length() - 1).trim();
+                continue;
+            }
+            int equals = line.indexOf('=');
+            if (equals < 0) {
+                continue;
+            }
+            String key = line.substring(0, equals).trim();
+            keys.add(section.isEmpty() ? key : section + "." + key);
+        }
+        return keys;
     }
 
     private static void write(Path path, String content) {
@@ -261,7 +351,7 @@ public final class TomlFile implements ConfigReader {
             return fallback;
         }
         try {
-            int parsed = Integer.decode(value);
+            int parsed = Integer.decode(value.startsWith("0x") || value.startsWith("0X") ? value : value);
             if (parsed < min || parsed > max) {
                 this.invalid(key, "an integer in [" + min + ", " + max + "]", value);
                 return fallback;
@@ -293,18 +383,16 @@ public final class TomlFile implements ConfigReader {
 
     /**
      * Reads a colour written either as {@code 0xRRGGBB}, {@code #RRGGBB} or a palette name.
-     */
+ */
     public int getColor(String key, int fallback) {
         String value = this.values.get(key);
         if (value == null) {
             return fallback;
         }
-        Optional<Integer> parsed = MerlinColor.parse(value);
-        if (parsed.isPresent()) {
-            return parsed.get();
-        }
-        this.invalid(key, "a colour such as 0xRRGGBB, #RRGGBB or a palette name", value);
-        return fallback;
+        return MerlinColor.parse(value).orElseGet(() -> {
+            this.invalid(key, "a colour such as 0xRRGGBB, #RRGGBB or a palette name", value);
+            return fallback;
+        });
     }
 
     public String getString(String key, String fallback) {
@@ -313,7 +401,7 @@ public final class TomlFile implements ConfigReader {
 
     /**
      * @return problems found while reading; the affected options fell back to their defaults.
-     */
+ */
     public List<ContentError> errors() {
         return List.copyOf(this.errors);
     }
@@ -323,14 +411,8 @@ public final class TomlFile implements ConfigReader {
     }
 
     /**
-     * Every value the file holds, keyed by {@code section.name}.
-     *
-     * <p>Added for the one-off import into another backend: reading a file key by key would mean keeping
-     * a second list of the options in step with this one, and a key added later would silently be left
-     * behind. The map is a copy and unmodifiable, so a caller cannot write through it.
-     *
-     * @return the parsed values, in file order
-     */
+     * @return every value the file holds, keyed by {@code section.key}, in file order
+ */
     public Map<String, String> values() {
         return java.util.Collections.unmodifiableMap(new LinkedHashMap<>(this.values));
     }

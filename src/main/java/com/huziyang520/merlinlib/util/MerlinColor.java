@@ -7,20 +7,6 @@ import java.util.Optional;
 
 /**
  * Colour helpers for potions and effects.
- *
- * <p>Two things are provided:
- * <ul>
- *     <li>a small palette so authors can write {@code MerlinColor.RED} instead of a magic number</li>
- *     <li>{@link #gradient(int)} which derives the highlight and shadow tones of a base colour, so a
- *     potion liquid does not look like a flat block of colour</li>
- * </ul>
- *
- * <p>All values are packed ARGB with a fully opaque alpha channel, matching what
- * {@code MobEffect}/{@code Potion} expect.
- *
- * <p>Loader independent: this class was moved over from the 26.3 line unchanged apart from
- * {@link #mix}, which used {@code Math.clamp} - a Java 21 addition - and now clamps by hand so the
- * file compiles for Java 17.
  */
 public final class MerlinColor {
 
@@ -75,7 +61,7 @@ public final class MerlinColor {
      *
      * @param rgb the red, green and blue channels
      * @return packed ARGB with alpha 0xFF
-     */
+ */
     public static int rgb(int rgb) {
         return 0xFF000000 | (rgb & 0xFFFFFF);
     }
@@ -87,7 +73,7 @@ public final class MerlinColor {
      *
      * @param value the textual colour
      * @return the packed colour, empty when the text cannot be understood
-     */
+ */
     public static Optional<Integer> parse(String value) {
         if (value == null || value.isBlank()) {
             return Optional.empty();
@@ -124,7 +110,7 @@ public final class MerlinColor {
      *
      * @param hex the hex digits, without any prefix
      * @return the packed colour, with the alpha kept when eight digits were given
-     */
+ */
     private static int parseHex(String hex) {
         // Long, not Integer: eight hex digits such as 0xFFFFFFFF exceed Integer.MAX_VALUE and would
         // make Integer.parseInt throw, which silently turned a valid colour into a config warning.
@@ -139,7 +125,7 @@ public final class MerlinColor {
      *
      * @param base the base colour
      * @return {@code [highlight, base, shadow]}
-     */
+ */
     public static int[] gradient(int base) {
         return new int[] { brighten(base, 0.28F), base, darken(base, 0.32F) };
     }
@@ -159,7 +145,7 @@ public final class MerlinColor {
      * @param to     colour at {@code t = 1}
      * @param t      blend factor, clamped to {@code [0, 1]}
      * @return the blended colour, alpha taken from {@code from}
-     */
+ */
     public static int mix(int from, int to, float t) {
         float factor = clamp(t, 0.0F, 1.0F);
         int r = channel(from, 16) + Math.round((channel(to, 16) - channel(from, 16)) * factor);

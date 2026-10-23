@@ -21,63 +21,17 @@ import java.util.stream.Collectors;
 /**
  * Client local command macros: named command lists bound to a combination of keys, stored next to the
  * other MerlinLib files so they follow this computer rather than the server.
- *
- * <h2>Keys</h2>
- *
- * <p>A macro is bound to a {@link KeyCombo}, not to a single key: any number of keys held together. The
- * file stores them as a list, and still reads the older single {@code "key"} field, so a file written by an
- * earlier version keeps working.
- *
- * <h2>Running</h2>
- *
- * <p>Running a macro means sending its commands as the player through the vanilla command path, exactly as
- * if they had been typed: permissions, command syntax and server side checks all apply unchanged.
- *
- * <p>The bindings themselves live in {@link HotkeyRegistry}; this class owns the data and re-registers the
- * bindings whenever the data changes.
- *
- * <h2>1.20.1: the stored key codes had to be migrated once, and this is where that happens</h2>
- *
- * <p>This is the most dangerous part of the port, because getting it wrong is silent: a macro whose key
- * codes mean something different loads without error, shows a plausible key name, and simply never fires
- * (or fires on the wrong key).</p>
- *
- * <p>The 26.3 line stored <b>USB HID usage ids</b> (escape 41, enter 40, keypad enter 88, left 80,
- * right 79). It had to, because that was the encoding its key events carried. On 1.20.1 the key event
- * carries <b>GLFW</b> codes (escape 256, enter 257, keypad enter 335, left 263, right 262), and
- * {@code InputConstants} no longer ships the HID table at all - so the mapping cannot be looked up, it
- * has to be written down. {@link #HID_TO_GLFW} is that table, covering the keys a macro can realistically
- * be bound to.</p>
- *
- * <p>The migration is done <b>here, on read</b>, and not in the macro screen. This is the only place that
- * can tell a file written by 26.3 from one written by this build, so doing it here means every reader of
- * {@code Macro.keys()} - the screen, the hotkey layer, a future exporter - is correct by construction. A
- * reader that had to remember to convert would eventually be written without it.</p>
- *
- * <p>How the two are told apart, and why it is safe: the file carries a {@code codec} marker once this
- * build has written it. A file <b>without</b> the marker was written by 26.3 (or is older still), so its
- * codes are converted and the marker is added. A file <b>with</b> the marker is left exactly as it is.
- * The marker is what makes this a one-off rather than a conversion applied on every load, which would
- * re-map an already-migrated code into nonsense the second time the game started.</p>
- *
- * <p>A code the table does not know is kept as it is rather than guessed at, and reported in the log: an
- * unusual binding is better left visible and possibly wrong than silently changed to a key the player
- * never chose.</p>
  */
 public final class MacroStorage {
 
-    /**
-     * One macro.
-     *
-     * @param name     the label shown in the macro screen
-     * @param keys     the GLFW key codes that have to be held together
-     * @param commands the commands to run, one per line, without a leading slash
-     */
+/**
+ * One macro.
+ */
     public record Macro(String name, List<Integer> keys, List<String> commands) {
 
         /**
          * @return the combination these keys form, empty when the macro is not bound
-         */
+ */
         public KeyCombo combo() {
             return KeyCombo.of(keys).orElseGet(KeyCombo::of);
         }
@@ -85,7 +39,7 @@ public final class MacroStorage {
         /**
          * @param newKeys the new key codes
          * @return a copy of this macro bound to those keys
-         */
+ */
         public Macro withKeys(List<Integer> newKeys) {
             return new Macro(this.name, List.copyOf(newKeys), this.commands);
         }
@@ -101,10 +55,10 @@ public final class MacroStorage {
      * <p>Any file without this marker predates the marker, so its codes are HID and are converted on
      * read. See the class Javadoc for why the marker - rather than a heuristic on every load - is what
      * makes the conversion a one-off.
-     */
+ */
     private static final String CODEC_GLFW = "glfw";
 
-    /** The marker 26.3 files implicitly carried, written out so the intent is readable in the file. */
+    /** Marker for a key written as HID codes; written out so the intent is readable in the file. */
     private static final String CODEC_HID = "hid";
 
     /**
@@ -114,7 +68,7 @@ public final class MacroStorage {
      * The table is deliberately conservative: it covers letters, digits, the function row, the modifier
      * and navigation keys, and the numpad. A code outside it is left alone and logged rather than
      * guessed at - see the class Javadoc.
-     */
+ */
     private static final java.util.Map<Integer, Integer> HID_TO_GLFW = buildHidTable();
 
     private MacroStorage() {
@@ -130,7 +84,7 @@ public final class MacroStorage {
      * whose later lines silently undo earlier ones cannot be checked by reading it.
      *
      * @return the mapping, immutable
-     */
+ */
     private static java.util.Map<Integer, Integer> buildHidTable() {
         java.util.Map<Integer, Integer> table = new java.util.HashMap<>();
 
@@ -235,7 +189,7 @@ public final class MacroStorage {
      * Replaces every macro and re-registers the bindings.
      *
      * @param macros the new macros
-     */
+ */
     public static void replaceAll(List<Macro> macros) {
         MACROS.clear();
         MACROS.addAll(macros);
@@ -244,7 +198,7 @@ public final class MacroStorage {
 
     /**
      * Appends one unbound, empty macro, which is what the "new macro" button does.
-     */
+ */
     public static void add() {
         MACROS.add(new Macro("Macro " + (MACROS.size() + 1), List.of(), List.of()));
         rebind();
@@ -254,7 +208,7 @@ public final class MacroStorage {
      * Removes one macro.
      *
      * @param index the index to remove, ignored when out of range
-     */
+ */
     public static void remove(int index) {
         if (index >= 0 && index < MACROS.size()) {
             MACROS.remove(index);
@@ -271,7 +225,7 @@ public final class MacroStorage {
      * <p>The file is always written with the {@code codec} marker, because everything this method writes
      * is already in GLFW codes. That marker is what stops the migration in {@link #load()} from running a
      * second time on the next launch.
-     */
+ */
     public static void save() {
         StoredFile file = new StoredFile();
         file.codec = CODEC_GLFW;
@@ -294,10 +248,7 @@ public final class MacroStorage {
     /**
      * Reads the macros from disk, migrating the key codes when the file predates this build, and
      * registers their bindings.
-     *
-     * <p>The file may be either shape: a bare array (what 26.3 wrote) or the object with a {@code codec}
-     * marker that this build writes. Both are accepted so an upgrade does not lose anything.
-     */
+ */
     public static void load() {
         MACROS.clear();
         boolean migrated = false;
@@ -310,7 +261,6 @@ public final class MacroStorage {
 
                 com.google.gson.JsonElement root = com.google.gson.JsonParser.parseString(json);
                 if (root.isJsonArray()) {
-                    // The 26.3 shape: a bare array, which means HID codes.
                     stored = GSON.fromJson(root, new TypeToken<List<StoredMacro>>() { }.getType());
                 } else if (root.isJsonObject()) {
                     StoredFile file = GSON.fromJson(root, StoredFile.class);
@@ -353,7 +303,7 @@ public final class MacroStorage {
      *
      * @param macro the macro as it was stored
      * @return the same macro with GLFW codes
-     */
+ */
     private static Macro migrate(Macro macro) {
         List<Integer> converted = new ArrayList<>(macro.keys().size());
         for (Integer code : macro.keys()) {
@@ -380,7 +330,7 @@ public final class MacroStorage {
      * be completed unambiguously, and the player should see that before wondering why a key does not work.
      *
      * @return every key code involved in a clash
-     */
+ */
     public static Set<Integer> conflictingKeys() {
         Set<Integer> clashing = new HashSet<>();
         for (int first = 0; first < MACROS.size(); first++) {
@@ -404,7 +354,7 @@ public final class MacroStorage {
      *
      * @param keyCode the GLFW key code, negative for unbound
      * @return the display name
-     */
+ */
     public static String keyDisplayName(int keyCode) {
         return HotkeyRegistry.keyName(keyCode);
     }
@@ -413,7 +363,7 @@ public final class MacroStorage {
      * Advances the hotkey layer by one client tick.
      *
      * @param minecraft the client
-     */
+ */
     public static void tick(Minecraft minecraft) {
         if (minecraft.player == null) {
             return;
@@ -424,7 +374,7 @@ public final class MacroStorage {
     /**
      * @param commands the commands
      * @return the commands joined for display, one per line
-     */
+ */
     public static String describe(List<String> commands) {
         return commands.stream().filter(command -> !command.isBlank()).collect(Collectors.joining(" / "));
     }
@@ -445,7 +395,7 @@ public final class MacroStorage {
      * Runs one macro as the player.
      *
      * @param macro the macro to run
-     */
+ */
     private static void run(Macro macro) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null) {
@@ -464,7 +414,7 @@ public final class MacroStorage {
      *
      * <p>{@code codec} names the key code encoding. Its absence means the file predates this build and
      * its codes are USB HID; see the class Javadoc.
-     */
+ */
     private static final class StoredFile {
         private String codec;
         private List<StoredMacro> macros;
@@ -475,7 +425,7 @@ public final class MacroStorage {
      *
      * <p>{@code key} is the field earlier versions wrote; it is still read so upgrading does not lose a
      * binding, and it is never written back.
-     */
+ */
     private static final class StoredMacro {
         private String name;
         private List<Integer> keys;

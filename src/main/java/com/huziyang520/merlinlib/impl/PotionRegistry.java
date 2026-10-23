@@ -17,15 +17,6 @@ import java.util.Set;
 
 /**
  * Registration state of every potion MerlinLib knows about.
- *
- * <p>Variant generation is centralised here so the {@code long_} / {@code strong_} naming, durations
- * and amplifiers stay consistent no matter which api path created the potion.
- *
- * <p>1.20.1 note: brewing recipes for these potions are not registered here. The 26.3 line relied on
- * the potion registry being data driven; on this version a potion is only reachable in game once a
- * brewing recipe points at it, and that is a separate registration the library does not do on the
- * caller's behalf (nothing in this project derives a potion, so adding one here would be inventing
- * behaviour the version does not imply).
  */
 public final class PotionRegistry implements PotionApi {
 
@@ -64,7 +55,7 @@ public final class PotionRegistry implements PotionApi {
     /**
      * @param id potion id
      * @return {@code true} when the potion was disabled and is therefore not registered at all.
-     */
+ */
     public boolean isDisabled(ResourceLocation id) {
         return this.disabled.contains(id);
     }
@@ -74,7 +65,7 @@ public final class PotionRegistry implements PotionApi {
      *
      * @param id potion id
      * @return {@code true} when the state changed
-     */
+ */
     public boolean disable(ResourceLocation id) {
         return this.disabled.add(id);
     }
@@ -84,7 +75,7 @@ public final class PotionRegistry implements PotionApi {
      *
      * @param builder the declaring builder
      * @return the id of the main potion
-     */
+ */
     public ResourceLocation submit(PotionBuilder builder) {
         ResourceLocation id = builder.id();
         if (this.isDisabled(id)) {

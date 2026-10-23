@@ -2,11 +2,6 @@ package com.huziyang520.merlinlib.platform.services;
 
 /**
  * Loader specific bridge for looking up a mod's display name.
- *
- * <p>A mod id such as {@code practical_enchantments} is not something to put in front of a player when
- * the loader already knows the name the mod ships with.
- *
- * <p>There is no hook to install for this one, so {@link #bootstrap(Object)} does nothing.
  */
 public interface IModNameBridge extends ILoaderBridge {
 
@@ -15,6 +10,6 @@ public interface IModNameBridge extends ILoaderBridge {
      *
      * @param modId the mod id
      * @return the display name, or the id itself when the mod is unknown to the loader
-     */
+ */
     String modName(String modId);
 }

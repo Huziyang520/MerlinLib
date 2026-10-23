@@ -7,12 +7,6 @@ import net.minecraft.resources.ResourceLocation;
 
 /**
  * Small helpers for reading and writing the json fragments the configuration format is made of.
- *
- * <p>On the 26.3 line this class also <em>built</em> the vanilla {@code description} component and the
- * generated datapack's tag references. Neither has a destination on 1.20.1 - the tooltip reads a
- * translation key and {@code supported_items} is evaluated in code - so what is left is the two
- * things that are still genuinely about json: reading an item reference out of a file, and building a
- * reference for the samples the mod writes.
  */
 public final class EnchantmentJson {
 
@@ -27,7 +21,7 @@ public final class EnchantmentJson {
      *
      * @param value the reference as written
      * @return the json form, or {@code null} when there is nothing to wrap
-     */
+ */
     public static JsonElement tag(String value) {
         if (value == null) {
             return null;
@@ -74,7 +68,7 @@ public final class EnchantmentJson {
      *
      * @param element the json value, may be {@code null}
      * @return the references, in written order; empty when the value is absent or not a reference
-     */
+ */
     public static java.util.List<String> references(JsonElement element) {
         if (element == null || element.isJsonNull()) {
             return java.util.List.of();
@@ -104,7 +98,7 @@ public final class EnchantmentJson {
      *
      * @param element the json value, may be {@code null}
      * @return the first reference, or empty when the value is absent or not a reference
-     */
+ */
     public static java.util.Optional<String> reference(JsonElement element) {
         java.util.List<String> all = references(element);
         return all.isEmpty() ? java.util.Optional.empty() : java.util.Optional.of(all.get(0));
@@ -116,7 +110,7 @@ public final class EnchantmentJson {
      *
      * @param reference the reference, with or without a leading {@code #}
      * @return the id, or empty when it is not a legal identifier
-     */
+ */
     public static java.util.Optional<ResourceLocation> idOf(String reference) {
         if (reference == null || reference.isBlank()) {
             return java.util.Optional.empty();

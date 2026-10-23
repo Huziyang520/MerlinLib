@@ -30,37 +30,6 @@ import java.util.Set;
 
 /**
  * Reads {@code config/MerlinLib/*.json} into immutable enchantment drafts.
- *
- * <h2>What changed from the 26.3 line</h2>
- *
- * <p>The file format did not change at all. What changed is what happens to the result: on 26.3 these
- * drafts were written back out as a generated datapack, so a field the datapack could not express
- * simply travelled through as json. On 1.20.1 they become the constructor arguments of a registered
- * {@code Enchantment}, which means every field has to be a value this version actually has. The
- * reader therefore resolves the two fields that changed type at parse time and reports the one that
- * has no destination:
- *
- * <ul>
- *   <li>{@code slots} is resolved into the slot names the draft maps onto {@code EquipmentSlot}; an
- *       unknown name is reported rather than silently widening the enchantment to every slot</li>
- *   <li>{@code supported_items} / {@code primary_items} / {@code exclusive_set} keep their json shape,
- *       because the draft parses them into item and tag lookups when the enchantment is created</li>
- *   <li>{@code description} is reduced to its {@code translate} value - the only part 1.20.1 has a
- *       place for, since an enchantment's name is a language key on this version</li>
- *   <li>{@code effects} is read and reported as unusable: the numeric effect system it describes
- *       arrives in 1.20.5. A file that declares effects gets a warning naming the id, once, instead
- *       of an enchantment that silently does nothing</li>
- * </ul>
- *
- * <p>Design rules, unchanged: one broken file never stops the others; every failure carries file +
- * json path + expectation; nothing is logged from here, the caller decides how loud to be.
- *
- * <p>Accepted file shapes:
- * <pre>{@code
- * [ { "id": "unbreakable", ... } ]                       // plain array
- * { "enchantments": [ { "id": "unbreakable", ... } ] }    // keyed array (recommended)
- * { "id": "unbreakable", ... }                            // single entry
- * }</pre>
  */
 public final class ContentConfigLoader {
 
@@ -73,7 +42,7 @@ public final class ContentConfigLoader {
      * @param apiEntries    enchantments registered through {@code MerlinApi}
      * @param disabledByApi ids disabled through {@code MerlinApi}
      * @return the effective snapshot, never {@code null}
-     */
+ */
     public static ContentSnapshot load(Collection<EnchantmentDraft> apiEntries, Set<ResourceLocation> disabledByApi) {
         List<ContentError> errors = new ArrayList<>();
         Map<ResourceLocation, EnchantmentDraft> fromConfig = new LinkedHashMap<>();
@@ -265,7 +234,7 @@ public final class ContentConfigLoader {
      * <p>A {@code description} written as a literal {@code text} is accepted and ignored: 1.20.1 looks
      * the name up by key, and a hard coded string would show up untranslated in every language. The
      * documented spelling on this version is {@code translation_key}.
-     */
+ */
     private static String translationKeyField(JsonObject object, ResourceLocation id) {
         JsonElement key = object.get("translation_key");
         if (key != null && key.isJsonPrimitive()) {
@@ -287,7 +256,7 @@ public final class ContentConfigLoader {
      * <p>A name the draft does not recognise is not fatal - the draft falls back to "every slot" - but it
      * almost always means a typo, and an enchantment that quietly applies to everything is far harder to
      * notice than one that reports its own misspelling.
-     */
+ */
     private static void validateSlots(List<String> slots, String file, String path, ResourceLocation id, List<ContentError> errors) {
         for (String slot : slots) {
             String value = slot == null ? "" : slot.trim().toLowerCase(java.util.Locale.ROOT);
@@ -442,7 +411,7 @@ public final class ContentConfigLoader {
      *
      * <p>The two {@code .toml} files are written by {@code ClientConfig}/{@code ServerConfig} themselves
      * when they are first read, so this only writes the content samples.
-     */
+ */
     public static void ensureDirectory() {
         Path root = ConfigDirectory.root();
         try {
@@ -468,7 +437,7 @@ public final class ContentConfigLoader {
      *
      * <p>{@code macros.json} belongs to the macro toolkit ({@code MacroStorage}); anything else added here
      * must be a file MerlinLib itself owns and writes.
-     */
+ */
     private static final Set<String> RESERVED_FILES = Set.of("macros.json");
 
     /**
@@ -478,7 +447,7 @@ public final class ContentConfigLoader {
      * <p>Effects are a code registry, so this file can only recolour or disable an effect that a mod
      * declared in code; it can never create a new one. That boundary is intentional and documented in
      * the README.
-     */
+ */
     private static void readEffectOverrides(Path file, Map<ResourceLocation, EffectOverrides.Entry> into, List<ContentError> errors) {
         String fileName = file.getFileName().toString();
         String text;
@@ -557,7 +526,7 @@ public final class ContentConfigLoader {
      * is compiled for Java 17, and every other string constant in this project is written the same way so a
      * future re-target stays mechanical. Backslashes are doubled where the sample itself has to contain
      * one.
-     */
+ */
     private static final String SAMPLE_EFFECTS =
             "{\n"
             + "  \"_comment\": \"MerlinLib effect overrides. Effects are registered in code by mods; this file can only recolour or disable them.\",\n"
@@ -573,12 +542,7 @@ public final class ContentConfigLoader {
 
     /**
      * The sample enchantment file, written once on first launch.
-     *
-     * <p>{@code _comment_reload} differs from the 26.3 line on purpose: that line told the author to run
-     * {@code /reload}, which re-read the generated datapack there. On 1.20.1 an enchantment is a plain
-     * registry entry created while the game starts, so the honest instruction is a restart. A sample file
-     * that promises a command which does nothing would be worse than no sample at all.
-     */
+ */
     private static final String SAMPLE_ENCHANTMENTS =
             "{\n"
             + "  \"_comment\": \"MerlinLib enchantment definitions. Delete or rename this file to start from scratch.\",\n"

@@ -7,20 +7,6 @@ import java.util.Optional;
 
 /**
  * One action bound to one or more keys that have to be held together.
- *
- * <p>Vanilla's {@code KeyMapping} binds exactly one key, so a combination has to be expressed as a set of
- * keys plus the rule "fire when every key of the set is held and one of them was just pressed". This class
- * is that set: immutable, sorted and de-duplicated, so two combinations that contain the same keys are
- * equal no matter in which order the player pressed them.
- *
- * <p>Ordering matters for firing: a combination that is a subset of a longer one is suppressed while the
- * longer one is held ({@link #isStrictSubsetOf}), which is what lets {@code LEFT} and {@code LEFT + A} coexist
- * without both firing on the same press.
- *
- * <p><b>What changed / 1.20.1 note:</b> nothing. This is a direct port. The 26.3 file was already free of
- * loader and Minecraft imports - it models a combination as plain {@code int} GLFW/HID codes and compares
- * them against a set of pressed codes handed in by the caller - so it ports verbatim. The one thing worth
- * saying is about the codes themselves rather than this class: see {@code MerlinUi}.
  */
 public final class KeyCombo {
 
@@ -36,7 +22,7 @@ public final class KeyCombo {
      *
      * @param keys GLFW key codes; negative values are dropped
      * @return the combination, possibly empty
-     */
+ */
     public static KeyCombo of(int... keys) {
         return new KeyCombo(normalise(keys));
     }
@@ -46,7 +32,7 @@ public final class KeyCombo {
      *
      * @param keys the key codes
      * @return the combination, or empty when there is no usable key
-     */
+ */
     public static Optional<KeyCombo> of(List<Integer> keys) {
         if (keys == null) {
             return Optional.empty();
@@ -91,7 +77,7 @@ public final class KeyCombo {
     /**
      * @param key a GLFW key code
      * @return true when the combination contains that key
-     */
+ */
     public boolean contains(int key) {
         return Arrays.binarySearch(this.keys, key) >= 0;
     }
@@ -99,7 +85,7 @@ public final class KeyCombo {
     /**
      * @param pressed the keys pressed during this tick
      * @return true when at least one of them belongs to this combination
-     */
+ */
     public boolean containsAny(java.util.Set<Integer> pressed) {
         for (int key : this.keys) {
             if (pressed.contains(key)) {
@@ -117,7 +103,7 @@ public final class KeyCombo {
      *
      * @param key the GLFW key code
      * @return the resulting combination
-     */
+ */
     public KeyCombo toggle(int key) {
         if (key < 0) {
             return this;
@@ -146,7 +132,7 @@ public final class KeyCombo {
     /**
      * @param other another combination
      * @return true when every key of this combination is also in the other, and the other has more keys
-     */
+ */
     public boolean isStrictSubsetOf(KeyCombo other) {
         return other.keys.length > this.keys.length && other.supersetOf(this);
     }
@@ -163,7 +149,7 @@ public final class KeyCombo {
     /**
      * @param other another combination
      * @return true when the two combinations share at least one key, which is what makes them clash
-     */
+ */
     public boolean intersects(KeyCombo other) {
         for (int key : this.keys) {
             if (other.contains(key)) {

@@ -2,18 +2,6 @@ package com.huziyang520.merlinlib.ui.anim;
 
 /**
  * Easing curves for interface animation, reachable by any mod.
- *
- * <p>An easing function takes a linear progress in {@code [0, 1]} and returns the value to use instead. The
- * curves are the ones a screen actually needs - nothing overshoots past its target except {@link #EASE_OUT_BACK},
- * which is there for the "pop" an opening window wants - and every one of them ends exactly at {@code 1}, so an
- * animation that is told it has finished lands precisely where it should.
- *
- * <p>Pure functions on doubles: they know nothing about Minecraft, screens or tick rates, which is what makes
- * them usable from anywhere (a mod may drive its own animation with them and never touch the rest of the
- * library).
- *
- * <p><b>What changed / 1.20.1 note:</b> nothing. This is a direct port - the class references no Minecraft
- * type at all, only {@code java.lang.Math}, so the 1.21 to 1.20.1 screen API rewrite cannot reach it.
  */
 public enum Easing {
 
@@ -47,7 +35,7 @@ public enum Easing {
      *
      * <p>The value exceeds {@code 1} in the middle of the curve on purpose: a caller that scales by it will see
      * the window grow a little past its final size and come back, which is the whole effect.
-     */
+ */
     EASE_OUT_BACK {
         @Override
         public double apply(double progress) {
@@ -76,13 +64,13 @@ public enum Easing {
     /**
      * @param progress linear progress, clamped to {@code [0, 1]}
      * @return the eased value
-     */
+ */
     public abstract double apply(double progress);
 
     /**
      * @param progress linear progress, may be outside {@code [0, 1]}
      * @return the eased value for the clamped progress
-     */
+ */
     public final double applyClamped(double progress) {
         return this.apply(Math.max(0.0D, Math.min(1.0D, progress)));
     }

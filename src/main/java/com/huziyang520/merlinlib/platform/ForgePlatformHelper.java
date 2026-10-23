@@ -6,10 +6,6 @@ import net.minecraftforge.fml.loading.FMLLoader;
 
 /**
  * Forge implementation of {@link IPlatformHelper}.
- *
- * <p>1.20.1 still allows the static FML entry points: {@code FMLLoader.isProduction()} is a static
- * method here (the 26.3 line had to move to {@code FMLEnvironment} because the call became
- * instance bound).
  */
 public final class ForgePlatformHelper implements IPlatformHelper {
 

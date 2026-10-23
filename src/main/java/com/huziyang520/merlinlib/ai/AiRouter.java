@@ -11,28 +11,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Collects the mods' AI hooks and answers the three questions for the mixins.
- *
- * <h2>Cost when nobody is listening</h2>
- *
- * <p>{@link #hasHooks()} is a plain boolean read and short circuits the whole path, so a server whose mods do
- * not use the feature never walks a mob list, and a mob that is not considering a player never asks anything.
- * The two questions that can be answered without a scan - targeting and avoiding - are asked directly; only
- * the "actively keep away" question needs to look at nearby players, and that is throttled to once a second
- * per mob so it cannot turn into a pathfinding cost of its own.
- *
- * <h2>Why a copy-on-write list</h2>
- *
- * <p>Registration happens while mods load, but a data pack or a late loader event can register later, and the
- * list is read from mob ticks on the server thread. Copy-on-write keeps a registration from ever being seen
- * half done, and removes nothing.
- *
- * <p>1.20.1 note: direct port. The members this class calls all exist unchanged on this version -
- * {@code Entity#level()}, {@code Level#players()} through {@code EntityGetter}, {@code Entity#distanceToSqr},
- * {@code PathNavigation#isDone()} and {@code PathNavigation#moveTo(double, double, double, double)} - so
- * nothing here is a rename and no mixin behaviour has to differ. The 26.3 line's mixins reach the same three
- * vanilla places on 1.20.1 ({@code Mob#setTarget}, {@code AvoidEntityGoal} and
- * {@code Cat$CatAvoidEntityGoal}), with the cat class at {@code net.minecraft.world.entity.animal.Cat}
- * instead of the {@code .animal.feline} package it moved to later.
  */
 public final class AiRouter {
 
@@ -49,7 +27,7 @@ public final class AiRouter {
      * Registers a hook.
      *
      * @param hook the hook, never {@code null}
-     */
+ */
     public static void register(AiHook hook) {
         HOOKS.add(hook);
         fleeHooks = true;
@@ -69,7 +47,7 @@ public final class AiRouter {
      * @param mob    the mob choosing a target
      * @param target the entity it is considering
      * @return true when some hook refuses the target
-     */
+ */
     public static boolean vetoesTargeting(Mob mob, LivingEntity target) {
         for (AiHook hook : HOOKS) {
             if (!hook.allowsTargeting(mob, target)) {
@@ -83,7 +61,7 @@ public final class AiRouter {
      * @param mob    the mob
      * @param entity the entity it considers avoiding
      * @return true when some hook refuses to let the mob flee
-     */
+ */
     public static boolean vetoesAvoiding(Mob mob, LivingEntity entity) {
         for (AiHook hook : HOOKS) {
             if (!hook.allowsAvoiding(mob, entity)) {
@@ -101,7 +79,7 @@ public final class AiRouter {
      * already charging keeps charging).
      *
      * @param mob the mob
-     */
+ */
     public static void steerAway(Mob mob) {
         for (Player player : mob.level().players()) {
             if (player.isSpectator() || !player.isAlive() || mob.distanceToSqr(player) > 256.0D) {

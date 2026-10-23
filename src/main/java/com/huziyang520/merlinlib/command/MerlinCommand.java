@@ -34,34 +34,6 @@ import java.util.Optional;
 
 /**
  * {@code /merlinlib} diagnostics and helpers.
- *
- * <p>Purpose: make it possible to tell, from inside the game, whether the declared enchantments
- * actually reached the enchantment registry. That distinguishes "the content pipeline is broken" from
- * "the enchantment exists but has no way to be obtained yet", which is otherwise very hard to see.
- *
- * <ul>
- *     <li>{@code /merlinlib list} - every MerlinLib managed enchantment that is really in the registry</li>
- *     <li>{@code /merlinlib info <id>} - effective source, enabled flag, level and weight</li>
- *     <li>{@code /merlinlib book <id> [level]} - hands out the enchanted book, operator only</li>
- *     <li>{@code /merlinlib content} - whether the files on disk are the ones this process registered</li>
- *     <li>{@code /merlinlib editor | health | macro} - opens the matching toolkit screen</li>
- *     <li>{@code /merlinlib notices} - opens the join notice switches</li>
- * </ul>
- *
- * <h2>Two changes from the 26.3 line</h2>
- *
- * <p><b>The pack subcommand is gone, replaced by {@code content}.</b> It reported on the generated
- * datapack - whether the pack repository knew it, whether it was selected, which resources it served.
- * On 1.20.1 there is no generated datapack and no data driven enchantment registry, so every one of
- * those questions is meaningless. The question an author actually has on this version is different and
- * worse: the files are read once at startup, so an edit made afterwards has no effect until a restart,
- * and nothing on screen says so. {@code /merlinlib content} answers exactly that, by comparing the
- * fingerprint the process registered against the one the files have now.
- *
- * <p><b>The book is built through {@link EnchantedBookItem}.</b> The 26.3 line wrote a
- * {@code STORED_ENCHANTMENTS} data component; that component system arrives in 1.20.5, and on this
- * version an enchanted book's contents are written with
- * {@code EnchantedBookItem.addEnchantment(ItemStack, EnchantmentInstance)}.
  */
 public final class MerlinCommand {
 
@@ -70,20 +42,16 @@ public final class MerlinCommand {
 
     /**
      * Registers the command tree.
-     *
-     * <p>Fire from Forge's {@code RegisterCommandsEvent} on the game event bus. The three arguments
-     * are the ones the event hands over, and the same three 26.3 got from its own loader hooks, so
-     * the signature carried over unchanged.
-     *
+ *
      * <p>The three toolkit subcommands ({@code editor}, {@code health}, {@code macro}) are the only way to
      * open those screens besides the key bindings: the library no longer ships a screen of its own, and a
      * command is available without one. They validate on this side - toolkit switch, operator switch - and
      * then ask the player's client to open the screen, because a {@code Screen} exists on the client only.
-     *
+ *
      * @param dispatcher   the server command dispatcher
      * @param buildContext registry access of the running server
      * @param selection    which command set is being built, unused
-     */
+ */
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext buildContext,
                                 Commands.CommandSelection selection) {
         dispatcher.register(Commands.literal("merlinlib")
@@ -127,7 +95,7 @@ public final class MerlinCommand {
      * @param context the command context
      * @param tool    which screen, one of {@link OpenToolPayload}'s constants
      * @return 1 when the request was sent, 0 when it was refused
-     */
+ */
     private static int openTool(CommandContext<CommandSourceStack> context, int tool) {
         CommandSourceStack source = context.getSource();
         ServerPlayer player = source.getPlayer();
@@ -165,7 +133,7 @@ public final class MerlinCommand {
      * @param context the command context
      * @param enabled the value to write
      * @return 1, the standard success code
-     */
+ */
     private static int setEditorHotkey(CommandContext<CommandSourceStack> context, boolean enabled) {
         ConfigManager.saveClient(java.util.Map.of("editor.hotkey_enabled", Boolean.toString(enabled)));
         context.getSource().sendSuccess(() -> Component.translatable(enabled
@@ -279,23 +247,19 @@ public final class MerlinCommand {
 
     /**
      * Reports whether the content files on disk are the ones this process registered.
-     *
+ *
      * <h2>Why this replaced the pack status command</h2>
-     *
-     * <p>The 26.3 line's {@code /merlinlib pack} walked the delivery chain of its generated datapack:
-     * known to the pack repository, selected, visible through the resource manager, present in the
-     * registry. Every one of those links exists because the content travelled through a data pack.
-     *
+ *
      * <p>On 1.20.1 the content does not travel. It is read once while the game starts and written
      * straight into the enchantment registry, which is then frozen for the life of the process. The
      * chain to walk is two links long, and the interesting one is the second: an author who edits
      * {@code config/MerlinLib/enchantments.json} and types {@code /merlinlib list} will see the old
      * definition, because the new one cannot be registered without a restart. Nothing else in the game
      * says so, and a silent no-op is the exact failure this project keeps writing commands to prevent.
-     *
+ *
      * <p>So this command prints the fingerprint the process registered alongside the one the files have
      * now, and says plainly which of the two situations the caller is in.
-     */
+ */
     private static int contentStatus(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
         String registered = ContentManager.registeredFingerprint();
@@ -320,7 +284,7 @@ public final class MerlinCommand {
      * @param fingerprint the opaque fingerprint string
      * @return its length and first characters, which is enough to tell two states apart in chat without
      *         printing a line per file
-     */
+ */
     private static String summarize(String fingerprint) {
         String trimmed = fingerprint.length() <= 48 ? fingerprint : fingerprint.substring(0, 45) + "...";
         return "[" + fingerprint.length() + "b] " + trimmed;

@@ -8,37 +8,6 @@ import java.util.List;
 
 /**
  * Join notices, reached through {@link MerlinApi#notices()}.
- *
- * <h2>What it is for</h2>
- *
- * <p>A message a mod wants to show in the chat when a player arrives - a warning, an announcement, a note
- * about something that changed. The mod says what to show and when, and the library handles the rest: the
- * three once/every modes and the switches for it - one global, one per mod, kept in {@code server.toml}.
- *
- * <pre>{@code
- * MerlinApi.notices().register(
- *         new ResourceLocation("mymod", "dependency_change"),
- *         NoticeMode.ONCE_PER_SAVE,
- *         Component.translatable("mymod.notice.dependency_change"));
- * }</pre>
- *
- * <h2>The rules that make it work</h2>
- *
- * <ul>
- *   <li>The <b>id's namespace is the owning mod</b>. The per mod switch is stored under it, so registering
- *       under someone else's namespace would hand your notice to their switch.</li>
- *   <li>Registration happens <b>before a player joins</b>. Registering from {@code onServerStarting} is the
- *       usual place, because that is where a mod has usually read its own configuration and knows what its
- *       default should be.</li>
- *   <li>Colours come from the component. One line may carry as many colours as it has styles, so a message
- *       can highlight its own first words - see the README for the data pack form, which spells segments
- *       out in JSON instead.</li>
- * </ul>
- *
- * <p>1.20.1 note: a direct port. {@code Identifier} becomes {@link ResourceLocation} and its two-component
- * factory becomes the plain constructor, but the three registration shapes and their meaning are unchanged,
- * and a code notice still reaches {@code NoticeManager} through the same
- * {@link NoticeRegistry#register} that a data pack notice does.
  */
 public final class NoticeApi {
 
@@ -54,7 +23,7 @@ public final class NoticeApi {
      * @param id   the notice id, whose namespace is the owning mod
      * @param mode when to show it
      * @param line the line to send
-     */
+ */
     public void register(ResourceLocation id, NoticeMode mode, Component line) {
         register(id, mode, List.of(line), true);
     }
@@ -66,7 +35,7 @@ public final class NoticeApi {
      * @param mode             when to show it
      * @param line             the line to send
      * @param enabledByDefault the default used until a per mod switch says otherwise
-     */
+ */
     public void register(ResourceLocation id, NoticeMode mode, Component line, boolean enabledByDefault) {
         register(id, mode, List.of(line), enabledByDefault);
     }
@@ -78,7 +47,7 @@ public final class NoticeApi {
      * @param mode             when to show it
      * @param lines            the lines to send, in order
      * @param enabledByDefault the default used until a per mod switch says otherwise
-     */
+ */
     public void register(ResourceLocation id, NoticeMode mode, List<Component> lines, boolean enabledByDefault) {
         NoticeRegistry.register(id, mode, lines, enabledByDefault);
     }

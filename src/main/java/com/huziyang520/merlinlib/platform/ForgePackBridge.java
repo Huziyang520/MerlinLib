@@ -11,13 +11,6 @@ import java.util.Map;
 
 /**
  * Forge implementation of {@link IPackBridge}.
- *
- * <p>Only the reload listener half is needed on 1.20.1. The runtime generated datapack of the 26.3
- * line has no job here: enchantments, tags and villager trades all live in ordinary jar resources or
- * in code, so nothing is mounted at runtime and there is no {@code KnownPack} to declare.
- *
- * <p>{@code AddReloadListenerEvent} fires on the game bus, and every listener added to it runs on
- * each {@code /reload} as well as on world load.
  */
 public final class ForgePackBridge implements IPackBridge {
 

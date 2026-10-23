@@ -19,12 +19,6 @@ import java.util.Set;
 
 /**
  * Registration state of every effect MerlinLib knows about, plus the runtime colour overrides.
- *
- * <p>The duplicate check that used to ask {@code BuiltInRegistries.MOB_EFFECT.containsKey} is gone:
- * on Forge the registry is frozen before mod constructors run, and touching it this early throws
- * {@code IllegalStateException: Registry is already frozen}. The bookkeeping here is what is left,
- * and it is the check that matters in practice: two registrations of the same id from the same
- * process are the mistake a mod actually makes.
  */
 public final class EffectRegistry implements EffectApi {
 
@@ -55,7 +49,7 @@ public final class EffectRegistry implements EffectApi {
      * @param id      effect id
      * @param builder the builder that produced it
      * @return the created instance, the same object the game will hold
-     */
+ */
     public MerlinMobEffect submit(ResourceLocation id, EffectBuilder builder) {
         MerlinMobEffect effect = builder.build();
         this.registered.put(id, effect);
@@ -112,7 +106,7 @@ public final class EffectRegistry implements EffectApi {
 
     /**
      * @return {@code true} when the effect was disabled through the api or a config file.
-     */
+ */
     public boolean isDisabled(ResourceLocation id) {
         return this.disabled.contains(id);
     }

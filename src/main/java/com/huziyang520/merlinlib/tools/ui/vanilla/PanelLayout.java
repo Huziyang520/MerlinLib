@@ -9,18 +9,6 @@ import java.util.List;
 
 /**
  * A screen's panel rectangle plus the row cursor used to lay its content out.
- *
- * <p>A panel is defined by the size of its <em>content</em>: the frame, the padding and the centring
- * are derived from it. That is the whole point, because it lets a screen size itself from measured
- * text (see {@link VanillaUi#measureWidth}) rather than from a constant that only fits one language.
- *
- * <p>Rows are handed out by {@link #row(int)} in the order they are requested, so a screen never
- * computes a y coordinate itself and rows can never overlap.
- *
- * <p><b>What changed / 1.20.1 note:</b> one parameter type. {@link #draw} took a
- * {@code GuiGraphicsExtractor} on 26.3 and takes a {@link GuiGraphics} here, because the extract pass
- * does not exist on this version. No public method was renamed, and no signature moved otherwise, so a
- * screen that only reads coordinates - which is every caller - is unaffected.
  */
 public final class PanelLayout {
 
@@ -51,7 +39,7 @@ public final class PanelLayout {
      * @param contentWidth   width available to the content
      * @param contentHeight  height available to the content
      * @return the layout, with the row cursor at the top of the content
-     */
+ */
     public static PanelLayout centered(Screen screen, int contentWidth, int contentHeight) {
         int margin = 4;
         int width = Math.min(contentWidth + VanillaUi.PADDING * 2, Math.max(60, screen.width - margin * 2));
@@ -69,7 +57,7 @@ public final class PanelLayout {
      * @param controlWidth the widest control in the right column
      * @param minContent   a lower bound
      * @return the content width in pixels
-     */
+ */
     public static int labelColumn(Font font, List<Component> labels, int controlWidth, int minContent) {
         return VanillaUi.measureWidth(font, labels, controlWidth, minContent);
     }
@@ -133,7 +121,7 @@ public final class PanelLayout {
      * Moves the row cursor.
      *
      * @param y the new cursor position
-     */
+ */
     public void cursorTo(int y) {
         this.cursor = y;
     }
@@ -143,7 +131,7 @@ public final class PanelLayout {
      *
      * @param height the height to reserve, usually {@link VanillaUi#WIDGET_HEIGHT}
      * @return the top edge of the reserved row
-     */
+ */
     public int row(int height) {
         int top = this.cursor;
         this.cursor += height;
@@ -154,7 +142,7 @@ public final class PanelLayout {
      * Reserves the standard widget row.
      *
      * @return the top edge of the reserved row
-     */
+ */
     public int row() {
         return row(VanillaUi.WIDGET_HEIGHT);
     }
@@ -163,7 +151,7 @@ public final class PanelLayout {
      * Reserves a gap without drawing anything.
      *
      * @param pixels the gap height
-     */
+ */
     public void gap(int pixels) {
         this.cursor += pixels;
     }
@@ -173,7 +161,7 @@ public final class PanelLayout {
      *
      * @param count how many buttons share the content width
      * @return the width of each button
-     */
+ */
     public int sliceWidth(int count) {
         return (contentWidth() - VanillaUi.GAP * (count - 1)) / count;
     }
@@ -189,7 +177,7 @@ public final class PanelLayout {
      * @param index the button index, starting at 0
      * @param count how many buttons share the content width
      * @return the left edge of that button
-     */
+ */
     public int sliceX(int index, int count) {
         return left() + index * (sliceWidth(count) + VanillaUi.GAP);
     }
@@ -198,7 +186,7 @@ public final class PanelLayout {
      * Draws the panel itself. Called by {@link VanillaScreen} from the background pass.
      *
      * @param graphics the graphics object
-     */
+ */
     public void draw(GuiGraphics graphics) {
         VanillaUi.panel(graphics, this.x, this.y, this.width, this.height);
     }

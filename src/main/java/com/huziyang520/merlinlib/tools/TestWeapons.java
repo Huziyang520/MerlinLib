@@ -28,35 +28,6 @@ import java.util.UUID;
 
 /**
  * The three testing weapons, each one a <b>subclass of its vanilla counterpart</b>.
- *
- * <h2>Why this class looks nothing like its 26.3 counterpart, and is far simpler</h2>
- *
- * <p>On 26.3 a sword, an axe and a spear were plain {@code Item}s whose entire behaviour came from item
- * components, because the classes had been replaced by data. Building one there meant writing out
- * vanilla's own component values by hand, and two attempts failed before that worked:
- *
- * <ol>
- *   <li>copying {@code Items.IRON_SWORD}'s component map crashed with
- *       {@code NullPointerException: Components not bound yet} - components are bound at registry
- *       binding, long after mod construction;</li>
- *   <li>calling vanilla's {@code sword()} / {@code axe()} helpers crashed with
- *       {@code IllegalStateException: Registry is already frozen}, because they begin by acquiring a
- *       bootstrap registry lookup that only exists inside vanilla's own bootstrap window.</li>
- * </ol>
- *
- * <p><b>None of that exists on 1.20.1.</b> {@link SwordItem}, {@link AxeItem}, {@link TridentItem} and
- * {@link Tiers} are all real classes here, they take their damage and attack speed as plain numbers in
- * the constructor, and no registry lookup is involved at all. The three weapons are therefore three
- * constructor calls, and the delayed-component mechanism, the frozen-registry crash chain and the
- * "which component did vanilla set" archaeology all simply do not apply. This is the simplification the
- * migration plan predicted, and it is worth stating plainly here so nobody re-derives the 26.3
- * workarounds on a version that does not need them.
- *
- * <h2>The spear is not here</h2>
- *
- * <p>26.3 had a fourth weapon, {@code test_spear}. The spear is a 1.21.11 weapon; 1.20.1 has no
- * spear item, no spear behaviour and no {@code minecraft:spears} tag to join. It is deliberately not
- * ported - not omitted by oversight - and the migration plan calls this out as a hard constraint.
  */
 public final class TestWeapons {
 
@@ -69,23 +40,17 @@ public final class TestWeapons {
      * of our own: the tooltip shows a modifier under vanilla's id as the familiar "Attack Damage" row,
      * and reusing the id also means a stack written by vanilla and a stack written by the editor are
      * the same shape.
-     */
+ */
     private static final UUID DAMAGE_MODIFIER = UUID.fromString("CB3F55D3-645C-4F38-A497-9C13A33DB5CF");
 
     /**
      * UUID of the attack speed modifier, vanilla's own, written out for the same reason.
-     */
+ */
     private static final UUID SPEED_MODIFIER = UUID.fromString("FA233E1C-4180-4865-B01B-BCCE9785ACA3");
 
     /**
      * The damage modifier id older builds wrote.
-     *
-     * <p>The 26.3 line wrote its own modifier id ({@code merlinlib:test_weapon_damage}) into the item's
-     * attribute component on some builds, which is why an id has to be recognised at all. On 1.20.1 the
-     * modifiers live in NBT keyed by UUID rather than by name, and the id a stack carries is always
-     * {@link #DAMAGE_MODIFIER} - a named id from the component era cannot appear in a 1.20.1 world. The
-     * constant is kept as the record of what the old builds meant, not as a second accepted spelling.
-     */
+ */
     @SuppressWarnings("unused")
     private static final ResourceLocation LEGACY_DAMAGE_MODIFIER =
             new ResourceLocation(Constants.MOD_ID, "test_weapon_damage");
@@ -105,7 +70,7 @@ public final class TestWeapons {
      * @param damage      nominal attack damage shown in the tooltip; the constructor takes this minus the
      *                    player base damage of 1
      * @param attackSpeed attack speed modifier, vanilla style: the player base is 4.0, so -2.4 shows 1.6
-     */
+ */
     private record WeaponSpec(ResourceLocation id, Kind kind, int damage, double attackSpeed) {
     }
 
@@ -129,12 +94,7 @@ public final class TestWeapons {
 
     /**
      * Registers all three weapons.
-     *
-     * <p>Called from the bootstrap. The item is deliberately built inside the supplier rather than
-     * before it: Forge freezes its registries before mod constructors run, and constructing an
-     * {@code Item} registers it into a creative-tab bookkeeping map, so the supplier is the only safe
-     * place - the same rule the 26.3 line followed, for the same reason.
-     */
+ */
     public static void register() {
         for (WeaponSpec spec : SPECS.values()) {
             Services.REGISTRATIONS.register(BuiltInRegistries.ITEM, spec.id(), () -> {
@@ -157,10 +117,9 @@ public final class TestWeapons {
      *
      * @param spec the weapon to build
      * @return the item, ready to be registered
-     */
+ */
     private static Item create(WeaponSpec spec) {
         Item.Properties properties = new Item.Properties()
-                // Netherite durability and iron enchantability, matching what 26.3 chose so the
                 // weapons behave the same in the editor's ceiling tests on both lines.
                 //
                 // NO stacksTo(1) HERE, and it is not an omission. Item.Properties#stacksTo throws
@@ -210,7 +169,7 @@ public final class TestWeapons {
      *
      * @param id the weapon id
      * @return the tag ids to join, empty when the id is not a testing weapon
-     */
+ */
     public static Optional<List<ResourceLocation>> tagMembership(ResourceLocation id) {
         WeaponSpec spec = SPECS.get(id);
         if (spec == null) {
@@ -253,22 +212,17 @@ public final class TestWeapons {
     /**
      * @param stack the item stack to inspect
      * @return {@code true} when this stack is one of the testing weapons
-     */
+ */
     public static boolean isTestWeapon(ItemStack stack) {
         return spec(stack) != null;
     }
 
     /**
      * The weapon spec behind a stack.
-     *
-     * <p>Recognised by the item itself, not by what the stack happens to carry. The 26.3 line learned
-     * this the hard way: recognising a testing weapon by its attribute modifier made a weapon in an
-     * existing world look like an ordinary item and its damage row disappear from the editor. An item
-     * identity is permanent; a modifier is not.
-     *
+ *
      * @param stack the stack to inspect, may be {@code null}
      * @return the spec, or {@code null} when the stack is not one of the testing weapons
-     */
+ */
     private static WeaponSpec spec(ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
             return null;
@@ -287,7 +241,7 @@ public final class TestWeapons {
      *
      * @param stack the stack to read
      * @return the damage, empty when the item carries no attack damage modifier
-     */
+ */
     public static Optional<Integer> nominalDamage(ItemStack stack) {
         return weaponDamage(stack);
     }
@@ -297,7 +251,7 @@ public final class TestWeapons {
      *
      * @param stack the stack to read
      * @return the damage, empty when the item carries no attack damage modifier
-     */
+ */
     public static Optional<Integer> weaponDamage(ItemStack stack) {
         return damageModifierAmount(stack).map(amount -> (int) Math.round(amount + 1.0D));
     }
@@ -305,7 +259,7 @@ public final class TestWeapons {
     /**
      * @param stack the stack to inspect
      * @return {@code true} when the stack's attack damage can be read and written
-     */
+ */
     public static boolean hasEditableDamage(ItemStack stack) {
         return damageModifierAmount(stack).isPresent();
     }
@@ -316,7 +270,7 @@ public final class TestWeapons {
      * @param stack  the stack to modify
      * @param damage the new damage
      * @return {@code true} when the value was applied
-     */
+ */
     public static boolean setWeaponDamage(ItemStack stack, int damage) {
         if (stack == null || stack.isEmpty() || damageModifierAmount(stack).isEmpty()) {
             return false;
@@ -330,7 +284,7 @@ public final class TestWeapons {
      * @param stack  the stack to modify, must be a testing weapon
      * @param damage the new nominal damage
      * @return {@code true} when the value was applied
-     */
+ */
     public static boolean setNominalDamage(ItemStack stack, int damage) {
         if (!isTestWeapon(stack)) {
             return false;
@@ -340,22 +294,15 @@ public final class TestWeapons {
 
     /**
      * Reads the attack damage modifier out of a stack.
-     *
-     * <p>1.20.1 has no {@code ItemAttributeModifiers} component, so
-     * {@link ItemStack#getAttributeModifiers(EquipmentSlot)} is the reader - and it is the right one
-     * here rather than a raw NBT walk: it merges what the item declares with what the stack stores,
-     * which is exactly the number the tooltip prints as "Attack Damage". The 26.3 line read a
-     * component because that was the only storage it had; on this version the merged view is both
-     * simpler and closer to what the player sees.
-     *
+ *
      * <p>The vanilla base modifier is preferred when it is present, because that is the one the
      * editor writes back. Any other attack damage entry is used as a fallback, so a weapon from
      * another mod that uses its own modifier id is still editable rather than reported as having no
      * damage at all.
-     *
+ *
      * @param stack the stack
      * @return the modifier amount, empty when the stack has no attack damage entry
-     */
+ */
     private static Optional<Double> damageModifierAmount(ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
             return Optional.empty();
@@ -400,7 +347,7 @@ public final class TestWeapons {
      * @param stack  the stack to modify
      * @param damage the new damage
      * @return {@code true} when the modifier was written
-     */
+ */
     private static boolean writeDamage(ItemStack stack, int damage) {
         removeStaleDamageModifier(stack);
         stack.addAttributeModifier(
@@ -415,7 +362,7 @@ public final class TestWeapons {
      * Drops every attribute modifier entry that carries the base attack damage UUID.
      *
      * @param stack the stack to clean
-     */
+ */
     private static void removeStaleDamageModifier(ItemStack stack) {
         CompoundTag tag = stack.getTag();
         if (tag == null || !tag.contains(TAG_ATTRIBUTE_MODIFIERS, Tag.TAG_LIST)) {

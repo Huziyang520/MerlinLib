@@ -5,10 +5,6 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Project wide constants.
- *
- * <p>This project targets a single loader (Forge for Minecraft 1.20.1), so unlike the 26.3 line
- * there is no common/fabric/neoforge split. The class is kept free of loader types anyway: it is
- * read from the config layer and from the Forge bridges alike.
  */
 public final class Constants {
 

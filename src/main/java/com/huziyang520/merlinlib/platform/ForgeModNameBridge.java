@@ -5,9 +5,6 @@ import net.minecraftforge.fml.ModList;
 
 /**
  * Forge implementation of {@link IModNameBridge}.
- *
- * <p>{@code ModContainer.getModInfo().getDisplayName()} is the same string Forge shows in its mod
- * list, so a join notice can name "Practical Enchantments" instead of {@code practical_enchantments}.
  */
 public final class ForgeModNameBridge implements IModNameBridge {
 

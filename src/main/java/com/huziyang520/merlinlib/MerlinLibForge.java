@@ -18,32 +18,6 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 /**
  * Forge entrypoint of MerlinLib for Minecraft 1.20.1.
- *
- * <h2>What this class is, next to the 26.3 line's {@code MerlinLib}</h2>
- *
- * <p>The 26.3 line had a loader independent {@code MerlinLib#init(Object)} called by a thin
- * {@code fabric/} and {@code neoforge/} entrypoint each. This project targets one loader, so the
- * entrypoint and the bootstrap are the same class and {@code init} is gone; every step it performed is
- * here, in the order it has to happen.
- *
- * <h2>The three phases, and why the order is not negotiable</h2>
- *
- * <ol>
- *   <li><b>Construction</b> (this constructor). The bridges are installed and the configuration is
- *       read. Nothing here touches a registry: Forge has already frozen them and re-opens them only
- *       for the registry events.</li>
- *   <li><b>Registration</b> ({@code RegisterEvent}, fired per registry by the mod event bus). The
- *       {@code DeferredRegister} entries created above are invoked here, while the registry is
- *       writable.</li>
- *   <li><b>After registration</b> ({@code FMLCommonSetupEvent}). Content is read from the config
- *       files and its effective enchantments are queued for registration. This <em>must</em> run
- *       before the registry events, which is why it is {@code FMLCommonSetupEvent} and not the
- *       common setup's {@code enqueueWork} - see the note on {@link #onCommonSetup}.</li>
- * </ol>
- *
- * <p>The one thing a reader should take away: on this version an enchantment has to be registered
- * while the game is starting, by a {@code DeferredRegister}. The 26.3 line wrote a data pack at
- * runtime instead, which is why its content pipeline could run at any moment and this one cannot.
  */
 @Mod(Constants.MOD_ID)
 public class MerlinLibForge {
@@ -63,6 +37,7 @@ public class MerlinLibForge {
         // own otherwise (see MerlinConfigEntry). With neither installed the button is absent and the
         // switches are edited in config/MerlinLib/client.toml and server.toml, which are commented for it.
         if (net.minecraftforge.fml.loading.FMLEnvironment.dist.isClient()) {
+            com.huziyang520.merlinlib.config.ForgeConfig.install();
             com.huziyang520.merlinlib.client.MerlinConfigEntry.register();
         }
 
@@ -118,7 +93,7 @@ public class MerlinLibForge {
      * to that ceiling, so an editor that lets the player type one million would silently end up at the
      * ceiling instead. The ceiling is a private final field with no setter, which is what the accessor
      * mixin is for; widening them once here is what makes the advertised range real.
-     */
+ */
     private static void widenAttributeCeilings() {
         raiseCeiling(Attributes.MAX_HEALTH, "max_health");
         raiseCeiling(Attributes.ATTACK_DAMAGE, "attack_damage");
@@ -126,14 +101,10 @@ public class MerlinLibForge {
 
     /**
      * Raises one attribute's ceiling.
-     *
-     * <p>1.20.1 declares {@code Attributes.MAX_HEALTH} as a plain {@link Attribute}, not as a
-     * {@code Holder<Attribute>}: the holder based attribute registry arrives in 1.21. The 26.3 line
-     * therefore had to unwrap with {@code attribute.value()}, and this line does not.
-     *
+ *
      * @param attribute the attribute
      * @param name      its name, for the log line that proves the widening happened
-     */
+ */
     private static void raiseCeiling(net.minecraft.world.entity.ai.attributes.Attribute attribute, String name) {
         if (attribute instanceof RangedAttributeAccessor accessor) {
             accessor.merlinlib$setMaxValue(Integer.MAX_VALUE);

@@ -11,10 +11,6 @@ import java.util.Set;
 
 /**
  * Registration entry point for mob effects.
- *
- * <p>Important boundary that the documentation repeats on purpose: {@code MobEffect} is a plain code
- * registry, so a config file <b>cannot create</b> a new effect. It can only recolour or disable one
- * that was declared in code.
  */
 public interface EffectApi {
 
@@ -23,7 +19,7 @@ public interface EffectApi {
      *
      * @param id effect id, the namespace is normally your own mod id
      * @return a builder, nothing is registered until {@link EffectBuilder#submit()}
-     */
+ */
     EffectBuilder register(ResourceLocation id);
 
     /**
@@ -32,7 +28,7 @@ public interface EffectApi {
      * @param id    effect id
      * @param color packed ARGB colour, see {@link MerlinColor}
      * @return {@code true} when the override was stored
-     */
+ */
     boolean overrideColor(ResourceLocation id, int color);
 
     /**
@@ -41,7 +37,7 @@ public interface EffectApi {
      *
      * @param id effect id
      * @return {@code true} when the state changed
-     */
+ */
     boolean disable(ResourceLocation id);
 
     /** @return ids of every effect registered through this api. */
@@ -56,7 +52,7 @@ public interface EffectApi {
      *
      * @param effectId the effect to derive a potion from
      * @return a potion builder pre-filled with the effect
-     */
+ */
     PotionBuilder potionFor(ResourceLocation effectId);
 
     /** @return the vanilla category used when a builder does not specify one. */

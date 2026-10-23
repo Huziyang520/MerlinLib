@@ -22,22 +22,6 @@ import java.util.Set;
 
 /**
  * Single source of truth for "what content exists right now".
- *
- * <h2>What changed from the 26.3 line</h2>
- *
- * <p>On 26.3 the snapshot was rebuilt lazily whenever the config files changed, which was what let
- * {@code /reload} pick up an edited file without a restart: the reader was a resource reload
- * listener and the registry it fed was data driven.
- *
- * <p>1.20.1 registers an enchantment once, during the mod event bus phase, into a registry that is
- * frozen immediately afterwards. Nothing can add to it later, so this class reads the content exactly
- * once - {@link #refresh()} is called from the bootstrap and that is the only call that can produce a
- * registration. {@link #current()} still exists and still answers, because the command, the item
- * editor and the diagnostics all ask it what is registered.
- *
- * <p>The fingerprint is still computed and logged. It is no longer a cache key, but it is the honest
- * way to tell an author whether the files on disk are the ones this process registered - which is
- * precisely the question a player asks after editing a definition on a version that needs a restart.
  */
 public final class ContentManager {
 
@@ -50,7 +34,7 @@ public final class ContentManager {
 
     /**
      * @return the snapshot this process registered, or an empty one before {@link #refresh()} ran.
-     */
+ */
     public static ContentSnapshot current() {
         ContentSnapshot local = cached;
         return local == null ? ContentSnapshot.EMPTY : local;
@@ -64,7 +48,7 @@ public final class ContentManager {
      * method is therefore guarded rather than merely documented as "call once".
      *
      * @return the change report, already logged
-     */
+ */
     public static ContentReport refresh() {
         synchronized (ContentManager.class) {
             ContentSnapshot built = build();
@@ -80,7 +64,7 @@ public final class ContentManager {
 
     /**
      * @return the report produced by the most recent {@link #refresh()}, empty before the first one.
-     */
+ */
     public static Optional<ContentReport> lastReport() {
         return Optional.of(lastReport);
     }
@@ -91,7 +75,7 @@ public final class ContentManager {
      * <p>Compared against the live {@link ConfigDirectory#fingerprint()} by the command, so an author
      * who edited a file and has not restarted is told exactly that instead of being shown a
      * definition the game is not running.
-     */
+ */
     public static String registeredFingerprint() {
         return registeredFingerprint;
     }
@@ -121,13 +105,9 @@ public final class ContentManager {
 
     /**
      * Writes every effective enchantment into the game registry, through the loader bridge.
-     *
-     * <p>This is the step that has no counterpart on the 26.3 line: there, "the snapshot exists" and
-     * "the enchantment exists" were the same statement, because the snapshot was serialised into a
-     * data pack that the game then read. Here they are two statements, and this is the second one.
-     *
+ *
      * @param snapshot the effective content
-     */
+ */
     private static void registerAll(ContentSnapshot snapshot) {
         for (EnchantmentDraft draft : snapshot.enchantments().values()) {
             EnchantmentRegistry.submitRegistration(draft);

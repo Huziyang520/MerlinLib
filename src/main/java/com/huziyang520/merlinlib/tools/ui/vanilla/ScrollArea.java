@@ -4,45 +4,6 @@ import net.minecraft.client.gui.GuiGraphics;
 
 /**
  * A scroll region with the vanilla scrollbar, including dragging.
- *
- * <p>Content is a stack of equal height rows, so the region never scrolls to a half row: the offset is
- * always a multiple of the row height, exactly like a vanilla list. Rows are drawn by the screen at
- * {@link #rowTop(int)}, while their widgets stay real widgets: the screen repositions them whenever the
- * scroll changes and hides the ones that scrolled out. That keeps clicking, hovering and Tab focus
- * working while the list scrolls, which a purely painted list would break.
- *
- * <p>The scrollbar itself is the same colours vanilla draws a list scrollbar with, so it looks and drags
- * like a vanilla list: click the track to jump, drag the handle with the left button, or use the wheel over
- * the region.
- *
- * <h2>What changed / 1.20.1 note</h2>
- *
- * <p>This is where the input rewrite lands, and it is a real signature change for callers. 26.3 delivered
- * a whole mouse event as one object ({@code MouseButtonEvent}, with {@code x()}, {@code y()} and
- * {@code button()} accessors) and a {@code GuiGraphicsExtractor} for drawing. This version passes the three
- * pieces of a mouse event as separate arguments, so all four mouse methods below had to be rewritten:
- *
- * <table border="1">
- *   <caption>mouse method mapping</caption>
- *   <tr><th>26.3</th><th>1.20.1</th></tr>
- *   <tr><td>{@code mouseClicked(MouseButtonEvent)}</td>
- *       <td>{@code mouseClicked(double, double, int)}</td></tr>
- *   <tr><td>{@code mouseDragged(MouseButtonEvent)}</td>
- *       <td>{@code mouseDragged(double, double, int, double, double)}</td></tr>
- *   <tr><td>{@code mouseReleased(MouseButtonEvent)}</td>
- *       <td>{@code mouseReleased(double, double, int)}</td></tr>
- *   <tr><td>{@code render(GuiGraphicsExtractor)}</td>
- *       <td>{@code render(GuiGraphics)}</td></tr>
- * </table>
- *
- * <p>{@link #mouseDragged} deliberately takes the full five argument vanilla shape - including the two
- * drag deltas it does not read - so that a screen can forward its own
- * {@code GuiEventListener#mouseDragged(double, double, int, double, double)} override straight into it
- * without unpacking anything. The two unused parameters are the price of that convenience.
- *
- * <p>{@link #mouseScrolled} needed <b>no</b> change: it already took three arguments on 26.3, and
- * {@code GuiEventListener#mouseScrolled(double, double, double)} is three arguments here. The "four
- * argument scroll" this project warns about is the 1.20.2+ shape and never applied to the 26.3 line.
  */
 public final class ScrollArea {
 
@@ -62,7 +23,7 @@ public final class ScrollArea {
      * @param width     region width, the scrollbar is carved out of its right edge
      * @param height    viewport height, normally a whole number of rows
      * @param rowHeight height of one row, the scroll step
-     */
+ */
     public ScrollArea(int x, int y, int width, int height, int rowHeight) {
         this.x = x;
         this.y = y;
@@ -105,7 +66,7 @@ public final class ScrollArea {
      * Sets how tall the content is, which decides whether a scrollbar is needed.
      *
      * @param contentHeight the total height of all rows
-     */
+ */
     public void setContentHeight(int contentHeight) {
         this.contentHeight = contentHeight;
         this.scroll = snap(this.scroll);
@@ -136,7 +97,7 @@ public final class ScrollArea {
      *
      * @param index the row index
      * @return the absolute y of the row
-     */
+ */
     public int rowTop(int index) {
         return this.y + index * this.rowHeight - this.scroll;
     }
@@ -146,7 +107,7 @@ public final class ScrollArea {
      *
      * @param index the row index
      * @return true when at least part of the row is visible
-     */
+ */
     public boolean rowVisible(int index) {
         int top = index * this.rowHeight - this.scroll;
         return top + this.rowHeight > 0 && top < this.height;
@@ -162,7 +123,7 @@ public final class ScrollArea {
      * Draws the scrollbar, if one is needed. Call after the rows so the bar sits on top.
      *
      * @param graphics the graphics object
-     */
+ */
     public void render(GuiGraphics graphics) {
         if (!scrollable()) {
             return;
@@ -173,15 +134,12 @@ public final class ScrollArea {
 
     /**
      * Handles a click on the track or the handle.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> takes the cursor and the button separately rather than one
-     * {@code MouseButtonEvent}. The button test is unchanged: 0 is the left button on both versions.
-     *
+ *
      * @param mouseX the cursor x
      * @param mouseY the cursor y
      * @param button the mouse button, 0 for the left one
      * @return true when the scrollbar consumed the click
-     */
+ */
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (!scrollable() || button != 0) {
             return false;
@@ -204,18 +162,14 @@ public final class ScrollArea {
 
     /**
      * Continues a drag started by {@link #mouseClicked}.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> the two trailing parameters are the vanilla drag deltas. This
-     * region only needs the cursor position, but taking the whole vanilla signature lets a screen forward
-     * its own override unchanged.
-     *
+ *
      * @param mouseX the cursor x
      * @param mouseY the cursor y
      * @param button the mouse button, unused
      * @param dragX  the x delta since the last mouse event, unused
      * @param dragY  the y delta since the last mouse event, unused
      * @return true when a drag is in progress
-     */
+ */
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         if (this.dragGrab == Integer.MIN_VALUE) {
             return false;
@@ -226,15 +180,12 @@ public final class ScrollArea {
 
     /**
      * Ends a drag.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> takes the cursor and the button separately rather than one
-     * {@code MouseButtonEvent}; neither is read, since any release ends the drag.
-     *
+ *
      * @param mouseX the cursor x
      * @param mouseY the cursor y
      * @param button the mouse button
      * @return true when a drag was in progress
-     */
+ */
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         boolean dragging = this.dragGrab != Integer.MIN_VALUE;
         this.dragGrab = Integer.MIN_VALUE;
@@ -243,14 +194,12 @@ public final class ScrollArea {
 
     /**
      * Scrolls with the wheel while the cursor is inside the region.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> nothing. Three arguments on 26.3, three arguments here.
-     *
+ *
      * @param mouseX the cursor x
      * @param mouseY the cursor y
      * @param amount the wheel delta, positive when scrolling up
      * @return true when the region consumed the scroll
-     */
+ */
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
         if (!scrollable() || amount == 0.0D || !contains(mouseX, mouseY)) {
             return false;
@@ -264,7 +213,7 @@ public final class ScrollArea {
      * Scrolls a row into view, used when a row is focused by the keyboard.
      *
      * @param index the row index
-     */
+ */
     public void scrollToRow(int index) {
         int top = index * this.rowHeight;
         int bottom = top + this.rowHeight;

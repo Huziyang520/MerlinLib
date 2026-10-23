@@ -2,18 +2,6 @@ package com.huziyang520.merlinlib.api;
 
 /**
  * The full ids of the vanilla loot tables a dependent mod is most likely to inject into.
- *
- * <p>They are plain strings, and every table in the game can be targeted by its id - these constants only
- * exist so that a typo becomes a compile error instead of a rule that silently never fires. The names are the
- * ones under {@code minecraft:chests/} and {@code minecraft:entities/}; a table that does not exist is never
- * loaded, so a misspelled id is invisible at runtime.
- *
- * <p>1.20.1 note: a direct port of the constant list, with one deliberate exception. The
- * {@code minecraft:chests/trial_chambers/*} family below is <b>1.21+ content and does not exist on
- * 1.20.1</b>. The constants are kept rather than deleted so that a rule carried over from the 26.3 line
- * still compiles; a rule that names one is reported at load time like any other unknown table and then
- * simply never fires, which is the same outcome as naming a table that is not installed. Removing them
- * would turn a working build into a compile error for no runtime gain.
  */
 public final class LootTables {
 
@@ -68,7 +56,7 @@ public final class LootTables {
      * 1.21+ only; kept for source compatibility, never fires on 1.20.1 - see the class javadoc.
      *
      * @deprecated the trial chambers do not exist on 1.20.1, so no rule naming this table can ever fire
-     */
+ */
     @Deprecated
     public static final String TRIAL_CHAMBERS_REWARD = CHESTS + "trial_chambers/reward";
 
@@ -76,7 +64,7 @@ public final class LootTables {
      * 1.21+ only; kept for source compatibility, never fires on 1.20.1 - see the class javadoc.
      *
      * @deprecated the trial chambers do not exist on 1.20.1, so no rule naming this table can ever fire
-     */
+ */
     @Deprecated
     public static final String TRIAL_CHAMBERS_REWARD_COMMON = CHESTS + "trial_chambers/reward_common";
 
@@ -84,7 +72,7 @@ public final class LootTables {
      * 1.21+ only; kept for source compatibility, never fires on 1.20.1 - see the class javadoc.
      *
      * @deprecated the trial chambers do not exist on 1.20.1, so no rule naming this table can ever fire
-     */
+ */
     @Deprecated
     public static final String TRIAL_CHAMBERS_REWARD_RARE = CHESTS + "trial_chambers/reward_rare";
 
@@ -92,7 +80,7 @@ public final class LootTables {
      * 1.21+ only; kept for source compatibility, never fires on 1.20.1 - see the class javadoc.
      *
      * @deprecated the trial chambers do not exist on 1.20.1, so no rule naming this table can ever fire
-     */
+ */
     @Deprecated
     public static final String TRIAL_CHAMBERS_REWARD_UNIQUE = CHESTS + "trial_chambers/reward_unique";
 
@@ -100,7 +88,7 @@ public final class LootTables {
      * 1.21+ only; kept for source compatibility, never fires on 1.20.1 - see the class javadoc.
      *
      * @deprecated the trial chambers do not exist on 1.20.1, so no rule naming this table can ever fire
-     */
+ */
     @Deprecated
     public static final String TRIAL_CHAMBERS_REWARD_OMINOUS = CHESTS + "trial_chambers/reward_ominous";
 

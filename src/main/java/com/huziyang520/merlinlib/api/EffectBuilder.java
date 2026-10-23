@@ -10,20 +10,6 @@ import java.util.Optional;
 
 /**
  * Fluent description of one mob effect.
- *
- * <pre>{@code
- * MerlinApi.effects()
- *         .register(new ResourceLocation("mymod", "frostbite"))
- *         .category(MobEffectCategory.HARMFUL)
- *         .color(MerlinColor.CYAN)
- *         .onTick((level, entity, amplifier) -> { entity.hurt(level.damageSources().freeze(), 1.0F); return true; })
- *         .submit();
- * }</pre>
- *
- * <p>The {@code onTick} example shows the one API difference from the 26.3 line that a caller has to
- * notice: 1.20.1 damages an entity with {@code entity.hurt(DamageSource, float)}. The
- * {@code hurtServer(ServerLevel, ...)} overload is 1.21+. The {@link MerlinMobEffect.TickBehaviour}
- * signature above is unchanged, because it already passed the level in.
  */
 public final class EffectBuilder {
 
@@ -55,7 +41,7 @@ public final class EffectBuilder {
      * as {@code "cyan"}.
      *
      * @throws IllegalArgumentException when the text cannot be understood
-     */
+ */
     public EffectBuilder color(String color) {
         this.color = MerlinColor.parse(color)
                 .orElseThrow(() -> new IllegalArgumentException(this.id + ": unknown colour '" + color + "', use #RRGGBB or a palette name from MerlinColor.named()"));
@@ -80,7 +66,7 @@ public final class EffectBuilder {
 
     /**
      * @return the effect instance without registering it.
-     */
+ */
     public MerlinMobEffect build() {
         MerlinMobEffect effect = new MerlinMobEffect(this.id, this.category, this.color, this.behaviour);
         effect.setInstant(this.instant);
@@ -91,7 +77,7 @@ public final class EffectBuilder {
      * Registers the effect through the loader.
      *
      * @return the created effect instance
-     */
+ */
     public MerlinMobEffect submit() {
         return this.owner.submit(this.id, this);
     }

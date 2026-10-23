@@ -36,7 +36,7 @@ public final class MerlinClientSetup {
      * first moment the things {@link MerlinLibForgeClient#install()} touches can safely be used.
      *
      * @param event the client setup
-     */
+ */
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
         // enqueueWork rather than doing it inline: this event is fired on the mod loading thread, and the
@@ -57,7 +57,7 @@ public final class MerlinClientSetup {
      * comment on {@link MerlinLibForgeClient} explains the split.
      *
      * @param event the key registration
-     */
+ */
     @SubscribeEvent
     public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
         MerlinLibForgeClient.registerKeyMappings(event);

@@ -9,80 +9,62 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Server side switches. This file is authoritative: the client only ever displays what the server
- * allows, and every toolkit action is validated against these values on the server.
- *
- * <p>Single player note: the integrated server shares this process, so a change written by a
- * configuration screen takes effect immediately. On a dedicated server the file must be edited there.
- * The 26.3 line applied it with {@code /reload}; on 1.20.1 the toolkit switches are read at the moment
- * they are used, so they are live as soon as the file is written, while the content files beside it
- * need a restart (see {@link ConfigDirectory#fingerprint()}).
+ * Server side switches. The server decides, the client only displays what it allows, and every toolkit
+ * action is validated against these values where it is applied.
  */
 public final class ServerConfig {
 
-    /**
-     * Template written on first launch; also the documented reference for every option.
-     *
-     * <p>Concatenated literals rather than a text block, for the reason given on
-     * {@link ClientConfig}'s template. The wording of the two lines that mention {@code /reload} is
-     * adjusted: content is no longer re-registered by that command on 1.20.1.
-     */
-    private static final String DEFAULTS =
-            "# MerlinLib server configuration.\n"
-            + "# This file is authoritative; the client only displays what the server allows.\n"
-            + "# The switches below are read as they are used, so a change applies to the next action.\n"
-            + "# The .json content files next to this one are read at startup: on 1.20.1 an enchantment is a\n"
-            + "# plain game registry entry, so editing them takes effect after a restart (the 26.3 line could\n"
-            + "# re-read them with /reload).\n"
-            + "\n"
-            + "[security]\n"
-            + "# When true, only operators may use the testing toolkit (editors, health editor, macros).\n"
-            + "restrict_tools_to_operators = false\n"
-            + "# Require command permission (operator) to open the item editor. On by default.\n"
-            + "editor_requires_permission = true\n"
-            + "# Require command permission (operator) to open the health editor. On by default.\n"
-            + "health_editor_requires_permission = true\n"
-            + "\n"
-            + "[tools]\n"
-            + "# Master switch of the testing screens: with it off, no toolkit screen opens (the item editor, the\n"
-            + "# health editor and the macro screen all refuse). The testing items stay in the creative tab.\n"
-            + "enable_testing_toolkit = true\n"
-            + "# Upper bound for the damage value of the test weapons. Defaults to the integer limit.\n"
-            + "max_test_weapon_damage = 2147483647\n"
-            + "# Upper bound for enchantment levels set through the item editor. Defaults to the integer limit.\n"
-            + "max_enchantment_level = 2147483647\n"
-            + "# When true, an enchantment may be raised above the maximum level its own definition declares.\n"
-            + "# On by default: the ceiling that matters is max_enchantment_level above, and the level stored in\n"
-            + "# the item's NBT is a short, which holds the whole range this option can reach.\n"
-            + "allow_levels_above_max = true\n"
-            + "# When true, any enchantment may be added to any item, for example efficiency on a sword.\n"
-            + "# Off by default: an enchantment that the item cannot normally carry has no effect in game.\n"
-            + "allow_mismatched_enchantments = false\n"
-            + "# When true, the item editor opens for every item, including blocks and other things that are\n"
-            + "# not weapons, tools or equipment. Off by default: the editor is meant for the equipment it can do\n"
-            + "# something useful with, and opening it on a block or a bucket invites edits that do nothing.\n"
-            + "allow_editing_all_items = false\n"
-            + "# When true, the base damage of an ordinary weapon can be edited too, not only of a testing weapon.\n"
-            + "# Off by default: ordinary weapons are what vanilla balance and other mods rely on.\n"
-            + "allow_non_test_item_damage = false\n"
-            + "# When true, the health editor only opens while holding the health editor item.\n"
-            + "health_editor_requires_item = true\n"
-            + "# File layout version. Written by the mod, read only to bring a file from an older build up to\n"
-            + "# the current defaults. Leave it alone; setting it back only repeats the migration.\n"
-            + "config_version = 5\n"
-            + "\n"
-            + "[content]\n"
-            + "# Emergency switch: when true, none of the enchantments defined in config/MerlinLib/*.json\n"
-            + "# are registered. Code api registrations are unaffected.\n"
-            + "disable_generated_enchantments = false\n"
-            + "\n"
-            + "[notices]\n"
-            + "# Show the join notices business mods registered through MerlinLib (MerlinApi.notices()). On by\n"
-            + "# default; turn it off to silence every join notice at once. Takes effect on the next join.\n"
-            + "enabled = true\n"
-            + "# The per mod switches are not here any more: they live in config/MerlinLib/notices.toml, one\n"
-            + "# \"modid = true\" line per mod, written by /merlinlib notices. A \"per_mod\" line left by an\n"
-            + "# older build is read once and moved into that file; it is not read afterwards.\n";
+    /** Template written on first launch; also the documented reference for every option. */
+    private static final String DEFAULTS = """
+            # MerlinLib server configuration.
+            # This file is authoritative; the client only displays what the server allows.
+            # The switches below are read as they are used, so a change applies to the next action.
+
+            [security]
+            # When true, only operators may use the testing toolkit (editors, health editor, macros).
+            restrict_tools_to_operators = false
+            # Require command permission (operator) to open the item editor. On by default.
+            editor_requires_permission = true
+            # Require command permission (operator) to open the health editor. On by default.
+            health_editor_requires_permission = true
+
+            [tools]
+            # Master switch of the testing screens: with it off, no toolkit screen opens (the item editor, the
+            # health editor and the macro screen all refuse). The testing items stay in the creative tab.
+            enable_testing_toolkit = true
+            # Upper bound for the damage value of the test weapons. Defaults to the integer limit.
+            max_test_weapon_damage = 2147483647
+            # Upper bound for enchantment levels set through the item editor. Defaults to the integer limit.
+            max_enchantment_level = 2147483647
+            # When true, an enchantment may be raised above the maximum level its own definition declares.
+            # On by default: the ceiling that matters is max_enchantment_level above, and the level codec
+            # that used to cap every saved level at 255 was widened by the mod, so the range is real.
+            allow_levels_above_max = true
+            # When true, any enchantment may be added to any item, for example efficiency on a sword.
+            # Off by default: an enchantment that the item cannot normally carry has no effect in game.
+            allow_mismatched_enchantments = false
+            # When true, the item editor opens for every item, including blocks and other things that are
+            # not weapons, tools or equipment. Off by default: the editor is meant for the equipment it can do
+            # something useful with, and opening it on a block or a bucket invites edits that do nothing.
+            allow_editing_all_items = false
+            # When true, the base damage of an ordinary weapon can be edited too, not only of a testing weapon.
+            # Off by default: ordinary weapons are what vanilla balance and other mods rely on.
+            allow_non_test_item_damage = false
+            # When true, the health editor only opens while holding the health editor item.
+            health_editor_requires_item = true
+
+            [content]
+            # Emergency switch: when true, none of the enchantments defined in config/MerlinLib/*.json
+            # are generated. Code api registrations are unaffected.
+            disable_generated_enchantments = false
+
+            [notices]
+            # Show the join notices business mods registered through MerlinLib (MerlinApi.notices()). On by
+            # default; turn it off to silence every join notice at once. Takes effect on the next join.
+            # The per mod switches are not here: they are the [mods] table of notices.toml, which the
+            # "join notices" screen under /merlinlib notices writes for you.
+            enabled = true
+            """;
 
     private boolean restrictToolsToOperators;
     private boolean editorRequiresPermission = true;
@@ -97,23 +79,25 @@ public final class ServerConfig {
     private boolean healthEditorRequiresItem = true;
     private boolean disableGeneratedEnchantments;
     private boolean noticesEnabled = true;
-    /**
-     * The switches an older build kept as {@code notices.per_mod}.
-     *
-     * <p>Read for one reason only: to move them into {@code config/MerlinLib/notices.toml} on the first
-     * launch after the move. Nothing else looks at it, and no screen offers it, because it is exactly the raw
-     * string players should never have had to type.
-     */
-    private String legacyNoticePerMod = "";
     private List<ContentError> errors = List.of();
 
+    /**
+     * @return the server switches, read from whichever store is currently installed
+ */
     public static ServerConfig load() {
+        return load(ConfigManager.serverView());
+    }
+
+    /**
+     * Reads the switches from one store.
+     *
+     * @param file the store to read, normally {@link ConfigManager#serverView()}
+     * @return the switches
+ */
+    static ServerConfig load(ConfigReader file) {
         ServerConfig config = new ServerConfig();
-        ConfigReader file = ConfigManager.read(path(), DEFAULTS);
-        if (migrate(file)) {
-            // The values below are read from the file, so it has to be parsed again after a migration
-            // rewrote it; otherwise this launch would still see the old numbers.
-            file = ConfigManager.read(path(), DEFAULTS);
+        if (file instanceof TomlFile toml && migrate(toml)) {
+            file = TomlFile.read(path(), DEFAULTS);
         }
 
         config.restrictToolsToOperators = file.getBoolean("security.restrict_tools_to_operators", false);
@@ -130,8 +114,6 @@ public final class ServerConfig {
         config.healthEditorRequiresItem = file.getBoolean("tools.health_editor_requires_item", true);
         config.disableGeneratedEnchantments = file.getBoolean("content.disable_generated_enchantments", false);
         config.noticesEnabled = file.getBoolean("notices.enabled", true);
-        // The old per mod string, read once so it can be moved into notices.toml. See NoticeSettings.
-        config.legacyNoticePerMod = file.getString("notices.per_mod", "");
         config.errors = file.errors();
         return config;
     }
@@ -141,59 +123,42 @@ public final class ServerConfig {
         return Path.of("config", Constants.CONFIG_DIRECTORY, "server.toml");
     }
 
-    /** The file layout this build writes; see {@link #migrate(ConfigReader)}. */
-    static final int CONFIG_VERSION = 5;
-
-    /** The layout that introduced the current defaults of the toolkit ceilings. */
-    private static final int CEILING_LAYOUT = 4;
+    /** The layout marker older builds wrote into {@code server.toml}; read once, never written again. */
+    private static final String LEGACY_VERSION_KEY = "tools.config_version";
 
     /**
      * Brings a file written by an older build up to the current defaults, once.
      *
-     * <p>Three options changed meaning while the toolkit was renamed from a weapon editor to an item
-     * editor: the level and damage ceilings were 255 and 100000 and are now the integer limit, and editing
-     * every item used to be off. A file always wins over the template, so a file created by the old build
-     * would keep the old, narrower behaviour forever and the switches would look broken.
+     * <p>Triggered by the legacy layout marker rather than by a number the server half would have to keep
+     * writing: the marker is read from the old file, the values it gated are imported, and the marker is
+     * then deleted, because the layout of this file is no longer versioned on the server side.
      *
-     * <p>A value is only touched while it still holds the old default: any other number was chosen by hand
-     * and is left exactly as it is. The version marker makes this a one-off, so setting a value back to 255
-     * on purpose stays honoured on the next launch. That is why the moves below are guarded by
-     * {@link #CEILING_LAYOUT} and not by "the file is out of date": the version is raised again whenever
-     * the layout is touched, and a launch that only raises it must not re-apply an old move to a value the
-     * player has since chosen himself.
+     * <p>A value is only touched while it still holds the old default, so a number chosen by hand stays.
      *
      * @param file the file the configuration was read from
-     * @return {@code true} when the file was rewritten and has to be read again
-     */
-    private static boolean migrate(ConfigReader file) {
-        int layout = file.getInt("tools.config_version", 0, 0, Integer.MAX_VALUE);
-        if (layout >= CONFIG_VERSION) {
+     * @return {@code true} when values were rewritten and the file has to be read again
+ */
+    private static boolean migrate(TomlFile file) {
+        if (!file.values().containsKey(LEGACY_VERSION_KEY)) {
             return false;
         }
         Map<String, String> overrides = new LinkedHashMap<>();
-        overrides.put("tools.config_version", Integer.toString(CONFIG_VERSION));
-        if (layout < CEILING_LAYOUT) {
-            if (file.getInt("tools.max_enchantment_level", 255, 1, Integer.MAX_VALUE) == 255) {
-                overrides.put("tools.max_enchantment_level", Integer.toString(Integer.MAX_VALUE));
-            }
-            if (file.getInt("tools.max_test_weapon_damage", 100000, 1, Integer.MAX_VALUE) == 100000) {
-                overrides.put("tools.max_test_weapon_damage", Integer.toString(Integer.MAX_VALUE));
-            }
-            // Editing every item was on by default until that build, and the migration before it wrote it
-            // into every file it touched as true - which is exactly why a file kept ignoring the new
-            // default. It is moved back to the default once, so the switch finally reads "off" the way the
-            // template documents it.
-            if (file.getBoolean("tools.allow_editing_all_items", false)) {
-                overrides.put("tools.allow_editing_all_items", "false");
-            }
-            if (!file.getBoolean("tools.allow_levels_above_max", false)) {
-                overrides.put("tools.allow_levels_above_max", "true");
-            }
+        if (file.getInt("tools.max_enchantment_level", 255, 1, Integer.MAX_VALUE) == 255) {
+            overrides.put("tools.max_enchantment_level", Integer.toString(Integer.MAX_VALUE));
         }
-        ConfigManager.write(path(), DEFAULTS, overrides);
-        Constants.LOG.info("[MerlinLib] server.toml migrated from layout {} to {}: {}",
-                layout, CONFIG_VERSION, overrides.keySet());
-        return true;
+        if (file.getInt("tools.max_test_weapon_damage", 100000, 1, Integer.MAX_VALUE) == 100000) {
+            overrides.put("tools.max_test_weapon_damage", Integer.toString(Integer.MAX_VALUE));
+        }
+        if (file.getBoolean("tools.allow_editing_all_items", false)) {
+            overrides.put("tools.allow_editing_all_items", "false");
+        }
+        if (!file.getBoolean("tools.allow_levels_above_max", false)) {
+            overrides.put("tools.allow_levels_above_max", "true");
+        }
+        TomlFile.rewrite(path(), DEFAULTS, overrides);
+        TomlFile.remove(path(), java.util.Set.of(LEGACY_VERSION_KEY));
+        Constants.LOG.info("[MerlinLib] server.toml migrated: {}", overrides.keySet());
+        return !overrides.isEmpty();
     }
 
     /** @return the commented template, which is also the documentation of the file. */
@@ -264,14 +229,6 @@ public final class ServerConfig {
     /** @return whether join notices registered through the api are shown at all */
     public boolean noticesEnabled() {
         return this.noticesEnabled;
-    }
-
-    /**
-     * @return the per mod overrides an older build kept as one string, for the one-off migration into
-     *         {@code notices.toml}; empty when there is nothing to move
-     */
-    public String legacyNoticePerMod() {
-        return this.legacyNoticePerMod;
     }
 
     /** @return problems found while reading the file during the last reload. */

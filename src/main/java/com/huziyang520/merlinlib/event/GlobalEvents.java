@@ -5,19 +5,6 @@ import java.util.List;
 
 /**
  * The events that do not belong to a single enchantment.
- *
- * <p>Two triggers are periodic or global by nature: every living entity ticks, and every player with a full
- * hunger bar regenerates. Chasing those through the per enchantment dispatcher would mean scanning the
- * equipment of every living entity in the world, sixty times a second, looking for enchantments that may not
- * even exist there. Instead a listener registers once, decides what it cares about, and does its own - cheaper,
- * narrower - work.
- *
- * <h2>The tick switch</h2>
- *
- * <p>Ticking every living entity is the single most expensive thing a library can subscribe to, so it is off
- * until somebody asks for it. {@link #enableLivingEntityTick()} is that ask; the loader triggers it the first
- * time a listener appears, and the trigger itself checks {@link #isLivingEntityTickEnabled()} before walking
- * the world. A server with no listener therefore pays nothing for the feature existing.
  */
 public final class GlobalEvents {
 
@@ -49,7 +36,7 @@ public final class GlobalEvents {
      * <p>Idempotent: calling it from several mods, or several times from one, changes nothing after the first
      * call. It is separate from registering a listener so that a mod can turn the feature on early and add its
      * listener later.
-     */
+ */
     public static void enableLivingEntityTick() {
         livingEntityTickEnabled = true;
     }
@@ -73,7 +60,7 @@ public final class GlobalEvents {
 
         /**
          * @param event the ticking entity
-         */
+ */
         void onTick(LivingEntityTickEvent event);
     }
 
@@ -83,7 +70,7 @@ public final class GlobalEvents {
 
         /**
          * @param event the regeneration, cancellable
-         */
+ */
         void onRegen(FoodRegenEvent event);
     }
 }

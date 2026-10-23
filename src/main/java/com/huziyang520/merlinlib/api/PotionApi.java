@@ -6,9 +6,6 @@ import java.util.Set;
 
 /**
  * Registration entry point for potions.
- *
- * <p>Like mob effects, potions are a plain code registry: a config file can only override or disable
- * an existing potion, never create one.
  */
 public interface PotionApi {
 
@@ -17,7 +14,7 @@ public interface PotionApi {
      *
      * @param id potion id, the namespace is normally your own mod id
      * @return a builder, nothing is registered until {@link PotionBuilder#submit()}
-     */
+ */
     PotionBuilder register(ResourceLocation id);
 
     /**
@@ -32,7 +29,7 @@ public interface PotionApi {
      *
      * @param effectId the effect the potion is built from
      * @return a builder already carrying the effect
-     */
+ */
     PotionBuilder potionFor(ResourceLocation effectId);
 
     /** @return ids of every potion registered through this api. */

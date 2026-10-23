@@ -19,14 +19,6 @@ import java.util.function.Consumer;
 
 /**
  * The health editor item: sneak and use it on a living entity to open the health editor for it.
- *
- * <p>The screen is opened on the client only, through an opener installed by the client entrypoint, so
- * this class stays free of client references and is safe on a dedicated server.
- *
- * <p>1.20.1 carries this over with one deletion: the 26.3 line had to give the item properties an
- * explicit id ({@code Properties#setId(ResourceKey)}), because 1.21 moved an item's registry key into
- * its properties. This version takes the id from the {@code DeferredRegister} call instead, which is
- * both simpler and the only thing the registry event looks at.
  */
 public final class HealthEditorItem extends Item {
 
@@ -49,7 +41,7 @@ public final class HealthEditorItem extends Item {
      * Installs the client side opener.
      *
      * @param consumer opens the health editor screen for the given entity
-     */
+ */
     public static void setOpener(Consumer<LivingEntity> consumer) {
         opener = consumer;
     }
@@ -92,7 +84,7 @@ public final class HealthEditorItem extends Item {
      * @param player the player using the item
      * @param hand   the hand holding it
      * @return a successful holder when the editor was opened for the player himself
-     */
+ */
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         if (player.isShiftKeyDown()) {

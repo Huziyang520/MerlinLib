@@ -23,75 +23,8 @@ import java.util.Set;
 
 /**
  * The command macro screen.
- *
- * <p>A macro is a name, a key combination and a list of commands. The commands are edited in a vanilla
- * multi line text area - one command per line - and the combination is captured by pressing keys.
- *
- * <h2>Capturing a combination</h2>
- *
- * <p>Clicking the key button starts a <em>fresh</em> capture (the old binding is dropped, so a new binding
- * cannot silently inherit the previous keys), and the capture ends on Escape or on a click anywhere else.
- * While it is running, keys - Enter included, since it is a key like any other - are added to the
- * combination; pressing a key that is already in it removes it, so a mistake is corrected by pressing the
- * wrong key again. Clicking the key button itself binds a mouse button the same way. The current combination
- * is shown on the button the whole time.
- *
- * <p>Ending on a click is not decoration: a capture that never ends swallows every keystroke, which makes the
- * name and command fields impossible to type into and quietly binds every letter the player types.
- *
- * <h2>What changed / 1.20.1 note</h2>
- *
- * <p>The macro logic - the capture state machine, the deferred persist, the selection handling, the clash
- * marking - is a direct port. The key codes it stores are <b>GLFW</b> codes here, where the 26.3 line
- * numbered keys by USB HID usage id, but that conversion is deliberately <b>not</b> in this file: it belongs
- * in {@link MacroStorage#load()}, which is the only place that can tell a file written by the 26.3 line from
- * one written by this build. This screen only ever deals in the codes an event carries, and on this version
- * those are the GLFW codes {@link MerlinUi} names, so it is unaffected either way.
- *
- * <p>What did move is the interface, and four items are worth recording:
- *
- * <ol>
- *   <li><b>the render pass</b> is {@link #render(GuiGraphics, int, int, float)} rather than
- *       {@code extractRenderState(GuiGraphicsExtractor, ...)}, and {@code drawContentBackground} takes a
- *       {@link GuiGraphics} rather than a {@code GuiGraphicsExtractor}. Both are pure renames of the
- *       parameter type, because every actual drawing call goes through {@link VanillaUi}, whose own first
- *       parameter moved the same way;</li>
- *   <li><b>the input methods are unpacked.</b> {@code keyPressed(KeyEvent)} is
- *       {@code keyPressed(int, int, int)}; {@code mouseClicked(MouseButtonEvent, boolean)} is
- *       {@code mouseClicked(double, double, int)} and has <b>no</b> double-click parameter, so the flag is
- *       dropped rather than reimplemented; {@code mouseDragged(MouseButtonEvent, double, double)} is
- *       {@code mouseDragged(double, double, int, double, double)}; {@code mouseReleased(MouseButtonEvent)} is
- *       {@code mouseReleased(double, double, int)}; and {@code mouseScrolled(double, double, double, double)}
- *       is the <b>three</b> argument {@code mouseScrolled(double, double, double)} - 1.20.1 has no
- *       horizontal wheel, so the single delta is what 26.3 called {@code scrollY}. Every
- *       {@code event.x()} / {@code event.y()} / {@code event.button()} / {@code event.key()} in the 26.3
- *       body became the parameter of the same name;</li>
- *   <li><b>the command area is built differently, and one of its limits is gone.</b> 26.3 used
- *       {@code MultiLineEditBox.builder()} with {@code setPlaceholder}, {@code setShowBackground(true)} and
- *       {@code setShowDecorations(true)}, then called {@code setLineLimit(64)}. On 1.20.1 <b>there is no
- *       builder class at all</b> - {@code MultiLineEditBox$Builder} resolves to nothing - only the
- *       seven argument constructor, and there is no {@code setLineLimit} on either
- *       {@code MultiLineEditBox} or the {@code MultilineTextField} behind it. The constructor replaces the
- *       builder (the placeholder is its sixth argument) and the background and decorations are
- *       <b>unconditional</b> on this version, because {@code AbstractScrollWidget} always draws them - so
- *       the two {@code setShow*} calls had nothing to turn on. The line limit is a genuine capability this
- *       version lacks and it is <b>not</b> emulated: a macro may now hold as many commands as fit the
- *       4096 character limit, and the 64 line ceiling that 26.3 imposed is simply absent. Nothing else about
- *       the field changed, and {@code setCharacterLimit(4096)} is the same call;</li>
- *   <li><b>{@code Minecraft#setScreenAndShow(Screen)}</b> is not used by this screen at all - it does not
- *       open another screen - so the only rename left is that {@code Component.literal} and the
- *       {@code MacroStorage} / {@link HotkeyRegistry} calls are unchanged.</li>
- * </ol>
- *
- * <p><b>One item is outside this file.</b> {@link MacroStorage} and {@link HotkeyRegistry} do not exist in
- * this project yet - they are being ported separately - so this screen is written against the 26.3 method
- * signatures exactly as they are: {@code MacroStorage.macros()}, {@code replaceAll(List)}, {@code save()},
- * the {@code Macro} record with {@code name()} / {@code keys()} / {@code combo()}, and
- * {@code HotkeyRegistry.comboName(KeyCombo)} / {@code release(int)}. When those two files land this screen
- * compiles with no further change.
  */
 public class MacroScreen extends VanillaScreen {
-
 
     /** Macro rows visible at once on a window tall enough. */
     private static final int MAX_ROWS = 6;
@@ -113,10 +46,7 @@ public class MacroScreen extends VanillaScreen {
     private static final int LABEL = 12;
     /**
      * Character ceiling of the command area.
-     *
-     * <p>4096 characters, which is what 26.3 used. The line ceiling 26.3 also set is not repeated because
-     * this version has no such limit to set; see the class comment.
-     */
+ */
     private static final int COMMANDS_CHARACTER_LIMIT = 4096;
 
     private final Screen parent;
@@ -143,7 +73,7 @@ public class MacroScreen extends VanillaScreen {
 
     /**
      * @param parent the screen to return to, or {@code null} to resume the game
-     */
+ */
     public MacroScreen(Screen parent) {
         super(Component.translatable("gui.merlinlib.macro.title"));
         this.parent = parent;
@@ -183,7 +113,7 @@ public class MacroScreen extends VanillaScreen {
      * instead of running off the bottom of the window.
      *
      * @return the number of rows to show, between {@link #MIN_ROWS} and {@link #MAX_ROWS}
-     */
+ */
     private int visibleRows() {
         int editorColumn = (LABEL + VanillaUi.WIDGET_HEIGHT + 6) * 2 + LABEL + COMMANDS_HEIGHT;
         int other = 12 + 4 + 6 + 10 + 6 + VanillaUi.WIDGET_HEIGHT
@@ -240,11 +170,9 @@ public class MacroScreen extends VanillaScreen {
         // counter of the box on top of them.
         int commandsHeight = Math.max(30, Math.min(COMMANDS_HEIGHT,
                 this.hintY - 6 - LABEL - 6 - VanillaUi.WIDGET_HEIGHT - commandsY));
-        // What changed / 1.20.1 note: 26.3 built this with MultiLineEditBox.builder() and then set
         // setCharacterLimit(4096) and setLineLimit(64). This version has neither a builder class nor a line
         // limit - the seven argument constructor below is the whole of the API, and the placeholder is its
         // sixth argument. The background and the decorations cannot be switched off here because
-        // AbstractScrollWidget always draws them, which is the state 26.3 asked for anyway. The 64 line
         // ceiling is simply not available; see the class comment.
         this.commandsBox = new MultiLineEditBox(this.font, editorX, commandsY, editorWidth, commandsHeight,
                 Component.translatable("gui.merlinlib.macro.commands_hint"),
@@ -409,7 +337,7 @@ public class MacroScreen extends VanillaScreen {
      *
      * <p>Fresh, not additive: the point of clicking the button is to set a new combination, and keeping the
      * previous keys is how the previous version ended up with a combination of eight keys nobody intended.
-     */
+ */
     private void beginCapture() {
         if (this.selected < 0) {
             return;
@@ -459,18 +387,12 @@ public class MacroScreen extends VanillaScreen {
 
     /**
      * Feeds a key to the capture, or to the screen.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> the 26.3 override took a {@code KeyEvent} and asked it for
-     * {@code key()}; this version takes the key code, the scan code and the modifier mask as three separate
-     * arguments. Only the first is read, and it is compared against {@link MerlinUi}, which now names the
-     * GLFW codes this version's events carry. The behaviour - Escape cancels, any other key toggles itself
-     * into the combination and is released - is unchanged.
-     *
+ *
      * @param keyCode   the GLFW key code the event carries
      * @param scanCode  the platform scan code, unused
      * @param modifiers the modifier mask, unused
      * @return {@code true} when the key was consumed
-     */
+ */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (this.capturing) {
@@ -500,7 +422,7 @@ public class MacroScreen extends VanillaScreen {
      * to close on Escape while that capture is running.
      *
      * @return whether Escape may close this screen
-     */
+ */
     @Override
     public boolean shouldCloseOnEsc() {
         return !this.capturing;
@@ -520,18 +442,12 @@ public class MacroScreen extends VanillaScreen {
     /**
      * Handles a click: it binds a mouse button during a capture, ends the capture, selects a row, or reaches
      * the scrollbar.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> the cursor and the button arrive as three separate arguments
-     * instead of one {@code MouseButtonEvent} with {@code x()} / {@code y()} / {@code button()} accessors,
-     * and this version's method has <b>no</b> double-click parameter, so the flag 26.3 forwarded is gone.
-     * {@link #overDeleteButton(double, double)} and {@link ScrollArea#mouseClicked} were both ported to the
-     * same unpacked shape, so the two calls below are straight pass-throughs.
-     *
+ *
      * @param mouseX the cursor x
      * @param mouseY the cursor y
      * @param button the mouse button, a GLFW button number
      * @return {@code true} when the click was consumed
-     */
+ */
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         // While capturing, clicking the key button binds the mouse button that was clicked; a click anywhere
@@ -572,7 +488,7 @@ public class MacroScreen extends VanillaScreen {
      * @param mouseX the cursor x
      * @param mouseY the cursor y
      * @return {@code true} when a visible delete button is under the cursor
-     */
+ */
     private boolean overDeleteButton(double mouseX, double mouseY) {
         for (Button button : this.deleteButtons) {
             if (button.visible && button.isMouseOver(mouseX, mouseY)) {
@@ -584,17 +500,14 @@ public class MacroScreen extends VanillaScreen {
 
     /**
      * Continues a scrollbar drag.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> the vanilla five argument drag signature; the two trailing deltas
-     * are forwarded unused, which is exactly the shape {@link ScrollArea#mouseDragged} takes.
-     *
+ *
      * @param mouseX the cursor x
      * @param mouseY the cursor y
      * @param button the mouse button
      * @param dragX  the x delta, forwarded but unused
      * @param dragY  the y delta, forwarded but unused
      * @return {@code true} when the drag was consumed
-     */
+ */
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         if (this.list != null && this.list.mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
@@ -605,14 +518,12 @@ public class MacroScreen extends VanillaScreen {
 
     /**
      * Ends a scrollbar drag.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> three separate arguments instead of one event object.
-     *
+ *
      * @param mouseX the cursor x
      * @param mouseY the cursor y
      * @param button the mouse button
      * @return {@code true} when the release was consumed
-     */
+ */
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         if (this.list != null && this.list.mouseReleased(mouseX, mouseY, button)) {
@@ -623,16 +534,12 @@ public class MacroScreen extends VanillaScreen {
 
     /**
      * Scrolls the macro list with the wheel.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> <b>three</b> arguments, not four. 1.20.1 has no horizontal wheel,
-     * so the 26.3 {@code scrollX} parameter does not exist and the single delta arrives where 26.3 put
-     * {@code scrollY}.
-     *
+ *
      * @param mouseX  the cursor x
      * @param mouseY  the cursor y
      * @param scrollY the wheel delta
      * @return {@code true} when the scroll was consumed
-     */
+ */
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
         if (this.list != null && this.list.mouseScrolled(mouseX, mouseY, scrollY)) {
@@ -724,7 +631,7 @@ public class MacroScreen extends VanillaScreen {
      * it never blocks a macro from being saved or fired.
      *
      * @return the key sets used by at least two macros
-     */
+ */
     private Set<Set<Integer>> duplicatedCombos() {
         Map<Set<Integer>, Integer> counts = new HashMap<>();
         for (MacroStorage.Macro macro : this.macros) {

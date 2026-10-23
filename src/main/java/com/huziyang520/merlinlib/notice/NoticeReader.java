@@ -22,20 +22,6 @@ import java.util.Map;
 
 /**
  * Reads notices out of data packs.
- *
- * <p>A pack adds one at {@code data/<namespace>/merlinlib/notices/<name>.json}; the notice id is
- * {@code <namespace>:<name>}, so the file's location and the per mod switch both follow from the pack's own
- * namespace. The format is written out in the README.
- *
- * <p>Parsing happens once per player join rather than on a reload listener: the read is a resource listing and
- * a handful of small files, joins are rare, and doing it here means a pack that was edited and reloaded is
- * picked up the next time somebody joins - with no listener to register on two loaders and no stale cache to
- * invalidate. A file that does not parse is logged and skipped, never allowed to stop the join.
- *
- * <p>1.20.1 note: direct port - {@code ResourceManager#listResources} and
- * {@link Resource#openAsReader()} were both added before 1.20.1 and carry the same shape here, unlike the
- * {@code Resource#openAsReader} of the older {@code ResourceManager} calls the 1.20.1 line would otherwise
- * have had to fall back on.
  */
 final class NoticeReader {
 
@@ -50,7 +36,7 @@ final class NoticeReader {
      *
      * @param server the running server, for its resource manager
      * @return the notices, in a stable order
-     */
+ */
     static List<NoticeEntry> read(MinecraftServer server) {
         ResourceManager resources = server.getResourceManager();
         Map<ResourceLocation, Resource> found = resources.listResources(DIRECTORY,
@@ -80,7 +66,7 @@ final class NoticeReader {
      *
      * @param file the resource id of the file
      * @return the notice id, or {@code null} when the file is nested deeper than one folder
-     */
+ */
     private static ResourceLocation toNoticeId(ResourceLocation file) {
         String path = file.getPath();
         String name = path.substring(DIRECTORY.length() + 1, path.length() - ".json".length());
@@ -96,7 +82,7 @@ final class NoticeReader {
      * @param id   the notice id the file belongs to
      * @param json the file's contents
      * @return the notice, or {@code null} when it has no lines
-     */
+ */
     private static NoticeEntry parse(ResourceLocation id, JsonElement json) {
         if (!json.isJsonObject()) {
             Constants.LOG.warn("[MerlinLib] the join notice {} is not a JSON object and was skipped", id);
@@ -126,7 +112,7 @@ final class NoticeReader {
      *
      * @param line the JSON of the line
      * @return the line, or {@code null} when it is neither form
-     */
+ */
     private static Component parseLine(JsonElement line) {
         if (line.isJsonPrimitive()) {
             return Component.literal(line.getAsString());
@@ -171,7 +157,7 @@ final class NoticeReader {
      *
      * <p>Spelled out here rather than looked up through the formatting enum: the lookup helpers have moved
      * around between versions while the colours themselves have not changed since they were invented.
-     */
+ */
     private static final Map<String, Integer> NAMED_COLORS = Map.ofEntries(
             Map.entry("black", 0x000000), Map.entry("dark_blue", 0x0000AA),
             Map.entry("dark_green", 0x00AA00), Map.entry("dark_aqua", 0x00AAAA),
@@ -187,7 +173,7 @@ final class NoticeReader {
      *
      * @param text the colour as written in the file
      * @return the colour, or {@code null} when it is not recognised
-     */
+ */
     private static TextColor parseColor(String text) {
         String value = text.trim();
         if (value.isEmpty()) {
@@ -216,7 +202,7 @@ final class NoticeReader {
      * @param id    the notice id, for the warning
      * @param value the mode as written in the file
      * @return the mode, falling back to every join
-     */
+ */
     private static NoticeMode parseMode(ResourceLocation id, String value) {
         return switch (value.toLowerCase(Locale.ROOT)) {
             case "once", "once_per_save" -> NoticeMode.ONCE_PER_SAVE;

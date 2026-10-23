@@ -15,32 +15,6 @@ import java.util.List;
 
 /**
  * Fluent description of one enchantment.
- *
- * <p>Typical use:
- * <pre>{@code
- * MerlinApi.enchantments()
- *         .register(new ResourceLocation("mymod", "frostbite"))
- *         .maxLevel(3)
- *         .weight(5)
- *         .slots("mainhand")
- *         .supportedItems("#minecraft:enchantable/weapon")
- *         .submit();
- * }</pre>
- *
- * <p>{@link #build()} only produces the immutable draft, {@link #submit()} registers it.
- *
- * <h2>What still takes json, and why</h2>
- *
- * <p>{@link #supportedItems(String)}, {@link #primaryItems(String)} and {@link #exclusiveSet} keep
- * the vanilla datapack spellings - {@code "#namespace:tag"}, {@code "namespace:item"} or a list -
- * because that is what the documentation and the existing config files write. They are parsed into
- * code by {@code EnchantmentRegistry} at registration time; nothing on 1.20.1 reads a tag for these
- * fields.
- *
- * <p>{@link #description(JsonElement)} and {@link #effects(JsonObject)} are kept for source
- * compatibility with the 26.3 line. On 1.20.1 the description is a translation key
- * ({@link #translationKey(String)}) and the numeric effect system does not exist
- * ({@link #effects(JsonObject)} records the value and reports that it cannot be applied).
  */
 public final class EnchantmentBuilder {
 
@@ -67,7 +41,7 @@ public final class EnchantmentBuilder {
     /**
      * Public only so the registry implementation in another package can construct it; use
      * {@link EnchantmentApi#register(ResourceLocation)} instead of calling this directly.
-     */
+ */
     public EnchantmentBuilder(EnchantmentRegistry owner, ResourceLocation id) {
         this.owner = owner;
         this.id = id;
@@ -81,14 +55,7 @@ public final class EnchantmentBuilder {
     }
 
     /**
-     * Accepts the vanilla {@code description} component shape of the 26.3 line and keeps only its
-     * {@code translate} value, which is the only part 1.20.1 has a place for.
-     *
-     * <p>A literal {@code text} description has nowhere to go on this version: the enchantment's name
-     * is a translation key looked up by the tooltip, and a hard coded string would show up untranslated
-     * in every language. It is accepted and ignored rather than rejected, so a file carried over from
-     * 26.3 still loads.
-     */
+ */
     public EnchantmentBuilder description(JsonElement description) {
         if (description != null && description.isJsonObject()) {
             JsonElement key = description.getAsJsonObject().get("translate");
@@ -160,13 +127,7 @@ public final class EnchantmentBuilder {
 
     /**
      * Records the declared numeric effects.
-     *
-     * <p>Kept so a caller written for the 26.3 line still compiles and so {@code /merlinlib info} can
-     * show what was declared. It is <b>not applied</b>: the numeric effect system it describes
-     * ({@code minecraft:add}, {@code LevelBasedValue}) is 1.20.5+, and on this version behaviour comes
-     * from the event api. A non-empty value is reported once, by id, at registration time - see
-     * {@code EnchantmentRegistry#submit}.
-     */
+ */
     public EnchantmentBuilder effects(JsonObject effects) {
         this.effects = effects;
         return this;
@@ -194,7 +155,7 @@ public final class EnchantmentBuilder {
      *
      * @param category the vanilla category
      * @return this builder
-     */
+ */
     public EnchantmentBuilder category(net.minecraft.world.item.enchantment.EnchantmentCategory category) {
         this.category = category;
         return this;
@@ -202,7 +163,7 @@ public final class EnchantmentBuilder {
 
     /**
      * @return the immutable draft, without registering it.
-     */
+ */
     public EnchantmentDraft build() {
         return new EnchantmentDraft(
                 this.id,
@@ -231,7 +192,7 @@ public final class EnchantmentBuilder {
      *
      * @return the registered draft
      * @throws IllegalArgumentException when a field is out of range; the message names the field
-     */
+ */
     public EnchantmentDraft submit() {
         return this.owner.submit(this.build());
     }

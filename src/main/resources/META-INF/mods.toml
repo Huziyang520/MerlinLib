@@ -1,14 +1,8 @@
 # Forge 1.20.1 mod metadata.
 #
-# Differences from the 26.3 neoforge.mods.toml:
-#   * the file is META-INF/mods.toml (neoforge.mods.toml only exists from 1.20.6 onwards)
-#   * the dependency key is `mandatory = true/false`, not `type = "required"`
-#   * the icon field is `logoFile` (`iconFile` / `bannerFile` only exist from 26.2)
-#   * there is no `[[mixins]]` block: Forge 1.20.1's ModFileParser does not know the key at all
-#     (probed: the string "mixins" is absent from ModFileParser/ModInfo). Mixin configurations are
-#     announced through the jar manifest's MixinConfigs attribute instead, see build.gradle.
-#   * displayURL / issueTrackerURL / logoFile must sit inside the [[mods]] sub-table; at the top
-#     level they are silently ignored and the mod list buttons stay dead.
+# This file is META-INF/mods.toml, the loader's own name for it. Dependencies say `mandatory`,
+# the icon is `logoFile`, and the mixin configuration is announced in the jar manifest rather
+# than here, because Forge 1.20.1's ModFileParser knows no `[[mixins]]` key.
 modLoader="javafml"
 loaderVersion="${forge_loader_version_range}"
 license="${license}"

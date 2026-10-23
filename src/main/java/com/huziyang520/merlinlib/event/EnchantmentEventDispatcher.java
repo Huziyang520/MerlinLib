@@ -15,27 +15,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Delivers an event to the enchantments that care about it.
- *
- * <h2>How a dispatch is kept cheap</h2>
- *
- * <p>A dispatch first looks at a mask of the types that have at least one callback. When nobody listens to
- * attacks, an attack costs one bit test and nothing else - no scan of the equipment, no allocation. The mask
- * is read through a volatile field, so a registration during gameplay is visible to the next trigger without
- * locking the hot path.
- *
- * <h2>How one bad callback is kept harmless</h2>
- *
- * <p>Callbacks belong to other people's mods. A callback that throws is logged with its enchantment and the
- * remaining callbacks - and the caller's own logic - still run. A library that lets one listener take down an
- * attack calculation is worse than no library.
- *
- * <h2>What the key is</h2>
- *
- * <p>Callbacks are keyed by the enchantment's registry id. The 26.3 line did the same thing for a different
- * reason - holders were recreated by every datapack reload there - and the reason still holds here in a
- * weaker form: an id survives being written to a config file, compared against a config file, and printed in
- * a diagnostic, while an object identity does not. The context that reaches a callback carries the live
- * enchantment, so a callback always sees the registered definition.
  */
 public final class EnchantmentEventDispatcher {
 
@@ -58,7 +37,7 @@ public final class EnchantmentEventDispatcher {
      * @param type        the event type
      * @param callback    the callback
      * @param <E>         the event type's event class
-     */
+ */
     public static <E extends EnchantmentEvent> void register(Enchantment enchantment,
                                                              EnchantmentEventType<E> type,
                                                              EnchantmentEventCallback<E> callback) {
@@ -77,7 +56,7 @@ public final class EnchantmentEventDispatcher {
     /**
      * @param type the event type
      * @return {@code true} when any enchantment listens to it; a trigger uses this to do nothing at all
-     */
+ */
     public static boolean hasCallbacks(EnchantmentEventType<?> type) {
         return (activeTypes & type.mask()) != 0L;
     }
@@ -85,7 +64,7 @@ public final class EnchantmentEventDispatcher {
     /**
      * @param enchantment the enchantment
      * @return {@code true} when that enchantment listens to anything
-     */
+ */
     public static boolean hasEnchantmentCallbacks(Enchantment enchantment) {
         ResourceLocation id = idOf(enchantment);
         Map<EnchantmentEventType<?>, List<EnchantmentEventCallback<?>>> byType = id == null ? null : CALLBACKS.get(id);
@@ -99,7 +78,7 @@ public final class EnchantmentEventDispatcher {
      * @param event  the event
      * @param entity the entity to scan, usually {@link EnchantmentEvent#getEntity()}
      * @param <E>    the event class
-     */
+ */
     public static <E extends EnchantmentEvent> void dispatch(EnchantmentEventType<E> type, E event,
                                                              LivingEntity entity) {
         if (event == null || !hasCallbacks(type)) {
@@ -118,7 +97,7 @@ public final class EnchantmentEventDispatcher {
      * @param event the event
      * @param stack the weapon snapshot to scan
      * @param <E>   the event class
-     */
+ */
     public static <E extends EnchantmentEvent> void dispatchStack(EnchantmentEventType<E> type, E event,
                                                                   ItemStack stack) {
         if (event == null || !hasCallbacks(type)) {
@@ -134,7 +113,7 @@ public final class EnchantmentEventDispatcher {
      * @param event    the event
      * @param contexts the enchantments to deliver to
      * @param <E>      the event class
-     */
+ */
     private static <E extends EnchantmentEvent> void dispatchTo(EnchantmentEventType<E> type, E event,
                                                                 List<EnchantmentContext> contexts) {
         for (EnchantmentContext context : contexts) {
@@ -167,7 +146,7 @@ public final class EnchantmentEventDispatcher {
     /**
      * @param enchantment the enchantment
      * @return how many callbacks it has registered, across all event types
-     */
+ */
     public static int callbackCount(Enchantment enchantment) {
         ResourceLocation id = idOf(enchantment);
         Map<EnchantmentEventType<?>, List<EnchantmentEventCallback<?>>> byType = id == null ? null : CALLBACKS.get(id);
@@ -184,7 +163,7 @@ public final class EnchantmentEventDispatcher {
     /**
      * @param type the event type
      * @return how many callbacks are registered for it, across all enchantments
-     */
+ */
     public static int callbackCount(EnchantmentEventType<?> type) {
         int count = 0;
         for (Map<EnchantmentEventType<?>, List<EnchantmentEventCallback<?>>> byType : CALLBACKS.values()) {
@@ -222,12 +201,7 @@ public final class EnchantmentEventDispatcher {
 
     /**
      * Drops every callback.
-     *
-     * <p>The 26.3 line called this from its reload path when a pack removed an enchantment. On 1.20.1 the
-     * registry never changes while the game runs, so nothing calls it on its own; it is kept because a
-     * dependent mod that wants to rebuild its own registrations has nowhere else to start from, and because
-     * leaving it out would make this class's state un-resettable.
-     */
+ */
     public static void clear() {
         CALLBACKS.clear();
         activeTypes = 0L;
@@ -236,7 +210,7 @@ public final class EnchantmentEventDispatcher {
     /**
      * @param enchantment the enchantment
      * @return its id, or {@code null} when it is not in the registry
-     */
+ */
     private static ResourceLocation idOf(Enchantment enchantment) {
         return enchantment == null ? null : net.minecraft.core.registries.BuiltInRegistries.ENCHANTMENT.getKey(enchantment);
     }

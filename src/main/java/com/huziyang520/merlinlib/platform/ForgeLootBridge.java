@@ -13,15 +13,6 @@ import java.util.List;
 
 /**
  * Forge implementation of {@link ILootBridge}.
- *
- * <p>{@code LootTableLoadEvent} hands out the table that Forge patched with
- * {@code addPool(LootPool)} - verified against the real 1.20.1 Forge bytecode, where
- * {@code LootTable.addPool(LootPool)} exists next to {@code getPool(String)}. So one shape covers
- * both of 26.3's loaders and the sink can simply build the pool and add it.
- *
- * <p>The event itself carries no registry access, so the registry access is captured when the
- * server starts. Loot tables are loaded during {@code ServerAboutToStartEvent}, so it is already
- * populated by the time the first table arrives.
  */
 public final class ForgeLootBridge implements ILootBridge {
 

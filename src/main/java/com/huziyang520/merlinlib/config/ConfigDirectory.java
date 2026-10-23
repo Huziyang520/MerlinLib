@@ -12,9 +12,6 @@ import java.util.stream.Stream;
 
 /**
  * Locates and fingerprints the MerlinLib configuration directory.
- *
- * <p>The folder is resolved relative to the game working directory, which is the same place the
- * vanilla {@code config} directory lives on Forge as it did on the 26.3 line's two loaders.
  */
 public final class ConfigDirectory {
 
@@ -23,14 +20,14 @@ public final class ConfigDirectory {
 
     /**
      * @return {@code <gameDir>/config/MerlinLib}, created on first use.
-     */
+ */
     public static Path root() {
         return Path.of("config", Constants.CONFIG_DIRECTORY).toAbsolutePath().normalize();
     }
 
     /**
      * @return every {@code .json} file in the directory, sorted by file name for stable ordering.
-     */
+ */
     public static List<Path> jsonFiles() {
         Path root = root();
         if (!Files.isDirectory(root)) {
@@ -52,16 +49,9 @@ public final class ConfigDirectory {
     /**
      * Builds a cheap fingerprint of the current configuration state. Any change of file set, size or
      * modification time invalidates the cached content snapshot.
-     *
-     * <p>The 26.3 line used this to make {@code /reload} pick up edited files without restarting the
-     * game, which was possible there because enchantments lived in a data driven registry. On 1.20.1
-     * an enchantment is a plain game registry entry that is frozen for the life of the process, so an
-     * edited file is only re-registered by restarting (documented in the README). The fingerprint is
-     * kept because a restart is not the only reader: it still distinguishes "the files changed since
-     * the snapshot" for the report the command prints.
-     *
+ *
      * @return an opaque string, equal while the files are unchanged
-     */
+ */
     public static String fingerprint() {
         StringBuilder builder = new StringBuilder();
         for (Path file : jsonFiles()) {

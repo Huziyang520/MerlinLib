@@ -9,12 +9,6 @@ import java.util.regex.Pattern;
 /**
  * Validates identifiers early so a broken id fails with a readable message instead of an obscure
  * registry error later on.
- *
- * <p>{@link net.minecraft.resources.ResourceLocation} validates its own path on construction and
- * throws, which is why {@link #parse} below catches that instead of returning a null id the way the
- * 26.3 line did: on 1.20.1 there is no {@code ResourceLocation.tryParse} that reports failure with a
- * {@code null} result, and an id read out of a hand written config file must not be able to crash the
- * game during startup.
  */
 public final class IdValidator {
 
@@ -44,7 +38,7 @@ public final class IdValidator {
      *
      * @param raw value as written by the user, e.g. {@code unbreakable} or {@code othermod:thing}
      * @return the parsed id, or empty when the value is not a legal identifier
-     */
+ */
     public static Optional<ResourceLocation> parse(String raw) {
         if (raw == null || raw.isBlank()) {
             return Optional.empty();
@@ -65,7 +59,7 @@ public final class IdValidator {
 
     /**
      * @return a readable reason why {@code raw} is not a legal id, or empty when it is legal.
-     */
+ */
     public static Optional<String> describeProblem(String raw) {
         if (raw == null || raw.isBlank()) {
             return Optional.of("id must not be empty");

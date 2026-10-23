@@ -2,6 +2,7 @@ package com.huziyang520.merlinlib.notice;
 
 import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.config.ConfigManager;
+import com.huziyang520.merlinlib.config.NoticeSettings;
 import com.huziyang520.merlinlib.config.ServerConfig;
 import com.huziyang520.merlinlib.platform.Services;
 import net.minecraft.network.chat.Component;
@@ -14,17 +15,6 @@ import java.util.List;
 
 /**
  * Sends join notices.
- *
- * <p>Installed once at startup; from then on every player who joins is offered every notice they have not
- * already seen, in registration order for code notices and resource order for pack notices.
- *
- * <p>Every switch is read at the moment of sending - the global one in {@code server.toml} and the per mod
- * ones in {@code notices.toml} - which is what makes a settings change take effect on the next join instead
- * of on the next restart.
- *
- * <p>1.20.1 note: the only real divergence is in {@link #remember}, which reaches the save's store through the
- * older three argument {@code DimensionDataStorage#computeIfAbsent(load, create, name)} instead of the single
- * {@code SavedDataType} argument the 26.3 line passes. Everything else in this class is a rename.
  */
 public final class NoticeManager {
 
@@ -41,7 +31,7 @@ public final class NoticeManager {
      *
      * @param server the running server
      * @return the notices, in a stable order
-     */
+ */
     public static List<NoticeEntry> all(MinecraftServer server) {
         List<NoticeEntry> entries = new ArrayList<>(code());
         entries.addAll(NoticeReader.read(server));
@@ -55,7 +45,7 @@ public final class NoticeManager {
      * the switches are named by the mods rather than by the packs, and they still work.
      *
      * @return the code notices
-     */
+ */
     public static List<NoticeEntry> code() {
         return NoticeRegistry.codeNotices();
     }
@@ -64,7 +54,7 @@ public final class NoticeManager {
      * Offers every unseen notice to a player who just joined.
      *
      * @param player the player
-     */
+ */
     private static void onJoin(ServerPlayer player) {
         if (!(player.level() instanceof ServerLevel level)) {
             return;
@@ -79,7 +69,7 @@ public final class NoticeManager {
         }
         int sent = 0;
         for (NoticeEntry entry : all(server)) {
-            if (!NoticeSettings.isEnabled(entry)) {
+            if (!NoticeSettings.isEnabled(entry.owner(), entry.enabledByDefault())) {
                 continue;
             }
             if (!shouldSend(level, player, entry)) {
@@ -102,7 +92,7 @@ public final class NoticeManager {
      * @param player the player
      * @param entry  the notice
      * @return true when it should be sent
-     */
+ */
     private static boolean shouldSend(ServerLevel level, ServerPlayer player, NoticeEntry entry) {
         return switch (entry.mode()) {
             case EVERY_JOIN -> true;
@@ -121,7 +111,7 @@ public final class NoticeManager {
      * @param level the level, used to reach the save's storage
      * @param key   the key to record
      * @return true when the key had not been recorded before
-     */
+ */
     private static boolean remember(ServerLevel level, String key) {
         MinecraftServer server = level.getServer();
         if (server == null) {

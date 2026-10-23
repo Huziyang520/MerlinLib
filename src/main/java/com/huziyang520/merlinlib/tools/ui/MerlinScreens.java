@@ -26,40 +26,6 @@ import net.minecraft.world.item.TridentItem;
 /**
  * Client side entry points for the MerlinLib screens, and the one place that decides whether a screen may
  * open on this side.
- *
- * <h2>Silence is deliberate</h2>
- *
- * <p>A refused open says nothing on screen. The reason is written to the log instead: a chat message that
- * repeats "no permission" while the player is already experimenting only adds noise, and the player asked
- * for exactly this. The log line names the switch and its current value, which is what actually helps.
- *
- * <h2>Why the client cannot ask for permissions</h2>
- *
- * <p>The operator question can only be answered on the server: on a client the local player carries no
- * permission set, so asking there locks out everybody including the operator. This class therefore never
- * checks permissions, and the server refuses the write where it happens, which is the only place that knows.
- *
- * <p>This class is only referenced from loader client code, so a dedicated server never loads it and the
- * client-only types it uses ({@code Minecraft}, {@code Screen}) can never break server startup.
- *
- * <h2>What changed / 1.20.1 note</h2>
- *
- * <p>Three API moves, none of which change what the class decides:
- *
- * <ul>
- *   <li>{@code Minecraft#setScreenAndShow(Screen)} is a 1.21 method; this version's is
- *       {@code Minecraft#setScreen(Screen)}. Every open below uses it;</li>
- *   <li>{@link #mayOpenEditorLocally} reports the refusal with
- *       {@code Player#displayClientMessage(Component, boolean)} and passes {@code actionBar = true}, which
- *       is exactly what 26.3's {@code sendOverlayMessage} meant - the message above the hotbar, not in chat.
- *       The method name changed; the behaviour did not, and the "refuse silently towards chat" rule above
- *       still holds;</li>
- *   <li>{@link #isEquippableToolOrWeapon} could ask about item <em>components</em> on 26.3
- *       ({@code DataComponents.ATTRIBUTE_MODIFIERS}, {@code TOOL}, {@code WEAPON},
- *       {@code KINETIC_WEAPON}, {@code PIERCING_WEAPON}). 1.20.1 has no data component system - components
- *       arrive in 1.20.5 - so the same question is asked of the item's <em>class</em> and of the vanilla
- *       attribute map instead. See that method for what replaced what.</li>
- * </ul>
  */
 public final class MerlinScreens {
 
@@ -68,21 +34,17 @@ public final class MerlinScreens {
 
     /**
      * Whether the permission switches let this player use an editor, as far as the client can tell.
-     *
+ *
      * <p>In single player the integrated server is in this very process, so the question can be answered
      * properly by asking it about its own player object. That is what makes the "requires command
      * permission" switches visible the moment they are flipped, instead of the player opening an editor
      * whose work is dropped when it is saved. On a dedicated server the client has no permission set to
      * ask about, so the screen opens and the server keeps the last word.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> the refusal is sent with
-     * {@code displayClientMessage(message, true)}. The Boolean is "show it above the hotbar rather than in
-     * chat", which is the 1.20.1 spelling of the 26.3 {@code sendOverlayMessage}.
-     *
+ *
      * @param player the local player
      * @param health {@code true} for the health editor, {@code false} for the item editor
      * @return {@code false} only when the switches deny it and the answer is known
-     */
+ */
     private static boolean mayOpenEditorLocally(Player player, boolean health) {
         MinecraftServer server = Minecraft.getInstance().getSingleplayerServer();
         if (server == null) {
@@ -112,7 +74,7 @@ public final class MerlinScreens {
      *
      * @param player the local player, may be {@code null}
      * @return {@code true} when a screen may open
-     */
+ */
     public static boolean mayUseToolsLocally(Player player) {
         if (player == null) {
             return false;
@@ -136,7 +98,7 @@ public final class MerlinScreens {
      * @param player the local player
      * @param stack  the item in hand
      * @return {@code true} when the editor may open
-     */
+ */
     public static boolean mayEdit(Player player, ItemStack stack) {
         if (!mayUseToolsLocally(player)) {
             return false;
@@ -151,39 +113,13 @@ public final class MerlinScreens {
 
     /**
      * Whether an item is something the editor opens by default: a weapon, a tool or equipment.
-     *
+ *
      * <p>The test is deliberately broader than a list of item ids, so modded weapons, tools and armour are
      * covered too.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> 26.3 read the item's components, which is the cleanest possible
-     * test:
-     *
-     * <table border="1">
-     *   <caption>one 26.3 component test, replaced</caption>
-     *   <tr><th>26.3 test</th><th>1.20.1 replacement</th></tr>
-     *   <tr><td>{@code DataComponents.ATTRIBUTE_MODIFIERS}</td>
-     *       <td>{@code stack.getAttributeModifiers(EquipmentSlot.MAINHAND)} is non-empty - the same
-     *       question, asked of the live attribute map instead of a stored component. That map is built from
-     *       the item's own defaults, so a modded sword answers yes without being named here;</td></tr>
-     *   <tr><td>{@code DataComponents.TOOL}</td>
-     *       <td>{@link DiggerItem} - the class that carries a mining tier, speed and set of blocks;</td></tr>
-     *   <tr><td>{@code DataComponents.WEAPON}</td>
-     *       <td>{@link SwordItem} and {@link ProjectileWeaponItem} (which covers {@link BowItem} and
-     *       {@link CrossbowItem}); {@link TridentItem} and {@link ShieldItem} are added on their own, since
-     *       they are combat items that carry none of those supertypes;</td></tr>
-     *   <tr><td>{@code DataComponents.KINETIC_WEAPON} / {@code PIERCING_WEAPON}</td>
-     *       <td>nothing. Those two components are about the post-1.21 combat model - kinetic (mace style)
-     *       and piercing weapons - and this version has no item that would carry them, so there is nothing
-     *       to test. A modded trident-like weapon is still covered by {@link TridentItem} or by the
-     *       attribute test above;</td></tr>
-     *   <tr><td>bulk equipment</td>
-     *       <td>{@link ArmorItem} and {@code stack.isDamageableItem()}, the latter standing in for "this
-     *       item has durability", which is how the 26.3 code accepted any damageable item.</td></tr>
-     * </table>
-     *
+ *
      * @param stack the item
      * @return {@code true} when the item is normally editable
-     */
+ */
     private static boolean isEquippableToolOrWeapon(ItemStack stack) {
         return !stack.getAttributeModifiers(EquipmentSlot.MAINHAND).isEmpty()
                 || stack.getItem() instanceof DiggerItem
@@ -197,7 +133,7 @@ public final class MerlinScreens {
 
     /**
      * Opens the item editor for the item in the main hand, when it is allowed.
-     */
+ */
     public static void openItemEditor() {
         Minecraft minecraft = Minecraft.getInstance();
         Player player = minecraft.player;
@@ -224,7 +160,7 @@ public final class MerlinScreens {
      * <p>The binding ships switched off ({@code editor.hotkey_enabled}), so the library can be installed
      * without claiming a key. It can be switched on with {@code /merlinlib editorhotkey on}, or in the
      * configuration file (Jupiter's screen, or {@code client.toml} when Jupiter is absent).
-     */
+ */
     public static void openItemEditorFromHotkey() {
         if (!ConfigManager.client().editorHotkeyEnabled()) {
             return;
@@ -241,7 +177,7 @@ public final class MerlinScreens {
      * disagree about them and the client is where the screen actually opens.
      *
      * @param tool the screen to open, one of {@link OpenToolPayload}'s constants
-     */
+ */
     public static void openFromCommand(int tool) {
         Minecraft minecraft = Minecraft.getInstance();
         Player player = minecraft.player;
@@ -272,7 +208,7 @@ public final class MerlinScreens {
      * deliberately not applied: that requirement exists so that a sneak right click is unambiguous, and a
      * command is already about as unambiguous as a request gets. The permission switch still applies, on
      * both sides.
-     */
+ */
     private static void openHealthEditorForSelf() {
         Minecraft minecraft = Minecraft.getInstance();
         Player player = minecraft.player;
@@ -293,7 +229,7 @@ public final class MerlinScreens {
      * class comment.
      *
      * @param parent the screen to return to, or {@code null} to resume the game
-     */
+ */
     public static void openMacroScreen(Screen parent) {
         Player player = Minecraft.getInstance().player;
         if (!mayUseToolsLocally(player)) {
@@ -316,13 +252,9 @@ public final class MerlinScreens {
      * it has already been through {@code PermissionGate} on the server.
      *
      * @param parent the screen to return to, or {@code null} to resume the game
-     */
+ */
     public static void openNoticesScreen(Screen parent) {
-        Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null) {
-            return;
-        }
-        minecraft.setScreen(new NoticesScreen(parent));
+        Minecraft.getInstance().setScreen(new NoticesScreen(parent));
     }
 
     /**
@@ -339,7 +271,7 @@ public final class MerlinScreens {
      * @param parent the screen to return to
      * @param target the entity to edit
      * @return {@code true} when the screen was opened
-     */
+ */
     public static boolean openHealthEditor(Screen parent, LivingEntity target) {
         Minecraft minecraft = Minecraft.getInstance();
         Player player = minecraft.player;

@@ -1,0 +1,106 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.11/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Directory 'C:\Users\HP\.gradle\jdks\eclipse_adoptium-25-amd64-windows.2' (Gradle property 'org.gradle.java.installations.paths') used for java installations does not exist
+> Task :downloadMcpConfig
+> Task :extractSrg UP-TO-DATE
+> Task :createSrgToMcp UP-TO-DATE
+> Task :convertSrgToTsrg UP-TO-DATE
+
+> Task :compileJava
+Note: SpongePowered MIXIN Annotation Processor Version=0.8.5
+Note: Supported obfuscation types: ObfuscationServiceMCP supports [notch] ObfuscationServiceFG3 supports [searge]
+Note: Loading searge mappings from D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\build\tmp\mojmap-to-srg.tsrg
+Note: Writing refmap to D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\build\resources\main\merlinlib.refmap.json
+Note: Writing refmap to D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\build\resources\main\merlinlib.refmap.json
+Note: Writing searge composite mappings to D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\build\tmp\refmap-out.tsrg
+Note: Writing refmap to D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\build\resources\main\merlinlib.refmap.json
+Note: Writing refmap to D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\build\resources\main\merlinlib.refmap.json
+Note: Writing searge composite mappings to D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\build\tmp\refmap-out.tsrg
+D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\src\main\java\com\huziyang520\merlinlib\impl\PotionRegistry.java:96: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+            ResourceLocation longId = new ResourceLocation(id.getNamespace(), "long_" + id.getPath());
+                                      ^
+D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\src\main\java\com\huziyang520\merlinlib\impl\PotionRegistry.java:97: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+            ResourceLocation strongId = new ResourceLocation(id.getNamespace(), "strong_" + id.getPath());
+                                        ^
+D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\src\main\java\com\huziyang520\merlinlib\impl\EffectRegistry.java:107: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+        ResourceLocation potionId = new ResourceLocation(effectId.getNamespace(), effectId.getPath());
+                                    ^
+D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\src\main\java\com\huziyang520\merlinlib\client\HudRowPolicy.java:29: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+            new ResourceLocation("minecraft", "textures/gui/icons.png");
+            ^
+D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\src\main\java\com\huziyang520\merlinlib\client\MerlinConfigEntry.java:32: warning: [removal] get() in ModLoadingContext has been deprecated and marked for removal
+            ModLoadingContext.get().registerExtensionPoint(
+                             ^
+D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\src\main\java\com\huziyang520\merlinlib\config\JupiterContainer.java:33: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+        super(new ResourceLocation(Constants.MOD_ID, "settings"),
+              ^
+D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\src\main\java\com\huziyang520\merlinlib\content\BuiltInContent.java:21: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+    public static final ResourceLocation UNBREAKABLE = new ResourceLocation(Constants.MOD_ID, "unbreakable");
+                                                       ^
+D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\src\main\java\com\huziyang520\merlinlib\content\EnchantmentJson.java:135: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+            return java.util.Optional.of(new ResourceLocation(text));
+                                         ^
+D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\src\main\java\com\huziyang520\merlinlib\event\BuiltInEvents.java:82: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+        return new ResourceLocation("merlinlib", path);
+               ^
+D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\src\main\java\com\huziyang520\merlinlib\impl\IdValidator.java:60: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+            return Optional.of(new ResourceLocation(namespace, path));
+                               ^
+D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\src\main\java\com\huziyang520\merlinlib\MerlinLibForge.java:58: warning: [removal] get() in FMLJavaModLoadingContext has been deprecated and marked for removal
+        IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
+                                                   ^
+D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\src\main\java\com\huziyang520\merlinlib\network\DamageFeedbackPayload.java:46: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+    public static final ResourceLocation ID = new ResourceLocation(Constants.MOD_ID, "damage_feedback");
+                                              ^
+D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\src\main\java\com\huziyang520\merlinlib\network\HealthEditPayload.java:33: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+    public static final ResourceLocation ID = new ResourceLocation(Constants.MOD_ID, "health_edit");
+                                              ^
+D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\src\main\java\com\huziyang520\merlinlib\network\ItemEditPayload.java:43: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+    public static final ResourceLocation ID = new ResourceLocation(Constants.MOD_ID, "item_edit");
+                                              ^
+D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\src\main\java\com\huziyang520\merlinlib\network\ServerSender.java:94: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+                new ResourceLocation(Constants.MOD_ID, CHANNEL_NAME),
+                ^
+D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\src\main\java\com\huziyang520\merlinlib\notice\BuiltInNotices.java:29: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+    public static final ResourceLocation CONFIG_UI = new ResourceLocation(Constants.MOD_ID, "config_ui");
+                                                     ^
+D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\src\main\java\com\huziyang520\merlinlib\notice\NoticeReader.java:90: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+        return new ResourceLocation(file.getNamespace(), name);
+               ^
+D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\src\main\java\com\huziyang520\merlinlib\reload\ContentReloadListener.java:58: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+    public static final ResourceLocation ID = new ResourceLocation(Constants.MOD_ID, "content");
+                                              ^
+D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\src\main\java\com\huziyang520\merlinlib\tools\HealthEditorItem.java:33: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+    private static final ResourceLocation ID = new ResourceLocation(Constants.MOD_ID, "health_editor");
+                                               ^
+D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\src\main\java\com\huziyang520\merlinlib\tools\TestWeapons.java:91: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+            new ResourceLocation(Constants.MOD_ID, "test_weapon_damage");
+            ^
+D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\src\main\java\com\huziyang520\merlinlib\tools\TestWeapons.java:126: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+        ResourceLocation id = new ResourceLocation(Constants.MOD_ID, path);
+                              ^
+D:\ä¯ÀÀÆ÷\Mymods\¹²´´¸½Ä§\MerlinLib\1.20.1\src\main\java\com\huziyang520\merlinlib\tools\TestWeapons.java:229: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+        return Optional.of(tags.stream().map(ResourceLocation::new).toList());
+                                             ^
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+22 warnings
+
+> Task :processResources
+> Task :classes
+> Task :jar
+> Task :createMcpToSrg UP-TO-DATE
+> Task :reobfJar
+> Task :jarJar SKIPPED
+> Task :reobfJarJar SKIPPED
+> Task :assemble
+[Incubating] Problems report is available at: file:///D:/%E6%B5%8F%E8%A7%88%E5%99%A8/Mymods/%E5%85%B1%E5%88%9B%E9%99%84%E9%AD%94/MerlinLib/1.20.1/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.11/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 1m 32s
+9 actionable tasks: 5 executed, 4 up-to-date

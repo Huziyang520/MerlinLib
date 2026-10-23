@@ -20,46 +20,12 @@ import java.util.function.Supplier;
 
 /**
  * The library's network channel, and the sink client screens send through.
- *
- * <h2>What changed from the 26.3 line, and why this class is not a one for one port</h2>
- *
- * <p>On 26.3 this class was a two method indirection and nothing else: each loader's client entrypoint
- * installed a {@code Consumer<Object>} that forwarded to that loader's send helper
- * ({@code ClientPlayNetworking.send} / {@code ClientPacketDistributor.sendToServer}), and the payload
- * <em>types</em> and their <em>handlers</em> were registered separately, in the loader entrypoints.
- *
- * <p>1.20.1 has no equivalent of that split. A {@code SimpleChannel} is one object that owns the
- * encoding, the decoding, and the handler of every message it carries, and it has to be built in one
- * place; there is no loader level "register this payload type" call to spread the work over. That one
- * place is here, because this is the class the rest of the library already asks to send things.
- *
- * <p>The indirection is kept anyway, and it still earns its place: {@link #setSink} lets a client
- * entrypoint override the transport (the 26.3 client entrypoints still call it), while
- * {@link #send} falls back to {@code SimpleChannel#sendToServer} when nobody has. A dedicated server
- * never installs a sink, and the server bound path is never taken there.
- *
- * <h2>Why the handler is not registered per side</h2>
- *
- * <p>26.3 could register the clientbound <em>handler</em> on the client only, which is what kept the
- * client sink out of the dedicated server. A {@code SimpleChannel} handler is registered once for the
- * process, so it exists on the server too - and it delegates straight to {@link DamageFeedbackSink},
- * whose sink is {@code null} there. That is exactly the property the 26.3 class was written for, so
- * the server stays free of client classes.
- *
- * <h2>Wiring</h2>
- *
- * <p>{@link #register()} must be called once during mod construction or common setup. It is
- * idempotent, so calling it from more than one place is harmless.
  */
 public final class ServerSender {
 
     /**
      * Protocol version advertised to the other side.
-     *
-     * <p>Both predicates accept only this exact value, which is the 1.20.1 way of saying "this side
-     * must also have the mod". The effect matches 26.3, where a client without the payload types
-     * registered could not complete the handshake either; only the mechanism differs.
-     */
+ */
     private static final String PROTOCOL_VERSION = "1";
 
     /** The one channel every MerlinLib message travels on. */
@@ -84,7 +50,7 @@ public final class ServerSender {
      * <p>Idempotent by design: the channel registry cannot be reopened, so a second call would throw
      * rather than overwrite, and the likeliest way to reach that is two entrypoints both asking to
      * install the network.
-     */
+ */
     public static synchronized void register() {
         if (channel != null) {
             return;
@@ -132,13 +98,9 @@ public final class ServerSender {
 
     /**
      * Installs the client side sender.
-     *
-     * <p>Optional on 1.20.1: {@link #send} reaches {@code SimpleChannel#sendToServer} on its own, so a
-     * client entrypoint that installs nothing still works. It is kept because the 26.3 client
-     * entrypoints call it and because a dependent mod may want to route payloads its own way.
-     *
+ *
      * @param sender accepts a payload and sends it to the server
-     */
+ */
     public static void setSink(Consumer<Object> sender) {
         sink = sender;
     }
@@ -148,7 +110,7 @@ public final class ServerSender {
      *
      * @param payload the payload to send
      * @throws IllegalStateException when the channel was never registered and no sink is installed
-     */
+ */
     public static void send(Object payload) {
         Consumer<Object> active = sink;
         if (active != null) {
@@ -167,15 +129,10 @@ public final class ServerSender {
 
     /**
      * Sends damage feedback to one player.
-     *
-     * <p>This is the 1.20.1 form of the 26.3 call site
-     * {@code attacker.connection.send(new DamageFeedbackPayload(...))}: a {@code SimpleChannel} is the
-     * only supported way to put a packet on the wire, and the player additive distributor is its
-     * clientbound equivalent of "to this connection".
-     *
+ *
      * @param player  the receiving player, typically the attacker
      * @param payload the feedback to send
-     */
+ */
     public static void sendToPlayer(ServerPlayer player, DamageFeedbackPayload payload) {
         SimpleChannel local = channel;
         if (local == null || player == null) {
@@ -193,7 +150,7 @@ public final class ServerSender {
      *
      * @param player  the receiving player
      * @param payload which screen to open
-     */
+ */
     public static void sendToPlayer(ServerPlayer player, OpenToolPayload payload) {
         SimpleChannel local = channel;
         if (local == null || player == null) {
@@ -211,7 +168,7 @@ public final class ServerSender {
      *
      * @param payload  the decoded payload
      * @param supplier the network context
-     */
+ */
     private static void onOpenTool(OpenToolPayload payload, Supplier<NetworkEvent.Context> supplier) {
         NetworkEvent.Context context = supplier.get();
         context.enqueueWork(() -> ToolOpenSink.handle(payload));
@@ -226,7 +183,7 @@ public final class ServerSender {
      *
      * @param payload  the decoded payload
      * @param supplier the network context
-     */
+ */
     private static void onDamageFeedback(DamageFeedbackPayload payload, Supplier<NetworkEvent.Context> supplier) {
         NetworkEvent.Context context = supplier.get();
         context.enqueueWork(() -> DamageFeedbackSink.handle(payload));
@@ -241,7 +198,7 @@ public final class ServerSender {
      *
      * @param payload  the requested edit
      * @param supplier the network context
-     */
+ */
     private static void onHealthEdit(HealthEditPayload payload, Supplier<NetworkEvent.Context> supplier) {
         NetworkEvent.Context context = supplier.get();
         ServerPlayer player = context.getSender();
@@ -258,7 +215,7 @@ public final class ServerSender {
      *
      * @param payload  the requested stack
      * @param supplier the network context
-     */
+ */
     private static void onItemEdit(ItemEditPayload payload, Supplier<NetworkEvent.Context> supplier) {
         NetworkEvent.Context context = supplier.get();
         ServerPlayer player = context.getSender();
@@ -292,7 +249,7 @@ public final class ServerSender {
      *
      * @param player  the requesting player, may be {@code null}
      * @param payload the requested edit
-     */
+ */
     private static void applyHealthEdit(ServerPlayer player, HealthEditPayload payload) {
         if (player == null) {
             return;

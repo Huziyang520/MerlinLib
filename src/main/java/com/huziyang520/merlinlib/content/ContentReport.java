@@ -8,19 +8,6 @@ import java.util.stream.Collectors;
 /**
  * Outcome of one content refresh. Printed in full after every startup so that authors can see exactly
  * what was registered instead of guessing.
- *
- * <p>The 26.3 line ran this after every {@code /reload} as well, because a data driven registry could
- * gain and lose entries while the game ran. On 1.20.1 an enchantment cannot be added to the registry
- * after the registry event, so this is produced once per launch and the "updated"/"removed" lists are
- * always empty in practice. They are kept because the report is also what {@code /merlinlib list}
- * prints, and because a future target that regains a dynamic registry should not have to reintroduce
- * the vocabulary.
- *
- * @param added   ids that were registered by this refresh
- * @param updated ids whose definition changed
- * @param removed ids that no longer exist
- * @param failed  ids or files that could not be loaded
- * @param errors  detailed, locatable problems
  */
 public record ContentReport(
         List<ResourceLocation> added,
@@ -42,7 +29,7 @@ public record ContentReport(
 
     /**
      * @return a multi-line, human readable summary. Never empty, so callers can always log it.
-     */
+ */
     public String describe() {
         StringBuilder builder = new StringBuilder();
         builder.append("added=").append(this.added.size())

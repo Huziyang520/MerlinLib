@@ -20,66 +20,6 @@ import java.util.Map;
 
 /**
  * The combat feedback overlay: the nominal damage above the crosshair and the floating damage numbers.
- *
- * <h2>Both are drawn in the HUD layer</h2>
- *
- * <p>Floating numbers over an entity look like world rendering, but drawing them in the HUD layer and
- * projecting the world position to screen space has three advantages: no world render event is needed
- * (the two loaders differ a lot there), the text always faces the player by construction, and one
- * renderer works on both loaders - the 26.3 line's Fabric {@code HudElement} and NeoForge
- * {@code GuiLayer} both handed out the same extractor plus a delta tracker.
- *
- * <h2>Where the numbers come from</h2>
- *
- * <ul>
- *   <li><b>Crosshair number</b>: the damage the server resolved for the swing, sent over the wire. The
- *       client cannot recompute it, because the enchantment pipeline needs a {@code ServerLevel}.</li>
- *   <li><b>Floating numbers</b>: the health drop of <i>every</i> living entity in render distance,
- *       sampled each client tick. Tracking only the local player's own targets missed damage dealt by
- *       other players and by the environment.</li>
- * </ul>
- *
- * <h2>Every switch is read where it is used</h2>
- *
- * <p>The two displays and all their parameters come from {@code client.toml} and are read at draw time,
- * not cached in fields. That is what keeps the switches honest: switching damage numbers off
- * takes effect on the next frame, without a restart, and switching the crosshair number on takes effect
- * on the next hit.
- *
- * <h2>What changed / 1.20.1 note</h2>
- *
- * <p>This is a port of the whole overlay, not a translation by pattern. Five things had no 1.20.1
- * counterpart and were re-derived from the bytecode of this version:
- *
- * <ul>
- *   <li><b>The render callback's second argument.</b> 26.3 took a {@code DeltaTracker} and asked it for
- *       {@code getGameTimeDeltaPartialTick(false)}. There is no {@code DeltaTracker} on 1.20.1 at all
- *       ({@code javap net.minecraft.client.DeltaTracker} reports the class missing), because the HUD
- *       callback of this version is still handed the partial tick directly. The render method therefore
- *       takes that float and uses it verbatim - it is the same number the tracker was asked for.</li>
- *   <li><b>The pose stack.</b> {@code PoseStack#pushMatrix}/{@code popMatrix} and a two argument
- *       {@code scale} are 1.21 names. This version's {@code PoseStack} has {@code pushPose},
- *       {@code popPose} and {@code scale(float, float, float)}, so the draw thunks are written with the
- *       three argument form and a {@code 1.0F} on the z axis, which is exactly what the two argument
- *       form meant.</li>
- *   <li><b>Text.</b> {@code GuiGraphicsExtractor#text} is this version's
- *       {@code GuiGraphics#drawString(Font, String, int, int, int, boolean)}, the same call with the
- *       same drop shadow flag.</li>
- *   <li><b>The camera's field of view.</b> This is the one real loss. {@code Camera#getFov()} exists on
- *       26.3 and does <b>not</b> exist on 1.20.1: the whole field of view lives inside
- *       {@code GameRenderer}, behind a {@code private double getFov(Camera, float, boolean)}. See
- *       {@link #fieldOfView} for what replaced it and why the replacement is not a guess.</li>
- *   <li><b>The camera's angles.</b> {@code Camera#yRot()} / {@code xRot()} are the bean accessors
- *       {@code getYRot()} / {@code getXRot()} on this version, confirmed with
- *       {@code javap -p net.minecraft.client.Camera}. The projection maths itself is unchanged.</li>
- * </ul>
- *
- * <p>One thing is deliberately <em>not</em> changed, and is worth stating because it looks like an
- * omission: the 26.3 class comment says the overlay "rides the vanilla HUD layer and lets the game
- * decide when the HUD is hidden". On 1.20.1 that decision is not a layer concept - the whole HUD is
- * skipped by {@code GameRenderer#render} unless {@code !Options.hideGui || Screen != null} (bytecode of
- * {@code GameRenderer#render}, offsets 555 to 575). Anything hooked to the HUD therefore inherits the
- * rule automatically, which is what the 26.3 comment intended.
  */
 public final class CombatFeedback {
 
@@ -118,7 +58,7 @@ public final class CombatFeedback {
 
     /**
      * @return the shared overlay state.
-     */
+ */
     public static CombatFeedback instance() {
         return INSTANCE;
     }
@@ -160,7 +100,7 @@ public final class CombatFeedback {
      * @param damage   the unclamped swing damage the server resolved
      * @param critical whether the server classified the swing as critical
      * @param targetId the id of the entity that was hit
-     */
+ */
     public void onServerDamage(float damage, boolean critical, int targetId) {
 
         this.hudDamage = Math.max(0.5F, damage);
@@ -176,7 +116,7 @@ public final class CombatFeedback {
      * @param player   the local player
      * @param target   the entity being hit
      * @param critical whether the swing looks critical on the client
-     */
+ */
     public void onLocalSwing(Player player, Entity target, boolean critical) {
 
         if (critical) {
@@ -193,7 +133,7 @@ public final class CombatFeedback {
      *
      * @param player the attacker
      * @return {@code true} when the swing counts as critical
-     */
+ */
     public static boolean isCritical(Player player) {
         return player.fallDistance > 0.0F
                 && !player.onGround()
@@ -214,7 +154,7 @@ public final class CombatFeedback {
      * switch: an overlay that is not wanted costs nothing.
      *
      * @param minecraft the client
-     */
+ */
     public void tick(Minecraft minecraft) {
 
         this.tickCounter++;
@@ -277,7 +217,7 @@ public final class CombatFeedback {
      *
      * @param target the hit entity
      * @return the world position the number starts at
-     */
+ */
     private static Vec3 anchorOf(LivingEntity target) {
         return target.position().add(0.0D, target.getBbHeight() * 1.1D + 0.4D, 0.0D);
     }
@@ -286,16 +226,10 @@ public final class CombatFeedback {
 
     /**
      * Draws the whole overlay.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> the callback is shaped for this version. 26.3's
-     * {@code (GuiGraphicsExtractor, DeltaTracker)} pair has no counterpart here - the extractor is
-     * {@link GuiGraphics} and the delta tracker does not exist - so the second parameter is the partial
-     * tick itself, which is the value the tracker was asked to compute. A Forge GUI overlay hands that
-     * straight over: {@code (gui, graphics, partialTick, width, height) -> render(graphics, partialTick)}.
-     *
+ *
      * @param graphics    the draw context
      * @param partialTick the frame's partial tick, used to interpolate entity positions
-     */
+ */
     public void render(GuiGraphics graphics, float partialTick) {
 
         Minecraft minecraft = Minecraft.getInstance();
@@ -303,7 +237,6 @@ public final class CombatFeedback {
             return;
         }
         // The HUD is skipped by the game itself while Options.hideGui is set, which is the 1.20.1
-        // spelling of the 26.3 note about the overlay riding the vanilla HUD layer.
 
         int guiWidth = minecraft.getWindow().getGuiScaledWidth();
         int guiHeight = minecraft.getWindow().getGuiScaledHeight();
@@ -318,7 +251,7 @@ public final class CombatFeedback {
 
     /**
      * Draws the damage of the last swing, centred directly above the crosshair.
-     */
+ */
     private void drawHudDamage(GuiGraphics graphics, Minecraft minecraft, int guiWidth, int guiHeight) {
 
         Float damage = this.hudDamage;
@@ -337,7 +270,6 @@ public final class CombatFeedback {
         int x = guiWidth / 2 - (int) (textWidth * HUD_SCALE / 2.0F);
         int y = guiHeight / 2 - HUD_OFFSET_Y;
 
-        // pushPose / popPose / scale(float, float, float) are this version's names for the 26.3
         // pushMatrix / popMatrix / scale(float, float). The z axis is unscaled, as it was implicitly.
         graphics.pose().pushPose();
         graphics.pose().scale(HUD_SCALE, HUD_SCALE, FLAT);
@@ -362,7 +294,6 @@ public final class CombatFeedback {
         double focal = 1.0D / Math.tan(Math.toRadians(fov) * 0.5D);
         // The camera already moves with the partial tick, so the anchor must too; sampling the raw tick
         // position made every number wobble whenever the view moved. The partial tick is the render
-        // parameter on this version, which is where the 26.3 DeltaTracker took it from as well.
         float partial = partialTick;
 
         for (Popup popup : this.popups) {
@@ -401,13 +332,7 @@ public final class CombatFeedback {
 
     /**
      * The vertical field of view in degrees, for the frame being drawn.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> this is the one member of this class with no direct
-     * counterpart. 26.3 called {@code Camera#getFov()}, which does not exist on 1.20.1 - the whole field
-     * of view lives inside {@code GameRenderer}, in a {@code private double getFov(Camera, float,
-     * boolean)} with no public accessor. The value is therefore assembled from the same two inputs that
-     * vanilla's own method reads, which was established by disassembling it rather than by assuming:
-     *
+ *
      * <pre>
      * private double getFov(net.minecraft.client.Camera, float, boolean);
      *   ...
@@ -419,28 +344,22 @@ public final class CombatFeedback {
      *  179: ForgeHooksClient.getFieldOfView(GameRenderer, Camera, double, double, boolean)
      *  189: dreturn
      * </pre>
-     *
-     * <p>The multiplier vanilla interpolates is the one {@code AbstractClientPlayer#getFieldOfViewModifier}
-     * produces - {@code GameRenderer#tickFov} is literally
-     * {@code fov += (modifier - fov) * 0.5F}, and that modifier is a public method on this version. The
-     * configured setting times the interpolated modifier is therefore the quantity 26.3's
-     * {@code getFov()} returned.
-     *
+ *
      * <p>The result is finally passed through Forge's own {@code getFieldOfView} hook, which is the call
      * vanilla's method ends in. That matters: it posts {@code ViewportEvent.ComputeFov}, so a mod that
      * changes the field of view moves these numbers with the view instead of leaving them misaligned -
      * and it is the same door vanilla itself uses, so the two can never disagree.
-     *
+ *
      * <p>What is deliberately <em>not</em> reproduced: the death zoom and the lava/water narrowing, both
      * of which only apply while the camera entity is dying or submerged. A damage number drifting over an
      * entity while the player is drowning is not a case worth a second copy of vanilla's arithmetic, and
      * the error is a few percent of the projection scale.
-     *
+ *
      * @param minecraft   the client
      * @param camera      the camera being projected through
      * @param partialTick the frame's partial tick
      * @return the vertical field of view in degrees
-     */
+ */
     private static double fieldOfView(Minecraft minecraft, Camera camera, float partialTick) {
 
         double configured = minecraft.options.fov().get();
@@ -452,11 +371,7 @@ public final class CombatFeedback {
 
     /**
      * Projects a world position onto the GUI, or returns {@code null} when it is behind the camera.
-     *
-     * <p>The only change from 26.3 is the camera's angle accessors: {@code yRot()} and {@code xRot()} are
-     * the bean methods {@code getYRot()} and {@code getXRot()} on this version. The projection maths is
-     * byte for byte the same, which is what keeps the numbers sitting on the same spot on screen.
-     */
+ */
     private static double[] project(Vec3 world, Vec3 eye, Camera camera, double focal, double aspect,
                                     int guiWidth, int guiHeight) {
 
@@ -502,7 +417,7 @@ public final class CombatFeedback {
      *
      * @param damage the swing damage
      * @return an RGB colour
-     */
+ */
     private static int damageColour(float damage) {
 
         // two segments: white -> yellow over 0..20, yellow -> red over 20..40
@@ -533,7 +448,7 @@ public final class CombatFeedback {
 
     /**
      * Logs the overlay being registered, once, so the log proves the HUD hook is live.
-     */
+ */
     public static void announce() {
         Constants.LOG.info("[MerlinLib] combat overlay registered on the HUD (nominal damage + floating damage numbers)");
     }

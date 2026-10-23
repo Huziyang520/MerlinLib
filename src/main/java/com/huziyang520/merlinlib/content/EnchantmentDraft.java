@@ -13,59 +13,6 @@ import java.util.Objects;
 /**
  * Loader independent description of one enchantment, regardless of whether it was written in java
  * or in a config file.
- *
- * <h2>What changed from the 26.3 line, and why it had to</h2>
- *
- * <p>On 26.3 this record was the shape of a vanilla enchantment <em>datapack file</em>: the field
- * names mirrored {@code data/<ns>/enchantment/<name>.json} one for one, the values that datapack
- * could not express were carried as raw {@link JsonElement}s and translated on the way out, and a
- * generated datapack was what made them real.
- *
- * <p>1.20.1 has no data driven enchantment registry. An enchantment is a code object
- * ({@code DeferredRegister<Enchantment>}), created once during the registry event, and the things a
- * datapack would have said are said by overriding its methods. The draft therefore keeps the
- * <em>documented public field set</em> - so a {@code config/MerlinLib/*.json} file still looks and
- * reads exactly the same, and every value keeps its meaning - but the values are the plain java
- * types the constructor needs, and the ones that cannot exist here are resolved instead of passed
- * through:
- *
- * <ul>
- *   <li>{@code slots} becomes {@link #equipmentSlots()}, the {@link EquipmentSlot} array
- *       {@code Enchantment}'s constructor takes</li>
- *   <li>{@code supported_items} becomes a predicate, because
- *       {@code Enchantment#canEnchant(ItemStack)} is a method rather than a tag reference</li>
- *   <li>{@code exclusive_set} becomes a set of ids, because
- *       {@code Enchantment#checkCompatibility(Enchantment)} is a method rather than a tag</li>
- *   <li>{@code effects} is kept verbatim for the record and for {@code /merlinlib info}, and is
- *       reported as unusable rather than silently dropped: the numeric effect system it describes
- *       ({@code minecraft:add}, {@code LevelBasedValue}) arrives in 1.20.5. Behaviour on this
- *       version comes from the event api, which is what Practical Enchantments uses</li>
- * </ul>
- *
- * <p>Kept deliberately absent: the 26.3 {@code description} component. Enchantment names in 1.20.1
- * are translation keys ({@code enchantment.<namespace>.<path>}), which is what the config file's
- * {@code translation_key} already produces, and the vanilla tooltip reads exactly that key. See
- * {@link #translationKey()}.
- *
- * @param id              full identifier, namespace defaulted to {@code merlinlib}
- * @param source          who declared it, decides override priority
- * @param enabled         {@code false} removes the entry from the game no matter who else declares it
- * @param translationKey  the language key the tooltip reads, normally
- *                        {@code enchantment.<namespace>.<path>}
- * @param weight          rarity weight, 1..1024, exposed through {@code Enchantment#getRarity().getWeight()}
- * @param maxLevel        maximum level, 1..255, returned by {@code Enchantment#getMaxLevel()}
- * @param minCostBase     {@code min_cost.base}
- * @param minCostPerLevel {@code min_cost.per_level_above_first}
- * @param maxCostBase     {@code max_cost.base}
- * @param maxCostPerLevel {@code max_cost.per_level_above_first}
- * @param anvilCost       {@code anvil_cost}
- * @param slots           {@code slots}, e.g. {@code ["mainhand"]} or {@code ["any"]}
- * @param supportedItems  {@code supported_items}, item id, {@code #tag} or a json array
- * @param primaryItems    {@code primary_items}, optional; on 1.20.1 it decides whether the
- *                        enchantment may be offered at the enchanting table
- * @param exclusiveSet    {@code exclusive_set}, tag, id or array; matched against registered ids
- * @param effects         the declared numeric effects, kept for the record and never applied here
- * @param acquisition     how it can be obtained, translated onto the enchantment methods
  */
 public record EnchantmentDraft(
         ResourceLocation id,
@@ -148,7 +95,7 @@ public record EnchantmentDraft(
      * {@code EquipmentSlot.values()} is. The list is never empty: an empty slot set would make an
      * enchantment unreachable through every equipment lookup, and a config typo must not be able to
      * do that.
-     */
+ */
     public EquipmentSlot[] equipmentSlots() {
         List<EquipmentSlot> resolved = new java.util.ArrayList<>();
         for (String name : this.slots) {
@@ -165,14 +112,10 @@ public record EnchantmentDraft(
 
     /**
      * Maps a slot name written in a config file onto {@link EquipmentSlot}.
-     *
-     * <p>Accepts both the vanilla datapack spelling ({@code any}, {@code hand}, {@code armor},
-     * {@code mainhand}, ...) and the enum's own constant names, so a file written for the 26.3 line
-     * keeps working unchanged.
-     *
+ *
      * @param name the name as written
      * @return the slot, or {@code null} for {@code any} and for names with no 1.20.1 equivalent
-     */
+ */
     private static EquipmentSlot slotByName(String name) {
         if (name == null) {
             return null;
@@ -199,7 +142,7 @@ public record EnchantmentDraft(
      * four vanilla bands. The bands are the vanilla ones (COMMON 10, UNCOMMON 5, RARE 2, VERY_RARE 1)
      * and the mapping is the nearest band, so a file that says {@code "weight": 5} gets exactly the
      * rarity that number would have meant on the data driven version.
-     */
+ */
     public Enchantment.Rarity rarity() {
         if (this.weight >= 10) {
             return Enchantment.Rarity.COMMON;
@@ -215,7 +158,7 @@ public record EnchantmentDraft(
 
     /**
      * @return the translation key used for the enchantment's name.
-     */
+ */
     public String translationKey() {
         return this.translationKey;
     }

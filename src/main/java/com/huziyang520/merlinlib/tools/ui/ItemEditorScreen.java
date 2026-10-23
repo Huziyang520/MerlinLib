@@ -32,87 +32,8 @@ import java.util.Map;
 /**
  * The item editor: rename any item, edit the enchantments of any item, and edit the base damage of a
  * MerlinLib test weapon.
- *
- * <h2>How a row is laid out</h2>
- *
- * <p>Every enchantment row is the same four things, left to right: the enchantment name, a number field
- * holding its level, a {@code -} and a {@code +} button, and an {@code X} that removes the row. The name is
- * clipped to the room that is actually left, so a long translation cannot push the controls off the panel.
- *
- * <p>The level can be changed four ways, which is what players expect from a number in a game:
- * <ul>
- *     <li>type a number into the field;</li>
- *     <li>click {@code -} / {@code +} (with shift, by the configured step);</li>
- *     <li>put the wheel over a row's name, which changes that row by {@code editor.scroll_step}, or by
- *     {@code editor.scroll_step_fast} while control is held;</li>
- *     <li>shift and wheel to scroll the list instead, or drag the scrollbar, or wheel over the scrollbar.</li>
- * </ul>
- *
- * <h2>Why nothing is rebuilt while editing</h2>
- *
- * <p>The visible rows are a fixed set of widgets; a click resolves its target from the row index at click
- * time. Rebuilding the screen on every change made the - / + buttons act on the wrong row and reset the
- * order, so that never happens now.
- *
- * <h2>What changed / 1.20.1 note</h2>
- *
- * <p>This screen is the largest single casualty of the data component system not existing yet, and the
- * substitutions are not cosmetic. Four groups of changes, in the order they bite:
- *
- * <ol>
- *   <li><b>the render and input signatures are unpacked.</b>
- *       {@code extractRenderState(GuiGraphicsExtractor, int, int, float)} is
- *       {@link #render(GuiGraphics, int, int, float)}; {@code extractBackground} is
- *       {@code renderBackground(GuiGraphics)} but is called for us by {@code VanillaScreen}, so this class
- *       does not call it; {@code drawContentBackground} takes a {@link GuiGraphics};
- *       {@code keyPressed(KeyEvent)} is {@code keyPressed(int, int, int)};
- *       {@code mouseClicked(MouseButtonEvent, boolean)} is
- *       {@code mouseClicked(double, double, int)} and has <b>no</b> double-click flag at all, so the flag is
- *       dropped rather than reimplemented; {@code mouseDragged(MouseButtonEvent, double, double)} is
- *       {@code mouseDragged(double, double, int, double, double)} (two extra trailing deltas);
- *       {@code mouseReleased(MouseButtonEvent)} is {@code mouseReleased(double, double, int)}; and
- *       {@code mouseScrolled(double, double, double, double)} is the <b>three</b> argument
- *       {@code mouseScrolled(double, double, double)} - 1.20.1 has no horizontal wheel, so the
- *       {@code scrollX} parameter 26.3 invented is gone and the single delta is what 26.3 called
- *       {@code scrollY};</li>
- *   <li><b>the enchantments are no longer a component.</b> 26.3 read and wrote
- *       {@code DataComponents.ENCHANTMENTS} / {@code STORED_ENCHANTMENTS} as an {@code ItemEnchantments}
- *       value and mutated a copy through {@code ItemEnchantments.Mutable}. 1.20.1 predates data components
- *       entirely (they arrive in 1.20.5) and has <b>no</b> {@code ItemEnchantments} class - that was
- *       confirmed by probing this version's jar, where the name resolves to nothing. The equivalent here is
- *       the enchantment NBT list, read and written through
- *       {@link EnchantmentHelper#getEnchantments(ItemStack)} and
- *       {@link EnchantmentHelper#setEnchantments(Map, ItemStack)}, with the rows holding a plain
- *       {@link Enchantment} instead of the 26.3 {@code Holder<Enchantment>}. See
- *       {@link #writeEnchantments(Map)} for the one place where the two storages genuinely differ - an
- *       enchanted book - which is a divergence that <b>must</b> be handled here rather than papered
- *       over;</li>
- *   <li><b>an enchantment is named differently.</b> 1.21's {@code Enchantment#description()} does not exist
- *       on this version; the display name is built from {@code getDescriptionId()}, exactly as
- *       {@link EnchantmentLevel#label()} already does, and {@code getMaxLevel()} is unchanged. The
- *       {@code .value()} call the 26.3 rows needed on their holder is gone with the holder;</li>
- *   <li><b>an item is drawn and renamed differently.</b> {@code graphics.item(...)} is
- *       {@code graphics.renderItem(...)} here. The custom name is no longer a component either: it is the
- *       {@code display.Name} NBT entry, written through
- *       {@link ItemStack#setHoverName(Component)} and cleared through {@link ItemStack#resetHoverName()}.
- *       {@code setHoverName} stores the component's JSON form, which is byte for byte the representation
- *       vanilla's anvil writes, so a stack renamed here and a stack renamed by the anvil are the same
- *       stack. The 26.3 "is the typed name the same as the current one" test is kept, which is what makes
- *       clearing the field give the item its original name back.</li>
- * </ol>
- *
- * <p>Two smaller moves worth recording: {@code Minecraft#setScreenAndShow} is this version's
- * {@code Minecraft#setScreen}, and the shift / control state is read from
- * {@code Screen#hasShiftDown()} / {@code Screen#hasControlDown()}, which are <b>static on the screen
- * class</b> here - {@code Minecraft} has no {@code hasShiftDown} on this version, which is what the 26.3
- * call site used.
- *
- * <p>One visible behaviour is version specific and worth naming: on 1.20.1 the enchantment registry is
- * the plain static one, not a synced dynamic registry, so the picker opened from here sees every
- * enchantment that exists without a network round trip.
  */
 public class ItemEditorScreen extends VanillaScreen {
-
 
     /** Enchantment rows visible at once on a window tall enough; the rest is reached by scrolling. */
     private static final int MAX_ROWS = 5;
@@ -136,12 +57,7 @@ public class ItemEditorScreen extends VanillaScreen {
     private final boolean testWeapon;
     /**
      * The enchantment rows, sorted by name.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> a list of {@link Enchantment}, not of the 26.3
-     * {@code Holder<Enchantment>}. 1.20.1's enchantment registry is static and never rebuilt, so the
-     * holder indirection the 26.3 line used has nothing to protect here - the same reasoning
-     * {@link EnchantmentLevel} records.
-     */
+ */
     private final List<Enchantment> rows = new ArrayList<>();
 
     /** Per visible row: the level field, the - / + / X buttons. */
@@ -161,7 +77,7 @@ public class ItemEditorScreen extends VanillaScreen {
     /**
      * @param parent the screen to return to, or {@code null} to resume the game
      * @param stack  the item to edit; it is copied, so cancelling changes nothing
-     */
+ */
     public ItemEditorScreen(Screen parent, ItemStack stack) {
         super(Component.translatable("gui.merlinlib.editor.title"));
         this.parent = parent;
@@ -180,7 +96,7 @@ public class ItemEditorScreen extends VanillaScreen {
      * changes what vanilla balance and other mods expect.
      *
      * @return {@code true} when the row belongs on this screen
-     */
+ */
     private boolean showsDamageRow() {
         return TestWeapons.hasEditableDamage(this.working)
                 && (this.testWeapon || ConfigManager.server().allowNonTestItemDamage());
@@ -234,7 +150,7 @@ public class ItemEditorScreen extends VanillaScreen {
      * instead, and the scroll area reaches whatever rows are left.
      *
      * @return the number of rows to show, between {@link #MIN_ROWS} and {@link #MAX_ROWS}
-     */
+ */
     private int visibleRows() {
         int fixed = HEADER
                 + LABEL + VanillaUi.WIDGET_HEIGHT + 6
@@ -337,7 +253,7 @@ public class ItemEditorScreen extends VanillaScreen {
      *
      * <p>Each control is bound to a <em>slot</em>, not to an enchantment: the slot is turned into a row index
      * when it is used, which is what keeps scrolling from corrupting the targets.
-     */
+ */
     private void buildRowControls() {
         int x = this.list.x() + this.list.rowWidth() - rowControlsWidth();
         for (int slot = 0; slot < visibleRows(); slot++) {
@@ -405,57 +321,24 @@ public class ItemEditorScreen extends VanillaScreen {
 
     /**
      * The enchantments of the working stack, as a live map from enchantment to level.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> 26.3 read an {@code ItemEnchantments} component and had to
-     * choose between the stored one and the applied one by hand. This version has no such component; the
-     * equivalent read is {@link EnchantmentHelper#getEnchantments(ItemStack)}, which already makes the
-     * same choice internally - it reads {@code StoredEnchantments} for an enchanted book and
-     * {@code Enchantments} for everything else - and returns a fresh {@code LinkedHashMap}, so the caller
-     * may mutate the result freely and hand it straight back to the writer.
-     *
+ *
      * <p>The one behavioural difference is that this version's helper drops entries whose id no longer
      * resolves in the registry. On 1.21 a stale entry survived in the component until the player removed
      * it; here it is simply not reported. That is a strictly safer outcome - a row the player cannot see
      * is a row the editor cannot rewrite - and it cannot be reproduced without hand walking the NBT list,
      * which would trade a registry lookup for a raw tag dependency.
-     *
+ *
      * @return the current enchantments, never {@code null}
-     */
+ */
     private Map<Enchantment, Integer> currentEnchantments() {
         return EnchantmentHelper.getEnchantments(this.working);
     }
 
     /**
      * Writes the enchantments of the working stack back to the item.
-     *
-     * <p><b>What changed / 1.20.1 note, and an approximation that has to be stated out loud.</b> The two
-     * versions store enchantments in different keys, and this version's public writer only knows about
-     * one of them:
-     *
-     * <ul>
-     *   <li>an ordinary item carries them under {@code Enchantments}, and
-     *       {@link EnchantmentHelper#setEnchantments(Map, ItemStack)} writes exactly that - including
-     *       removing the key altogether when the map is empty, which is what "remove every enchantment"
-     *       has to do;</li>
-     *   <li>an <b>enchanted book</b> carries them under {@code StoredEnchantments} instead
-     *       ({@link EnchantedBookItem#TAG_STORED_ENCHANTMENTS}), and
-     *       {@code EnchantmentHelper#setEnchantments} is a <b>no-op</b> for a book on this version. That is
-     *       not a guess: this version's bytecode of that method branches on {@code Items.ENCHANTED_BOOK}
-     *       after building its list and skips the {@code addTagElement} write entirely, and 26.3 had no
-     *       equivalent trap because a component was addressed by type rather than by a hard coded NBT key.
-     *       A book is therefore written through {@link EnchantedBookItem#addEnchantment} instead, after the
-     *       old list has been removed, so the result is the same list an enchanting table would have
-     *       produced. The book's own tooltip and glint read that key, which is what makes an edited book
-     *       show what it now holds;</li>
-     * </ul>
-     *
-     * <p>The 1.20.1 API genuinely lacks the single call 26.3 could make here, so this branching is the
-     * approximation that has to be recorded: it is not a rename, it is a second write path that this
-     * version forces. Everything else - empty means "no enchantments", the map order is preserved - is
-     * identical to 26.3.
-     *
+ *
      * @param value the enchantments to store, possibly empty
-     */
+ */
     private void writeEnchantments(Map<Enchantment, Integer> value) {
         if (this.working.is(Items.ENCHANTED_BOOK)) {
             this.working.removeTagKey(EnchantedBookItem.TAG_STORED_ENCHANTMENTS);
@@ -474,16 +357,10 @@ public class ItemEditorScreen extends VanillaScreen {
 
     /**
      * Sorts a set of enchantments by their translated name.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> the sort key is
-     * {@code Component.translatable(getDescriptionId()).getString()} rather than 1.21's
-     * {@code Enchantment#description()}, which does not exist here. The order is the same for every
-     * vanilla enchantment and for every MerlinLib content enchantment, because both name themselves
-     * through their description id.
-     *
+ *
      * @param enchantments the enchantments to sort
      * @return a new list, sorted by name
-     */
+ */
     private static List<Enchantment> sorted(java.util.Collection<Enchantment> enchantments) {
         List<Enchantment> copy = new ArrayList<>(enchantments);
         copy.sort(java.util.Comparator.comparing(
@@ -496,7 +373,7 @@ public class ItemEditorScreen extends VanillaScreen {
      *
      * @param slot the visible row index
      * @return the enchantment, or {@code null} when the slot is past the end of the list
-     */
+ */
     private Enchantment resolve(int slot) {
         int index = this.list.firstRow() + slot;
         return index >= 0 && index < this.rows.size() ? this.rows.get(index) : null;
@@ -542,7 +419,7 @@ public class ItemEditorScreen extends VanillaScreen {
      * @param slot      the visible row
      * @param direction {@code +1} to raise, {@code -1} to lower
      * @param step      how much to change, at least 1
-     */
+ */
     private void stepLevelBy(int slot, int direction, int step) {
         Enchantment enchantment = resolve(slot);
         if (enchantment == null) {
@@ -595,7 +472,7 @@ public class ItemEditorScreen extends VanillaScreen {
      * @param enchantment the enchantment
      * @param level       the requested level
      * @return the allowed level, at least 1
-     */
+ */
     private int clampLevel(Enchantment enchantment, int level) {
         int cap = Math.max(1, ConfigManager.server().maxEnchantmentLevel());
         int maximum = ConfigManager.server().allowLevelsAboveMax()
@@ -618,15 +495,9 @@ public class ItemEditorScreen extends VanillaScreen {
 
     /**
      * The name to seed the field with.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> 26.3 read the {@code CUSTOM_NAME} component and fell back to
-     * {@code getHoverName()} when it was absent. This version has no components, but the very same
-     * fallback is already what {@link ItemStack#getHoverName()} does: it returns the {@code display.Name}
-     * NBT entry {@link ItemStack#setHoverName(Component)} writes, and the item's own name when there is
-     * none. The 26.3 two-branch read therefore collapses into this one call, and the result is identical.
-     *
+ *
      * @return the custom name, or the item's own name when it has none
-     */
+ */
     private String displayName() {
         return this.working.getHoverName().getString();
     }
@@ -647,7 +518,6 @@ public class ItemEditorScreen extends VanillaScreen {
         // Vanilla's own rule from the anvil: a name equal to the item's original name is not a custom name at
         // all, so it is cleared rather than stored. The original is read off a throwaway copy with the custom
         // name removed, because getHoverName() on this very stack reports the custom name when there is one -
-        // which is what the 26.3 test got wrong when it compared the typed text with getHoverName().
         ItemStack bare = this.working.copy();
         bare.resetHoverName();
         if (typed.isEmpty() || typed.equals(bare.getHoverName().getString())) {
@@ -676,16 +546,12 @@ public class ItemEditorScreen extends VanillaScreen {
 
     /**
      * Confirms the edit on Enter, the way a vanilla dialog does.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> the 26.3 override took a {@code KeyEvent} and asked it for the
-     * key; this version takes the key code, the scan code and the modifier mask as three separate
-     * arguments. Only the first is read, and it is compared against the GLFW constants in {@link MerlinUi}.
-     *
+ *
      * @param keyCode   the GLFW key code the event carries
      * @param scanCode  the platform scan code, unused
      * @param modifiers the modifier mask, unused
      * @return {@code true} when the key was consumed
-     */
+ */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (keyCode == MerlinUi.KEY_ENTER || keyCode == MerlinUi.KEY_KP_ENTER) {
@@ -697,16 +563,12 @@ public class ItemEditorScreen extends VanillaScreen {
 
     /**
      * Offers a click to the scrollbar before the widgets see it.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> three separate arguments instead of one {@code MouseButtonEvent}
-     * plus a double-click flag. This version's method has <b>no</b> double-click parameter, so the flag 26.3
-     * forwarded is simply gone; {@link ScrollArea} does not read it either.
-     *
+ *
      * @param mouseX the cursor x
      * @param mouseY the cursor y
      * @param button the mouse button
      * @return {@code true} when the click was consumed
-     */
+ */
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (this.list != null && this.list.mouseClicked(mouseX, mouseY, button)) {
@@ -718,17 +580,14 @@ public class ItemEditorScreen extends VanillaScreen {
 
     /**
      * Continues a scrollbar drag.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> the vanilla drag signature, so the two trailing deltas arrive
-     * here and are forwarded unused - {@link ScrollArea} takes the same shape for exactly this reason.
-     *
+ *
      * @param mouseX the cursor x
      * @param mouseY the cursor y
      * @param button the mouse button
      * @param dragX  the x delta, forwarded but unused
      * @param dragY  the y delta, forwarded but unused
      * @return {@code true} when the drag was consumed
-     */
+ */
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         if (this.list != null && this.list.mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
@@ -740,15 +599,12 @@ public class ItemEditorScreen extends VanillaScreen {
 
     /**
      * Ends a scrollbar drag.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> three separate arguments instead of one event object; neither is
-     * read, since any release ends the drag.
-     *
+ *
      * @param mouseX the cursor x
      * @param mouseY the cursor y
      * @param button the mouse button
      * @return {@code true} when the release was consumed
-     */
+ */
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         if (this.list != null && this.list.mouseReleased(mouseX, mouseY, button)) {
@@ -759,23 +615,17 @@ public class ItemEditorScreen extends VanillaScreen {
 
     /**
      * The wheel changes the level of the row under the cursor, or scrolls the list.
-     *
+ *
      * <p>Over a row's name the wheel changes that row's level by {@code editor.scroll_step}, or by
      * {@code editor.scroll_step_fast} while control is held - the two switches shown in the hint line. Over
      * the scrollbar, over the empty part below the rows, and with shift held anywhere in the region the
      * wheel scrolls the list instead, so a long list is still reached with the wheel alone.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> <b>three</b> arguments, not four. 1.20.1 has no horizontal
-     * wheel, so the 26.3 {@code scrollX} parameter does not exist and the single delta arrives where 26.3
-     * put {@code scrollY}. The "is this a horizontal scroll" test 26.3 could make is therefore
-     * unavailable - there is no second axis to distinguish - which is a capability this version genuinely
-     * lacks rather than a rename.
-     *
+ *
      * @param mouseX  the cursor x
      * @param mouseY  the cursor y
      * @param scrollY the wheel delta, positive when scrolling up
      * @return true when the scroll was handled
-     */
+ */
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
         // The damage row answers the wheel too, and it is checked first because the box sits above the list:
@@ -831,7 +681,6 @@ public class ItemEditorScreen extends VanillaScreen {
         int left = layout.left();
         int content = layout.contentWidth();
 
-        // What changed / 1.20.1 note: 26.3 called graphics.item(...) for this. On this version the same
         // operation is GuiGraphics#renderItem(ItemStack, int, int); there is no "item" method on this
         // version's GuiGraphics at all, which is why this is a rename rather than an overload choice.
         graphics.renderItem(this.working, left, layout.top() + 2);

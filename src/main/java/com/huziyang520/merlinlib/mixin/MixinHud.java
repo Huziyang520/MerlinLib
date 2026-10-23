@@ -18,78 +18,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Draws very large health as one vanilla heart plus the numbers, instead of one heart per two points.
- *
- * <h2>The problem</h2>
- *
- * <p>Vanilla draws one heart per two points of health and loops from {@code ceil(maxHealth / 2)} down
- * to zero. The health editor can set the ceiling to the integer limit, so a max health of two billion
- * asks for a billion hearts and the game stops responding while it draws them. Vanilla already guards
- * against this shape of problem for vehicles, where the heart count is capped at thirty.
- *
- * <h2>The fix, and why it is not a clamp</h2>
- *
- * <p>Clamping the values would hide what the player set. Instead, above {@link #COMPACT_THRESHOLD}
- * health the heart loop is asked for exactly <em>one</em> heart, and the exact numbers are drawn next
- * to it. The heart itself is still vanilla's own sprite and colour, so poison, wither, freezing and
- * absorption stay visible at a glance - which is the point of keeping a heart when the numbers are
- * huge. The attribute, the health value, the damage dealt and the network are untouched.
- *
- * <h2>1.20.1: every name in this file changed, and the mapping is evidence-driven</h2>
- *
- * <p>The class is still {@code net.minecraft.client.gui.Gui} - the rename to {@code Hud} comes later -
- * and every method this mixin touches was renamed with it. Verified with
- * {@code javap -p -s net.minecraft.client.gui.Gui}, which gives the whole set at once:
- *
- * <pre>
- * private void renderPlayerHealth(net.minecraft.client.gui.GuiGraphics);
- *   descriptor: (Lnet/minecraft/client/gui/GuiGraphics;)V
- * protected void renderHearts(net.minecraft.client.gui.GuiGraphics, net.minecraft.world.entity.player.Player, int, int, int, int, float, int, int, int, boolean);
- *   descriptor: (Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/entity/player/Player;IIIIFIIIZ)V
- * </pre>
- *
- * <p>Against the 26.3 names ({@code extractPlayerHealth} / {@code extractHealthLevel} /
- * {@code extractHearts} / {@code GuiGraphicsExtractor}) that is four independent renames, so the
- * injection points are re-derived from the bytecode below rather than translated by pattern.
- *
- * <h2>What was measured on 1.20.1, and the two rules that came out of it</h2>
- *
- * <p>The first version of this class was a direct translation of the 26.3 source: a
- * {@code @Redirect} on the {@code Player.getAttributeValue} call, a {@code @ModifyArg} on the
- * {@code renderHearts} call, and a {@code @Inject} at the tail of {@code renderHearts} for the
- * numbers. On 26.3 that works. On 1.20.1 the text appeared while a player with 102 health still drew
- * all fifty-one hearts and the armour row still floated above them, which proves the two hooks that
- * had been aimed at {@code renderPlayerHealth} never ran while the one inside {@code renderHearts}
- * did. A second attempt replaced the call-site hooks with {@code @ModifyVariable(index = 13)} on the
- * layout slot and it failed the same way - the armour stayed high - while the {@code renderHearts}
- * hook kept working.
- *
- * <p><b>Rule one: an injection point whose {@code @At} names a Minecraft member is not trustworthy
- * on this setup.</b> Both dead hooks named one ({@code renderHearts}, {@code Player.getAttributeValue})
- * and both are supposed to abort startup with {@code require = 1} when they cannot be resolved - yet
- * the game started, so the resolution step found something and the injection still did not run. The
- * hook that survives is the one with no {@code @At} target at all, and the layout hook above now
- * names {@code java.lang.Math}, which Mixin never remaps.
- *
- * <p><b>Rule two: {@code @ModifyVariable} must stay {@code argsOnly}.</b> Vanilla classes ship no
- * local variable table, and Mixin's own documentation for {@code index} says the injector has to read
- * (or generate) that table, "which can have mixed results". {@code argsOnly} reads the argument types
- * straight off the method descriptor, which is why the {@code renderHearts} hook has always worked.
- *
- * <p>The two hooks left in this file therefore follow both rules: the layout one redirects a JDK
- * call, and the heart count one sits on {@code renderHearts}' own {@code maxHealth} argument. The
- * second is the belt to the first's braces - it is a no-op whenever the layout hook did its job,
- * because the value it then sees is already {@link #ONE_HEART: two}, which is below the threshold.
- *
- * <h2>What is deliberately not done</h2>
- *
- * <p>{@code @ModifyArgs}, which the 26.3 source uses, is not available here: it makes Mixin
- * <em>generate a class at runtime</em> ({@code ArgsClassGenerator.CLASS_NAME_BASE} is
- * {@code "org.spongepowered.asm.synthetic.args.Args$"}), and the Mixin 0.8.5 that Forge 1.20.1
- * bundles does not do that generation - the game dies with
- * {@code NoClassDefFoundError: org/spongepowered/asm/synthetic/args/Args$1} and a stack trace that
- * names no mixin. Replacing the whole {@code renderHearts} call with {@code @Redirect} is not an
- * option either: it would have to re-invoke a {@code protected} method of the target class, and the
- * {@code @Shadow} that needs failed to resolve on this Mixin version.
  */
 @Mixin(Gui.class)
 public class MixinHud {
@@ -101,7 +29,7 @@ public class MixinHud {
      * Fallback threshold, used only while no client configuration is loaded.
      *
      * <p>99 folds from a ceiling of 100 upwards, which is the documented default.
-     */
+ */
     private static final float FALLBACK_COLLAPSE_THRESHOLD = 99.0F;
 
     /** When the next layout probe may print, in milliseconds; the HUD asks every frame. */
@@ -112,7 +40,7 @@ public class MixinHud {
      *
      * @param real the health the row was built from
      * @return true when the row collapses to one heart plus the numbers
-     */
+ */
     private static boolean folding(float real) {
         return HudRowPolicy.folding(real);
     }
@@ -127,7 +55,7 @@ public class MixinHud {
      * silently draw ten hearts instead of one, so both are written down here. {@code argsOnly} is what
      * makes this hook reliable: it reads the arguments straight off the method descriptor and never
      * touches the local variable table, which vanilla classes do not ship (see the class comment).
-     */
+ */
     private static final int MAX_HEALTH_ARG = 7;
 
     /** Gap between the heart and the numbers, and the text's vertical nudge. */
@@ -170,7 +98,7 @@ public class MixinHud {
      * @param a the maximum health the row was built from
      * @param b the displayed health
      * @return the larger of the two, brought down to one heart only when it is large
-     */
+ */
     @Redirect(method = "renderPlayerHealth(Lnet/minecraft/client/gui/GuiGraphics;)V", require = 1,
             at = @At(value = "INVOKE", target = "Ljava/lang/Math;max(FF)F"))
     private float merlinlib$oneRowWhenHuge(float a, float b) {
@@ -200,7 +128,7 @@ public class MixinHud {
      *
      * @param maxHealth the value the loop would use as the row width
      * @return one heart's worth of health once the value is large
-     */
+ */
     @ModifyVariable(method = "renderHearts(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/entity/player/Player;IIIIFIIIZ)V",
             at = @At("HEAD"), argsOnly = true, index = MAX_HEALTH_ARG, require = 1)
     private float merlinlib$oneHeartWhenHuge(float maxHealth) {
@@ -226,11 +154,7 @@ public class MixinHud {
 
     /**
      * Writes the exact numbers next to the single heart.
-     *
-     * <p>{@code renderHearts} keeps its tail free for a plain {@code @Inject} at {@code RETURN}, and
-     * the text is drawn through {@code GuiGraphics#drawString}, which is the 1.20.1 name for what
-     * 26.3 calls {@code text}.
-     *
+ *
      * @param graphics         the draw context
      * @param player           the player the row belongs to
      * @param xLeft            the left edge of the heart row
@@ -243,7 +167,7 @@ public class MixinHud {
      * @param absorption       the absorption amount
      * @param blink            whether the row is blinking after a change
      * @param info             the injection callback
-     */
+ */
     @Inject(method = "renderHearts(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/entity/player/Player;IIIIFIIIZ)V",
             at = @At("TAIL"), require = 1)
     private void merlinlib$healthNumbers(GuiGraphics graphics, Player player, int xLeft, int yLineBase,
@@ -271,7 +195,7 @@ public class MixinHud {
      * @param currentHealth the health as a whole number
      * @param oldHealth     the previously displayed health
      * @return the largest of the three, as a float
-     */
+ */
     private static float realHealth(Player player, int currentHealth, int oldHealth) {
         return Math.max(player.getMaxHealth(), Math.max(currentHealth, oldHealth));
     }

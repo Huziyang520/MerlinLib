@@ -29,17 +29,6 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Holds every enchantment declared through the java api and the ids that are disabled, and turns each
  * draft into the {@link Enchantment} the game registers.
- *
- * <h2>Why this class looks nothing like its 26.3 counterpart</h2>
- *
- * <p>On 26.3 an enchantment was a data pack entry: this class only kept the declarations, and a
- * generated data pack was what made them exist. 1.20.1 has no data driven enchantment registry, so
- * the draft has to become a real {@code Enchantment} object, and the fields a data pack would have
- * carried have to be expressed as overridden methods. That translation is
- * {@link #implement(EnchantmentDraft)} below, and it is the single place where the two models meet.
- *
- * <p>Only registration state lives here; the merged, finally effective content lives in
- * {@link ContentManager} because it also depends on the config files.
  */
 public final class EnchantmentRegistry implements EnchantmentApi {
 
@@ -120,7 +109,7 @@ public final class EnchantmentRegistry implements EnchantmentApi {
      * @param draft the validated draft
      * @return the stored draft
      * @throws IllegalArgumentException when a field is out of the range the game accepts
-     */
+ */
     public EnchantmentDraft submit(EnchantmentDraft draft) {
         Objects.requireNonNull(draft, "draft");
         validate(draft);
@@ -141,7 +130,7 @@ public final class EnchantmentRegistry implements EnchantmentApi {
     /**
      * Rejects values the game would refuse at registration time, so the error surfaces where the
      * mistake was made instead of during the registry event.
-     */
+ */
     public static void validate(EnchantmentDraft draft) {
         if (draft.weight() < 1 || draft.weight() > 1024) {
             throw new IllegalArgumentException(draft.id() + ": weight must be in [1, 1024] but was " + draft.weight());
@@ -188,18 +177,14 @@ public final class EnchantmentRegistry implements EnchantmentApi {
      *
      * @param draft the draft, already validated
      * @return a new enchantment instance, not yet in any registry
-     */
+ */
     public static Enchantment implement(EnchantmentDraft draft) {
         return new MerlinEnchantment(draft);
     }
 
-    /**
-     * The concrete enchantment type.
-     *
-     * <p>A named class rather than an anonymous one so a crash report, a debugger and
-     * {@code /merlinlib list} all name the same thing, and so the mixin that widens the level ceiling
-     * has one type to recognise.
-     */
+/**
+ * The concrete enchantment type.
+ */
     public static final class MerlinEnchantment extends Enchantment {
 
         private final EnchantmentDraft draft;
@@ -258,7 +243,7 @@ public final class EnchantmentRegistry implements EnchantmentApi {
          * The value is not lost: {@code AnvilMenu} asks the enchantment for a cost through its own
          * path on this version, and the honest place to expose the declared number is a method of our
          * own (below) rather than an override of something that does not exist.
-         */
+ */
         public int anvilCost() {
             return this.draft.anvilCost();
         }
@@ -271,7 +256,7 @@ public final class EnchantmentRegistry implements EnchantmentApi {
          * ("#minecraft:enchantable/weapon") both come through here. A reference that cannot be parsed
          * or that names something the registry does not have matches nothing, and says so once in the
          * log rather than silently accepting every item.
-         */
+ */
         @Override
         public boolean canEnchant(ItemStack stack) {
             if (this.supportedReferences.isEmpty()) {
@@ -290,7 +275,7 @@ public final class EnchantmentRegistry implements EnchantmentApi {
          *
          * <p>{@code EnchantmentTableMenu} asks exactly this before offering an entry, so it is where
          * the {@code in_enchanting_table} channel of the acquisition record is honoured on 1.20.1.
-         */
+ */
         @Override
         public boolean isDiscoverable() {
             return this.discoverable;
@@ -303,7 +288,7 @@ public final class EnchantmentRegistry implements EnchantmentApi {
          * {@code DeferredRegister} entry cannot carry. Overriding it is the closest equivalent: it is
          * the same question asked of the same object, and any code that consults the enchantment
          * rather than the tag gets the declared answer.
-         */
+ */
         @Override
         public boolean isTradeable() {
             return this.tradeable;
@@ -326,7 +311,7 @@ public final class EnchantmentRegistry implements EnchantmentApi {
          * anvil, the enchanting table and {@code ItemStack#enchant}. Both directions are checked,
          * because a declaration only lists one side of the pair and vanilla asks each enchantment
          * about the other.
-         */
+ */
         @Override
         protected boolean checkCompatibility(Enchantment other) {
             if (!super.checkCompatibility(other)) {
@@ -385,7 +370,7 @@ public final class EnchantmentRegistry implements EnchantmentApi {
          * @param stack     the item
          * @param reference the tag id, without the leading {@code #}
          * @return whether the item belongs to that tag, or to the 1.20.1 equivalent of it
-         */
+ */
         private static boolean matchesTag(ItemStack stack, ResourceLocation reference) {
             if (!"minecraft".equals(reference.getNamespace())) {
                 return stack.is(ItemTags.create(reference));
@@ -443,7 +428,7 @@ public final class EnchantmentRegistry implements EnchantmentApi {
      *
      * @param element the json value, may be {@code null}
      * @return the ids named, empty when there is nothing to read
-     */
+ */
     private static Set<ResourceLocation> readReferences(com.google.gson.JsonElement element) {
         Set<ResourceLocation> ids = new LinkedHashSet<>();
         if (element == null || element.isJsonNull()) {
@@ -475,7 +460,7 @@ public final class EnchantmentRegistry implements EnchantmentApi {
      * <p>{@code null} is a real answer and not an error: the enchantment can be disabled by a config
      * file, and the registry has not been populated during the very early phases of startup. Callers
      * must treat it as "no rule to enforce" rather than as a failure.
-     */
+ */
     public static Enchantment unbreakable() {
         Enchantment cached = unbreakable;
         if (cached == null) {
@@ -499,25 +484,19 @@ public final class EnchantmentRegistry implements EnchantmentApi {
      *
      * @param builder the builder {@code BuiltInContent} filled in
      * @return the stored draft
-     */
+ */
     public static EnchantmentDraft submitUnbreakable(EnchantmentBuilder builder) {
         return INSTANCE.submit(builder.build());
     }
 
     /**
      * Writes one effective draft into the game's enchantment registry.
-     *
-     * <p>This is the step that has no counterpart on the 26.3 line, and the reason the whole content
-     * pipeline had to be reworked: there, a draft became a file in a generated data pack and the game
-     * read it. Here it becomes a {@code DeferredRegister} entry, which is the only way to add to a
-     * Forge registry - the registry is frozen before mod constructors run and re-opened only for the
-     * length of the registry event.
-     *
+ *
      * <p>Called from {@link ContentManager#refresh()} with the finally effective content, so a draft
      * that a config file overrode or disabled never reaches this method.
-     *
+ *
      * @param draft the effective draft
-     */
+ */
     public static void submitRegistration(EnchantmentDraft draft) {
         Enchantment implemented = implement(draft);
         // BuiltInRegistries.ENCHANTMENT, not Registries.ENCHANTMENT: the latter is the ResourceKey
