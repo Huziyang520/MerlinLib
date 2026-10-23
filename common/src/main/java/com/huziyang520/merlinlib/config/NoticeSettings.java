@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * The per mod switches of the join notices, stored in {@code config/MerlinLib/notices.toml}.
@@ -45,6 +46,14 @@ public final class NoticeSettings {
     private static final String LEGACY_SECTION = "notices";
     private static final String LEGACY_KEY = "per_mod";
 
+    /** The {@code client.toml} key that used to switch MerlinLib's own notice, and its section. */
+    private static final String LEGACY_CLIENT_SECTION = "general";
+    private static final String LEGACY_CLIENT_KEY = "notice_enabled";
+
+    /** The copy the client file ends up in when a loader backend imported it on an earlier launch. */
+    private static final Path LEGACY_CLIENT_IMPORTED =
+            Path.of("config", Constants.CONFIG_DIRECTORY, "client.toml.imported");
+
     /** Guards the one-off import; also the reason it never runs twice in a process. */
     private static boolean imported;
 
@@ -57,7 +66,8 @@ public final class NoticeSettings {
     }
 
     /**
-     * Runs the one-off import of the old {@code notices.per_mod} string.
+     * Runs the one-off imports: the old {@code general.notice_enabled} of {@code client.toml} and the old
+     * {@code notices.per_mod} string.
      *
      * <p>Called from the shared bootstrap, which runs while the mod is still being constructed - before
      * NeoForge loads and rewrites {@code server.toml} from its spec. Safe to call more than once.
@@ -67,16 +77,53 @@ public final class NoticeSettings {
             return;
         }
         imported = true;
-        if (Files.exists(FILE)) {
+        // The older of the two imports goes first: it is the one that creates the file, and the per mod
+        // string would be skipped by the existence check if the client switch had already written it.
+        if (!Files.exists(FILE)) {
+            Map<String, Boolean> values = legacy();
+            if (!values.isEmpty()) {
+                save(values);
+                Constants.LOG.info("[MerlinLib] imported {} per mod join notice switch(es) from notices.per_mod "
+                        + "into {}", values.size(), FILE.getFileName());
+            }
+        }
+        importClientSwitch();
+    }
+
+    /**
+     * Moves the old {@code general.notice_enabled} of {@code client.toml} into MerlinLib's own row of this
+     * file, then deletes the key so the two answers cannot drift apart.
+     *
+     * <p>Idempotent twice over: the value is only written while this file has no row for MerlinLib yet, and
+     * the key is then removed from the client file, so a second launch finds nothing to import. The old key
+     * is gone from the client template, which is why a plain save does not drop it on its own.
+     */
+    private static void importClientSwitch() {
+        Boolean old = legacyClientSwitch();
+        if (old == null) {
             return;
         }
-        Map<String, Boolean> values = legacy();
-        if (values.isEmpty()) {
-            return;
+        Map<String, Boolean> current = values();
+        if (!current.containsKey(Constants.MOD_ID)) {
+            current.put(Constants.MOD_ID, old);
+            save(current);
+            Constants.LOG.info("[MerlinLib] imported general.notice_enabled={} into {} as {}.{}",
+                    old, FILE.getFileName(), SECTION, Constants.MOD_ID);
         }
-        save(values);
-        Constants.LOG.info("[MerlinLib] imported {} per mod join notice switch(es) from notices.per_mod "
-                + "into {}", values.size(), FILE.getFileName());
+        TomlFile.remove(ClientConfig.path(), Set.of(LEGACY_CLIENT_SECTION + "." + LEGACY_CLIENT_KEY));
+    }
+
+    /**
+     * @return the old client switch, or {@code null} when the file no longer has it
+     */
+    private static Boolean legacyClientSwitch() {
+        for (Path candidate : List.of(ClientConfig.path(), LEGACY_CLIENT_IMPORTED)) {
+            String value = readValue(candidate, LEGACY_CLIENT_SECTION, LEGACY_CLIENT_KEY);
+            if ("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)) {
+                return Boolean.parseBoolean(value);
+            }
+        }
+        return null;
     }
 
     /**
@@ -194,7 +241,7 @@ public final class NoticeSettings {
      */
     private static String legacyRaw() {
         for (Path candidate : List.of(LEGACY_FILE, LEGACY_IMPORTED)) {
-            String value = legacyRaw(candidate);
+            String value = readValue(candidate, LEGACY_SECTION, LEGACY_KEY);
             if (!value.isEmpty()) {
                 return value;
             }
@@ -206,10 +253,12 @@ public final class NoticeSettings {
      * Finds one key in one file by reading it as text, so the answer does not depend on which store the
      * loader currently answers configuration reads from.
      *
-     * @param file the file to scan
+     * @param file    the file to scan
+     * @param section the table the key is expected in
+     * @param wanted  the key inside that table
      * @return the value as written, or an empty string
      */
-    private static String legacyRaw(Path file) {
+    private static String readValue(Path file, String section, String wanted) {
         if (!Files.isRegularFile(file)) {
             return "";
         }
@@ -219,24 +268,24 @@ public final class NoticeSettings {
         } catch (IOException exception) {
             return "";
         }
-        String section = "";
+        String current = "";
         for (String raw : lines) {
             String line = stripComment(raw).trim();
             if (line.isEmpty()) {
                 continue;
             }
             if (line.startsWith("[") && line.endsWith("]")) {
-                section = line.substring(1, line.length() - 1).trim();
+                current = line.substring(1, line.length() - 1).trim();
                 continue;
             }
-            if (!LEGACY_SECTION.equals(section)) {
+            if (!section.equals(current)) {
                 continue;
             }
             int equals = line.indexOf('=');
             if (equals <= 0) {
                 continue;
             }
-            if (LEGACY_KEY.equals(line.substring(0, equals).trim())) {
+            if (wanted.equals(line.substring(0, equals).trim())) {
                 return unquote(line.substring(equals + 1).trim());
             }
         }

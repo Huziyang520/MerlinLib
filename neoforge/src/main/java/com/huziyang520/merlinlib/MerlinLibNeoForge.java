@@ -24,8 +24,6 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.config.ModConfigEvent;
-import net.neoforged.neoforge.client.gui.ConfigurationScreen;
-import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import com.huziyang520.merlinlib.tools.HealthCeiling;
@@ -49,16 +47,12 @@ public class MerlinLibNeoForge {
         // A death respawn rebuilds the player and copies attribute base values only (restoreFrom calls
         // assignPermanentModifiers solely when restoreAll is true), so the ceiling is carried over here.
         NeoForge.EVENT_BUS.addListener(this::onPlayerClone);
-        // The mods list screen picks this up and shows the config button for MerlinLib, which opens
-        // NeoForge's own configuration screen over the specs declared in NeoConfigs. The factory lambda only
-        // references the client side screen class inside its body, so a dedicated server never loads it. The
-        // named local resolves the registerExtensionPoint overload ambiguity: a bare lambda matches both
-        // Supplier<T> and the functional interface itself.
+        // The configuration screen itself is registered by the client entrypoint, with the section page that
+        // knows about the join notice. Registering a second, plainer factory here as well would fight over
+        // which one the mods list opens, and the one that lost would take the notice row with it.
         NeoConfigs.register(modContainer);
         eventBus.addListener(this::onConfigLoading);
         eventBus.addListener(this::onConfigReloading);
-        IConfigScreenFactory factory = (mod, parent) -> new ConfigurationScreen(mod, parent);
-        modContainer.<IConfigScreenFactory>registerExtensionPoint(IConfigScreenFactory.class, () -> factory);
         MerlinLib.init(eventBus);
     }
 

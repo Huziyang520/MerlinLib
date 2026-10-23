@@ -15,8 +15,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Builds the Cloth Config screen over the client switches. Keys, ranges and labels come from {@link
- * ClientOptions}, so this screen and the Jupiter one can never drift apart.
+ * Builds the Cloth Config screen over both switch files. Keys, ranges and labels come from {@link
+ * ClientOptions} and {@link ServerOptions}, so this screen and the Jupiter one can never drift apart.
  */
 public final class ClothScreen {
 
@@ -26,6 +26,9 @@ public final class ClothScreen {
     /**
      * Builds the screen.
      *
+     * <p>The client tabs come first and the authoritative ones after them, which is the order the two files
+     * document their tables in; the join notice tab is the last one either way.
+     *
      * @param parent the screen to return to, or {@code null} to resume the game
      * @return the screen to show
      */
@@ -34,40 +37,59 @@ public final class ClothScreen {
                 .setParentScreen(parent)
                 .setTitle(Component.translatable(ClientOptions.titleKey()));
         ConfigEntryBuilder entries = builder.entryBuilder();
-        Map<String, String> pending = new LinkedHashMap<>();
-        Map<String, String> current = ClientOptions.values();
+        Map<String, String> pendingClient = new LinkedHashMap<>();
+        Map<String, String> pendingServer = new LinkedHashMap<>();
+        Map<String, String> currentClient = ClientOptions.values();
+        Map<String, String> currentServer = ServerOptions.values();
 
         for (String section : ClientOptions.sections()) {
             ConfigCategory category = builder.getOrCreateCategory(
                     Component.translatable(ClientOptions.sectionKey(section)));
-            for (ClientOptions.Option option : ClientOptions.in(section)) {
-                category.addEntry(entry(entries, option, ClientOptions.valueOf(option, current), pending));
+            for (ConfigOption option : ClientOptions.in(section)) {
+                category.addEntry(entry(entries, option, ClientOptions.valueOf(option, currentClient),
+                        pendingClient));
+            }
+        }
+
+        ConfigCategory notices = null;
+        for (String section : ServerOptions.sections()) {
+            ConfigCategory category = builder.getOrCreateCategory(
+                    Component.translatable(ClientOptions.sectionKey(section)));
+            for (ConfigOption option : ServerOptions.in(section)) {
+                category.addEntry(entry(entries, option, ServerOptions.valueOf(option, currentServer),
+                        pendingServer));
+            }
+            if ("notices".equals(section)) {
+                notices = category;
             }
         }
 
         // The join notice page is MerlinLib's own screen: which mods registered a notice is only known at
-        // runtime, so this tab holds the way into it rather than a list of values.
-        ConfigCategory notices = builder.getOrCreateCategory(
-                Component.translatable(ClientOptions.sectionKey("notices")));
-        notices.addEntry(new ClothNoticeButtonEntry(Component.translatable(ClientOptions.noticesKey() + ".tooltip"),
-                Button.builder(Component.translatable(ClientOptions.noticesKey()),
-                                button -> MerlinScreens.openNoticesScreen(parent))
-                        .bounds(0, 0, 150, VanillaUi.WIDGET_HEIGHT)
-                        .build()));
+        // runtime, so the tab holds the way into it in addition to the global switch above it.
+        if (notices != null) {
+            notices.addEntry(new ClothNoticeButtonEntry(
+                    Component.translatable(ClientOptions.noticesKey() + ".tooltip"),
+                    Button.builder(Component.translatable(ClientOptions.noticesKey()),
+                                    button -> MerlinScreens.openNoticesScreen(parent))
+                            .bounds(0, 0, 150, VanillaUi.WIDGET_HEIGHT)
+                            .build()));
+        }
 
         builder.setSavingRunnable(() -> {
-            if (pending.isEmpty()) {
-                return;
+            if (!pendingClient.isEmpty()) {
+                ConfigManager.saveClient(new LinkedHashMap<>(pendingClient));
+                pendingClient.clear();
             }
-            Map<String, String> values = new LinkedHashMap<>(pending);
-            pending.clear();
-            ConfigManager.saveClient(values);
+            if (!pendingServer.isEmpty()) {
+                ConfigManager.saveServer(new LinkedHashMap<>(pendingServer));
+                pendingServer.clear();
+            }
         });
         return builder.build();
     }
 
     /**
-     * Builds the control one option needs, bound to the staged map.
+     * Builds the control one option needs, bound to the staged map of the file it belongs to.
      *
      * @param entries the entry builder of the screen
      * @param option  the option being shown
@@ -75,7 +97,7 @@ public final class ClothScreen {
      * @param pending the map values are staged in until the player saves
      * @return the finished entry
      */
-    private static AbstractConfigListEntry<?> entry(ConfigEntryBuilder entries, ClientOptions.Option option,
+    private static AbstractConfigListEntry<?> entry(ConfigEntryBuilder entries, ConfigOption option,
                                                     String value, Map<String, String> pending) {
         Component label = Component.translatable(option.labelKey());
         Component[] tooltip = {Component.translatable(option.labelKey() + ".tooltip")};

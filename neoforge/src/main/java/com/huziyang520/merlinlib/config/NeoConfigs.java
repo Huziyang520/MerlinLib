@@ -58,16 +58,13 @@ public final class NeoConfigs {
     }
 
     /**
-     * Declares the client switches, in the order {@code client.toml} documents them. The layout version is
-     * client only and therefore declared here, never in the shared half.
+     * Declares the client switches, in the order {@code client.toml} documents them. The file layout
+     * version is deliberately not here: it is written and read by the mod itself, and a key the screen
+     * shows but nothing can meaningfully change only invites edits.
      *
      * @param spec the backend under construction
      */
     private static void client(NeoSpecBackend spec) {
-        spec.push("general")
-                .bool("notice_enabled", true, "Show MerlinLib's own join notice in chat.")
-                .pop();
-
         spec.push("hud")
                 .bool("crosshair_damage", false,
                         "Show the listed damage of the weapon you just used near the crosshair.")
