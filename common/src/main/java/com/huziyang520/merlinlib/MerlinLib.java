@@ -110,16 +110,12 @@ public class MerlinLib {
     /**
      * Registers MerlinLib's own join notice about the rebuilt configuration screen.
      *
-     * <p>Sent once per save and per player, and switched off by {@code general.notice_enabled} in
-     * {@code client.toml}: the switch is read here, right after the configuration has been read, so turning
-     * it off takes effect on the next launch. Registered as a notice rather than as a plain chat message so
-     * that the server's notice switches - the global one in {@code server.toml} and the per mod one in
-     * {@code notices.toml} - apply to it exactly like they apply to a business mod's notice.
+     * <p>Registered as a notice rather than as a plain chat message, so the server's switches - the global
+     * one in {@code server.toml} and MerlinLib's own row in {@code notices.toml}, which the join notice
+     * page edits - apply to it exactly like they apply to a business mod's notice. Nothing is checked here:
+     * the switches are read when the notice would be sent, so a change takes effect on the next join.
      */
     private static void registerOwnNotices() {
-        if (!ConfigManager.client().noticeEnabled()) {
-            return;
-        }
         MerlinApi.notices().register(
                 Identifier.fromNamespaceAndPath(Constants.MOD_ID, "config_ui"),
                 NoticeMode.ONCE_PER_SAVE,

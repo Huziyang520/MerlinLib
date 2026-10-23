@@ -79,36 +79,48 @@ final class NeoSpecBackend implements ConfigBackend {
      * @return the translation key
      */
     private String label(String option) {
-        return this.path.isEmpty()
-                ? ClientOptions.KEY_PREFIX + option
-                : ClientOptions.KEY_PREFIX + String.join(".", this.path) + "." + option;
+        return ConfigOption.KEY_PREFIX + fullKey(option);
+    }
+
+    /**
+     * The key one option is stored and read under, spelled {@code section.option}.
+     *
+     * <p>The section prefix is not cosmetic: {@link ConfigReader} is asked with the same spelling the TOML
+     * files use, so a map keyed by the bare option name answers every read with the fallback and the file
+     * silently changes nothing.
+     *
+     * @param option the option path, relative to the open section
+     * @return the qualified key
+     */
+    private String fullKey(String option) {
+        return this.path.isEmpty() ? option : String.join(".", this.path) + "." + option;
     }
 
     NeoSpecBackend bool(String path, boolean defaultValue, String comment) {
         this.builder.comment(comment);
         this.builder.translation(label(path));
-        this.booleans.put(path, this.builder.define(path, defaultValue));
+        this.booleans.put(fullKey(path), this.builder.define(path, defaultValue));
         return this;
     }
 
     NeoSpecBackend number(String path, int defaultValue, int min, int max, String comment) {
         this.builder.comment(comment);
         this.builder.translation(label(path));
-        this.integers.put(path, this.builder.defineInRange(path, defaultValue, min, max));
+        this.integers.put(fullKey(path), this.builder.defineInRange(path, defaultValue, min, max));
         return this;
     }
 
     NeoSpecBackend decimal(String path, double defaultValue, double min, double max, String comment) {
         this.builder.comment(comment);
         this.builder.translation(label(path));
-        this.doubles.put(path, this.builder.defineInRange(path, defaultValue, min, max));
+        this.doubles.put(fullKey(path), this.builder.defineInRange(path, defaultValue, min, max));
         return this;
     }
 
     NeoSpecBackend text(String path, String defaultValue, String comment) {
         this.builder.comment(comment);
         this.builder.translation(label(path));
-        this.strings.put(path, this.builder.define(path, defaultValue));
+        this.strings.put(fullKey(path), this.builder.define(path, defaultValue));
         return this;
     }
 

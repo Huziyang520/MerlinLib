@@ -25,6 +25,21 @@ public final class MerlinScreens {
     }
 
     /**
+     * Tells the player why a requested screen did not open.
+     *
+     * <p>A refusal that only reaches the log looks like a dead key from in game, so every requested screen
+     * that is turned down also says one translatable line in chat.
+     *
+     * @param player  the local player, may be {@code null}
+     * @param message the translation key of the reason
+     */
+    private static void refuse(Player player, String message) {
+        if (player != null) {
+            player.sendSystemMessage(Component.translatable(message));
+        }
+    }
+
+    /**
      * Whether the permission switches let this player use an editor, as far as the client can tell.
      *
      * <p>In single player the integrated server is in this very process, so the question can be answered
@@ -74,6 +89,7 @@ public final class MerlinScreens {
         if (!ConfigManager.server().testingToolkitEnabled()) {
             Constants.LOG.info("[MerlinLib] {} was requested but the testing toolkit is switched off "
                     + "(server.toml: tools.enable_testing_toolkit = false)", "a toolkit screen");
+            refuse(player, "message.merlinlib.tools.disabled");
             return false;
         }
         return true;
@@ -100,6 +116,7 @@ public final class MerlinScreens {
         }
         Constants.LOG.info("[MerlinLib] {} is not a weapon, tool or piece of equipment, so the item editor "
                 + "refused it (server.toml: tools.allow_editing_all_items = false)", stack.getItem());
+        refuse(player, "message.merlinlib.editor.not_editable");
         return false;
     }
 
@@ -134,6 +151,7 @@ public final class MerlinScreens {
         ItemStack held = player.getMainHandItem();
         if (held.isEmpty()) {
             Constants.LOG.info("[MerlinLib] the item editor was requested with an empty hand");
+            refuse(player, "message.merlinlib.tools.empty_hand");
             return;
         }
         if (!mayEdit(player, held)) {
@@ -154,6 +172,10 @@ public final class MerlinScreens {
      */
     public static void openItemEditorFromHotkey() {
         if (!ConfigManager.client().editorHotkeyEnabled()) {
+            Player player = Minecraft.getInstance().player;
+            Constants.LOG.info("[MerlinLib] the editor hot key fired but the item editor is switched off "
+                    + "(client.toml: editor.hotkey_enabled = false)");
+            refuse(player, "message.merlinlib.editor.hotkey_off");
             return;
         }
         openItemEditor();
