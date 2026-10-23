@@ -24,26 +24,6 @@ import java.util.List;
 
 /**
  * Fires {@link BuiltInEvents#MODIFY_BLOCK_DROPS} on the drops of a block a player broke.
- *
- * <h2>Why the static drop method</h2>
- *
- * <p>{@code Block.getDrops} is the one place where the block being broken, the player who broke it, the tool
- * in their hand and the list of drops are all present at once. Hooking there means a dependent mod can add,
- * remove or replace drops, and ask for extra experience, without a second hook for experience orbs: the extra
- * experience is awarded by this mixin, at the block, as the last step.
- *
- * <h2>Only player breaks</h2>
- *
- * <p>The overload without a breaker entity is used by pipes, pistons and other machinery. There is no player
- * to deliver the event to there, so that overload is not hooked at all rather than displacing the drops of a
- * machine onto a player who was not involved.
- *
- * <h2>Why the injection is cancellable</h2>
- *
- * <p>Replacing the returned list means calling {@code setReturnValue}, and Mixin only allows that on a
- * cancellable injection. Without {@code cancellable = true} the call throws inside the drop path itself, which
- * does not merely lose the event: it aborts the break, so the player sees a block that refuses to drop
- * anything, and the exception surfaces as a crash report naming this class. The flag is not a formality.
  */
 @Mixin(Block.class)
 public class MixinBlockDrops {

@@ -8,9 +8,6 @@ import java.util.function.Supplier;
 
 /**
  * Fabric implementation of {@link IRegistrationBridge}.
- *
- * <p>Fabric keeps the registries writable for the whole mod initialisation phase, so the value is
- * written straight away and no bootstrap hook is needed.
  */
 public class FabricRegistrationBridge implements IRegistrationBridge {
 

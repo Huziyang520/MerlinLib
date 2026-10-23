@@ -4,15 +4,6 @@ import java.util.Objects;
 
 /**
  * A single, actionable problem found while reading content definitions.
- *
- * <p>Never report a bare "parse failed": every entry carries the file, the JSON path and what was
- * expected, so the author can fix it without guessing.
- *
- * @param file     file the problem was found in, relative to the config directory when possible
- * @param jsonPath dotted path inside the file, {@code <root>} for whole-file problems
- * @param entryId  id of the content entry, when it could be determined
- * @param expected human readable expectation, e.g. {@code integer in [1, 255]}
- * @param message  what actually went wrong
  */
 public record ContentError(
         String file,

@@ -8,30 +8,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Loader independent description of one enchantment, regardless of whether it was written in java
- * or in a config file.
- *
- * <p>The field names intentionally mirror the vanilla enchantment datapack format so that the
- * generated JSON needs no translation layer. {@code acquisition} and {@code enabled} are MerlinLib
- * extensions and never written into the vanilla schema directly.
- *
- * @param id              full identifier, namespace defaulted to {@code merlinlib}
- * @param source          who declared it, decides override priority
- * @param enabled         {@code false} removes the entry from the game no matter who else declares it
- * @param description     vanilla {@code description} component, e.g. {@code {"translate": "..."}}
- * @param weight          vanilla {@code weight}, 1..1024
- * @param maxLevel        vanilla {@code max_level}, 1..255
- * @param minCostBase     vanilla {@code min_cost.base}
- * @param minCostPerLevel vanilla {@code min_cost.per_level_above_first}
- * @param maxCostBase     vanilla {@code max_cost.base}
- * @param maxCostPerLevel vanilla {@code max_cost.per_level_above_first}
- * @param anvilCost       vanilla {@code anvil_cost}
- * @param slots           vanilla {@code slots}, e.g. {@code ["mainhand"]} or {@code ["any"]}
- * @param supportedItems  vanilla {@code supported_items}, item id, {@code #tag} or a json array
- * @param primaryItems    vanilla {@code primary_items}, optional
- * @param exclusiveSet    vanilla {@code exclusive_set}, tag, id or array
- * @param effects         vanilla {@code effects} object, passed through untouched
- * @param acquisition     MerlinLib extension translated into vanilla {@code tags/enchantment/*}
+ * Loader independent description of one enchantment, regardless of whether it was written in java or
+ * in a config file.
  */
 public record EnchantmentDraft(
         Identifier id,

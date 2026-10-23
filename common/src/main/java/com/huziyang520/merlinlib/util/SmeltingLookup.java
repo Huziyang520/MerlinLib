@@ -17,20 +17,6 @@ import java.util.Optional;
 
 /**
  * "What does this item smelt into", answered from a cache.
- *
- * <h2>Why a cache at all</h2>
- *
- * <p>The question is asked while blocks are being broken, which can happen many times a second, and answering
- * it the honest way means searching every recipe on the server for one that accepts the item. That is far too
- * much work for a lookup whose answer never changes between recipe reloads, so the answers are collected once
- * into a plain map from item to result.
- *
- * <h2>Why it keeps itself current</h2>
- *
- * <p>Recipes change on {@code /reload} and when the player switches worlds, and a stale answer would be a
- * silent wrong drop rather than a visible error. The cache therefore stores the recipe manager it was built
- * from and rebuilds whenever the server hands out a different one - which is exactly what a reload does - so
- * no listener and no manual invalidation is required for it to stay correct.
  */
 public final class SmeltingLookup {
 

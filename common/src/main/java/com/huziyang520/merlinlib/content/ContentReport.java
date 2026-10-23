@@ -6,14 +6,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Outcome of one content reload. Printed in full after every startup and every {@code /reload} so
- * that authors can see exactly what changed instead of guessing.
- *
- * @param added   ids that did not exist before this reload
- * @param updated ids whose generated definition changed
- * @param removed ids that no longer exist
- * @param failed  ids or files that could not be loaded
- * @param errors  detailed, locatable problems
+ * Outcome of one content reload. Printed in full after every startup and every {@code /reload} so that
+ * authors can see exactly what changed instead of guessing.
  */
 public record ContentReport(
         List<Identifier> added,

@@ -17,9 +17,6 @@ import java.util.function.Consumer;
 
 /**
  * The health editor item: sneak and use it on a living entity to open the health editor for it.
- *
- * <p>The screen is opened on the client only, through an opener installed by the loader's client
- * entrypoint, so this class stays free of client references and is safe on a dedicated server.
  */
 public final class HealthEditorItem extends Item {
 

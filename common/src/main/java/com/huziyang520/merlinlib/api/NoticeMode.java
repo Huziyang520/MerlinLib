@@ -2,9 +2,6 @@ package com.huziyang520.merlinlib.api;
 
 /**
  * When a join notice should be shown.
- *
- * <p>Read this alongside {@link NoticeApi}: the mode is the only thing a mod has to decide, and the three
- * answers cover the three things a message like "this mod changed its dependency" can mean.
  */
 public enum NoticeMode {
 

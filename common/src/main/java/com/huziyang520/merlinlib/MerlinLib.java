@@ -24,13 +24,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 
 /**
  * Loader independent bootstrap of MerlinLib.
- *
- * <p>This class lives in the common project, so it may only touch vanilla code, libraries bundled
- * with vanilla and optional third party libraries that ship loader independent binaries. Anything
- * that needs loader concepts (events, networking, datapack mounting, permissions, key bindings)
- * has to go through the {@code platform.services} interfaces.
- *
- * <p>Every loader entrypoint calls {@link #init(Object)} exactly once when the loader is ready.
  */
 public class MerlinLib {
 

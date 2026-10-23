@@ -7,15 +7,6 @@ import java.util.Optional;
 
 /**
  * One action bound to one or more keys that have to be held together.
- *
- * <p>Vanilla's {@code KeyMapping} binds exactly one key, so a combination has to be expressed as a set of
- * keys plus the rule "fire when every key of the set is held and one of them was just pressed". This class
- * is that set: immutable, sorted and de-duplicated, so two combinations that contain the same keys are
- * equal no matter in which order the player pressed them.
- *
- * <p>Ordering matters for firing: a combination that is a subset of a longer one is suppressed while the
- * longer one is held ({@link #isSubsetOf}), which is what lets {@code LEFT} and {@code LEFT + A} coexist
- * without both firing on the same press.
  */
 public final class KeyCombo {
 

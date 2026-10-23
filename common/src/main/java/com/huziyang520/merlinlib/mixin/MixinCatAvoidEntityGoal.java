@@ -10,12 +10,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * The same veto as {@link MixinAvoidEntityGoal}, for the cat's own avoid goal.
- *
- * <p>The cat does not use {@code AvoidEntityGoal} directly: it has a nested goal of its own, and a nested goal
- * that overrides the two decision methods never reaches the parent's version of them. One file per target is
- * the price of mixin not being able to inject into "a method of that shape somewhere in this hierarchy".
- *
- * <p>Targeted by name rather than by class literal: the nested type is not reachable from here.
  */
 @Mixin(targets = "net.minecraft.world.entity.animal.feline.Cat$CatAvoidEntityGoal")
 public class MixinCatAvoidEntityGoal {

@@ -13,10 +13,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Fires {@link BuiltInEvents#POST_KILL} when the entity that dies is a player.
- *
- * <p>{@code ServerPlayer.die} replaces the base implementation instead of extending it, so without this hook a
- * kill event would fire for every victim except a player. Since the override does not call the base method,
- * adding this one does not produce a second event for the same death - the pair together produces exactly one.
  */
 @Mixin(ServerPlayer.class)
 public class MixinServerPlayerDie {

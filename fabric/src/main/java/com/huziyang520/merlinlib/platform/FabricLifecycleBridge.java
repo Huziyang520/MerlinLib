@@ -13,10 +13,6 @@ import java.util.function.Consumer;
 
 /**
  * Fabric implementation of {@link ILifecycleBridge}, on top of {@code ServerLifecycleEvents}.
- *
- * <p>Fabric fires the events whether or not a listener exists, so the only thing worth doing here is to keep
- * the callbacks in lists until MerlinLib's bootstrap installs the listeners. That way the order between a
- * dependent mod's constructor and MerlinLib's initialisation cannot lose a registration.
  */
 public class FabricLifecycleBridge implements ILifecycleBridge {
 

@@ -44,36 +44,6 @@ import java.util.Optional;
 
 /**
  * The four testing weapons, each one a <b>variant of its vanilla counterpart</b>.
- *
- * <p>26.3 has no {@code SwordItem} / {@code AxeItem} / {@code SpearItem}: a sword, an axe and a spear
- * are plain {@link Item}s whose behaviour comes from item components. A trident is still a real class,
- * {@link TridentItem}.
- *
- * <h2>What two failed attempts taught us (this is not obvious, keep it documented)</h2>
- *
- * <p><b>1. You cannot read a vanilla item's components during mod init.</b> The first attempt copied
- * {@code Items.IRON_SWORD}'s component map; it crashed with
- * {@code NullPointerException: Components not bound yet}. {@code Item.components()} goes through the
- * item's {@code Holder.Reference}, and item components are only bound during registry binding, long
- * after mod construction.
- *
- * <p><b>2. You cannot call vanilla's own {@code sword()} / {@code axe()} / {@code spear()} helpers
- * either.</b> The second attempt called them verbatim; it crashed with
- * {@code IllegalStateException: Registry is already frozen}, because they begin with
- * {@code BuiltInRegistries.acquireBootstrapRegistrationLookup(BuiltInRegistries.BLOCK)} - a handle that
- * only exists inside vanilla's own bootstrap window. Mod constructors run after the registries freeze,
- * so that call can never succeed from a mod. The same applies to {@code repairable(TagKey)}.
- *
- * <p>So the components are written out explicitly, with vanilla's own values, and everything that needs
- * a registry or tag lookup goes through {@link Item.Properties#delayedComponent} - the very mechanism
- * vanilla uses for the axe's block transformer. Its initializer runs when the registries are usable.
- *
- * <p>The nominal damage is written last so it wins over the vanilla baseline: it is the single source of
- * truth the editor edits and the tooltip displays.
- *
- * <p>Known deliberate gaps versus vanilla, to be closed later: the axe's {@code BLOCK_TRANSFORMER}
- * (log stripping) and the spear's {@code KINETIC_WEAPON} (thrust and dismount parameters) are not set
- * yet, because both need values this class does not reproduce faithfully at the time of writing.
  */
 public final class TestWeapons {
 

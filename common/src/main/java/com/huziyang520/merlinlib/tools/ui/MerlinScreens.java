@@ -15,23 +15,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Client side entry points for the MerlinLib screens, and the one place that decides whether a screen may
- * open on this side.
- *
- * <h2>Silence is deliberate</h2>
- *
- * <p>A refused open says nothing on screen. The reason is written to the log instead: a chat message that
- * repeats "no permission" while the player is already experimenting only adds noise, and the player asked
- * for exactly this. The log line names the switch and its current value, which is what actually helps.
- *
- * <h2>Why the client cannot ask for permissions</h2>
- *
- * <p>The operator question can only be answered on the server: on a client the local player carries no
- * permission set, so asking there locks out everybody including the operator. This class therefore never
- * checks permissions, and the server refuses the write where it happens, which is the only place that knows.
- *
- * <p>This class is only referenced from loader client code, so a dedicated server never loads it and the
- * client-only types it uses ({@code Minecraft}, {@code Screen}) can never break server startup.
+ * Client side entry points for the MerlinLib screens, and the one place that decides whether a screen
+ * may open on this side.
  */
 public final class MerlinScreens {
 
@@ -217,10 +202,9 @@ public final class MerlinScreens {
     /**
      * Opens the join notice switches.
      *
-     * <p>A page of MerlinLib's own rather than a platform configuration screen: the switches are per mod and
-     * the mods are only known at runtime, which is something the configuration screens of both loaders
-     * cannot express. Every entry point - {@code /merlinlib notices} and the button in the Cloth / Jupiter
-     * screen - goes through here, so all of them show the same page.
+     * <p>A page of MerlinLib's own rather than a platform configuration screen, because the switches are per
+     * mod and the mods are only known at runtime. Every entry point - {@code /merlinlib notices} and the
+     * button in the NeoForge, Cloth Config and Jupiter screens - goes through here.
      *
      * @param parent the screen to return to, or {@code null} to resume the game
      */

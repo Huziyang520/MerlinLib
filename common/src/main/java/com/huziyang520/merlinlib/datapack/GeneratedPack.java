@@ -25,11 +25,6 @@ import java.util.Set;
 
 /**
  * In-memory datapack holding everything MerlinLib derives from the configuration files.
- *
- * <p>The content is built lazily on the first read and cached for the lifetime of this instance. A new
- * instance is created for every {@code Pack#open()} call, which is exactly what happens on startup and
- * on every {@code /reload}, so the pack always serves the newest configuration without any reload
- * ordering requirement.
  */
 public final class GeneratedPack implements PackResources {
 

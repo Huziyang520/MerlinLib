@@ -5,10 +5,6 @@ import net.minecraft.server.packs.resources.PreparableReloadListener;
 
 /**
  * Loader specific glue for everything that has to do with packs and reloads.
- *
- * <p>Implementations are discovered through {@code META-INF/services}, so they must have a public
- * no-argument constructor. Anything the loader needs at bootstrap time is passed through
- * {@link #bootstrap(Object)} instead of the constructor.
  */
 public interface IPackBridge extends ILoaderBridge {
 

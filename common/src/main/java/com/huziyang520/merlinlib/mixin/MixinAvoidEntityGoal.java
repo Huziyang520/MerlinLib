@@ -11,10 +11,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Lets a mod stop a mob from fleeing something - "cats do not run from you any more".
- *
- * <p>Both ends of the goal are covered: {@code canUse} decides whether it may start, and
- * {@code canContinueToUse} whether it may keep going. Stopping only the first would leave a cat that was
- * already running.
  */
 @Mixin(AvoidEntityGoal.class)
 public class MixinAvoidEntityGoal {

@@ -15,35 +15,6 @@ import java.util.List;
 /**
  * The vanilla look and feel of every MerlinLib screen, expressed as drawing primitives plus the few
  * measurements screens must not invent for themselves.
- *
- * <h2>Where every number comes from</h2>
- *
- * <p>Nothing here is invented. Each value is either a vanilla sprite or a colour copied from the vanilla
- * class that owns it, so a MerlinLib screen cannot drift away from the game's own look:
- *
- * <ul>
- *   <li><b>panel</b>: the container panel, drawn in its own colours (black frame, {@code #C6C6C6} body,
- *       white top and left edge, {@code #555555} bottom and right). The only generic panel sprite 26.3
- *       ships, {@code popup/background}, has a <em>dark</em> body ({@code #303030}) - that is the modern
- *       popup look, and using it is what made these screens look nothing like a container screen;</li>
- *   <li><b>scrollbar</b>: a recessed black track ({@code #000000}) and a {@code #808080} handle, drawn with
- *       the same rounded corners as the panel rather than blitted from a sprite, so the bar reads as part of
- *       the panel and not as a texture dropped into it;</li>
- *   <li><b>list area</b>: opaque black with a one pixel outline, exactly what
- *       {@code AbstractSelectionList#extractSelection} draws ({@code -16777216} fill, {@code -8355712}
- *       outline, white when the list is focused);</li>
- *   <li><b>text</b>: always drawn with a shadow, which is what makes white text readable on a light
- *       panel - the same combination vanilla uses for its own dialogs.</li>
- * </ul>
- *
- * <h2>Layout is measured, never hard coded</h2>
- *
- * <p>Every helper that takes text also takes the width it may occupy, and {@link #measureWidth} derives a
- * panel width from the actual translated labels. A screen built from these helpers therefore fits Chinese,
- * English or any other language without a per-language constant.
- *
- * <p>This is library surface: other mods may build screens on it, so signatures change only for good
- * reason, and every rule encoded here was chosen to keep screens pixel aligned at GUI scale 1, 2 and 3.
  */
 public final class VanillaUi {
 

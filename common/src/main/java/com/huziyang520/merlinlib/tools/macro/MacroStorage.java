@@ -21,30 +21,12 @@ import java.util.stream.Collectors;
 /**
  * Client local command macros: named command lists bound to a combination of keys, stored next to the
  * other MerlinLib files so they follow this computer rather than the server.
- *
- * <h2>Keys</h2>
- *
- * <p>A macro is bound to a {@link KeyCombo}, not to a single key: any number of keys held together. The
- * file stores them as a list, and still reads the older single {@code "key"} field, so a file written by an
- * earlier version keeps working.
- *
- * <h2>Running</h2>
- *
- * <p>Running a macro means sending its commands as the player through the vanilla command path, exactly as
- * if they had been typed: permissions, command syntax and server side checks all apply unchanged.
- *
- * <p>The bindings themselves live in {@link HotkeyRegistry}; this class owns the data and re-registers the
- * bindings whenever the data changes.
  */
 public final class MacroStorage {
 
     /**
-     * One macro.
-     *
-     * @param name     the label shown in the macro screen
-     * @param keys     the GLFW key codes that have to be held together
-     * @param commands the commands to run, one per line, without a leading slash
-     */
+ * One macro.
+ */
     public record Macro(String name, List<Integer> keys, List<String> commands) {
 
         /**

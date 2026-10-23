@@ -1,29 +1,8 @@
 package com.huziyang520.merlinlib.ui.anim;
 
 /**
- * The opening animation of a screen: where it is, how big it is and how visible it is, over a short moment.
- *
- * <p>A mod may drive one itself, or ignore the whole thing. It knows nothing about which screen it belongs to,
- * so the same object animates any of them:
- *
- * <pre>{@code
- * ScreenIntro intro = UiAnimation.intro();
- * graphics.pose().translate(intro.offsetX(width), intro.offsetY(height));
- * graphics.pose().scale((float) intro.scale(), (float) intro.scale());
- * }</pre>
- *
- * <h2>Why it is driven by the clock, not by ticks</h2>
- *
- * <p>The first version advanced once per tick and could only be started from a place that ticks. Screens do not
- * tick, and drawing runs many times per tick, so it counted frames and finished several times too fast. Reading
- * the wall clock in {@link #progress()} makes the animation independent of both: a caller asks for the current
- * value whenever it draws, and nothing has to be pumped.
- *
- * <h2>Why it returns offsets rather than drawing</h2>
- *
- * <p>A screen already knows how to draw itself; asking it for its width and height and giving back a
- * translation keeps the animation out of the drawing code, and lets a mod that wants a different effect use the
- * same object with its own transform.
+ * The opening animation of a screen: where it is, how big it is and how visible it is, over a short
+ * moment.
  */
 public final class ScreenIntro {
 
@@ -110,16 +89,8 @@ public final class ScreenIntro {
     }
 
     /**
-     * How opaque the veil drawn over the screen should be, 1 hiding it completely.
-     *
-     * <h2>Why it is a veil and not an alpha</h2>
-     *
-     * <p>The interface is drawn through a render state extractor, which has no colour multiplier: every fill
-     * and every piece of text takes its own colour and nothing can scale them all at once. Vanilla widgets are
-     * the real problem - they draw themselves, in their own colours, from a place a screen cannot reach. A fade
-     * that only dimmed what this library draws would leave the buttons at full brightness, which is exactly the
-     * half-working fade this replaces. Painting a dark veil over the finished frame fades everything that is on
-     * screen, the player's own widgets included, and it is the closest thing to a fade the interface allows.
+     * How opaque the veil drawn over the screen should be, 1 hiding it completely. A veil rather than an
+     * alpha, because the interface is drawn through a render state extractor that has no colour multiplier.
      *
      * @return the veil opacity, 0 for a transition that does not fade
      */

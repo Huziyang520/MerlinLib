@@ -20,9 +20,6 @@ import java.util.stream.Stream;
 
 /**
  * Repository source that offers the generated datapack to the game.
- *
- * <p>The pack is declared as required and hidden: it is always active (so {@code /reload} keeps it),
- * and it never shows up in the datapack or resource pack selection screens.
  */
 public final class GeneratedPackSource implements RepositorySource {
 

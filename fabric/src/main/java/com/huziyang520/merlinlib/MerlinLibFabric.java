@@ -28,8 +28,6 @@ import net.minecraft.world.item.ItemStack;
 /**
  * Fabric entrypoint. Boots the loader independent part through {@link MerlinLib#init(Object)},
  * registers the diagnostic command and adds the creative inventory entries.
- *
- * <p>No client class is referenced here, so a dedicated server can load this class safely.
  */
 public class MerlinLibFabric implements ModInitializer {
 

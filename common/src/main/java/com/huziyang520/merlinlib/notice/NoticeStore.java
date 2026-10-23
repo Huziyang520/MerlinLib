@@ -14,16 +14,6 @@ import java.util.Set;
 
 /**
  * Which notices a world save has already shown.
- *
- * <h2>Why the save and not the player</h2>
- *
- * <p>"Once per world" is what the mode means, and a world's own data is the only place that stays true to
- * that: it disappears with the world, comes back with it, and does not have to be kept in step with anything
- * else. A player who copies a world elsewhere still sees the notice once there, which is correct - it is a
- * different world.
- *
- * <p>Player specific entries carry the player's id in the key, so one player seeing a notice does not silence
- * it for the others.
  */
 public final class NoticeStore extends SavedData {
 

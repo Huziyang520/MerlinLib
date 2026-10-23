@@ -16,9 +16,6 @@ import java.util.Set;
 
 /**
  * Registration state of every potion MerlinLib knows about.
- *
- * <p>Variant generation is centralised here so the {@code long_} / {@code strong_} naming, durations
- * and amplifiers stay consistent no matter which api path created the potion.
  */
 public final class PotionRegistry implements PotionApi {
 

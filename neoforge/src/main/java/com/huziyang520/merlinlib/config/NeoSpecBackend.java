@@ -11,28 +11,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * The NeoForge store for MerlinLib's switches.
- *
- * <p>NeoForge already owns a configuration system - a {@code ModConfigSpec}, the file it generates for it
- * and the screen that edits it - so MerlinLib hands its switches over instead of keeping a second format
- * of its own. This class is the bridge: it declares every key once, in the spec, and answers the
- * {@link ConfigReader} calls from the values the spec holds.
- *
- * <p>Two things are deliberate:
- *
- * <ul>
- *   <li><b>values are read through the spec, never cached here.</b> NeoForge can reload a configuration at
- *       any time, and a copy kept in this class would keep answering with the old value afterwards.</li>
- *   <li><b>nothing is read before the spec reports itself loaded.</b> {@link ConfigValue#get()} throws in
- *       that window, and a mod that throws while the game is starting is worse than one that answers with
- *       the default, which is what this class does instead.</li>
- * </ul>
- *
- * <p>Colours are stored as text ({@code 0xRRGGBB}, {@code #RRGGBB} or a palette name) because that is the
- * form the file and the screen both understand, and because an integer field in a configuration screen
- * would show a colour as a meaningless decimal.
- *
- * <p>Internal to the NeoForge module; see {@link NeoConfigs} for the two instances.
+ * The NeoForge store for MerlinLib's switches: one spec per half, answered through {@link
+ * ConfigReader}.
  */
 final class NeoSpecBackend implements ConfigBackend {
 
@@ -92,22 +72,16 @@ final class NeoSpecBackend implements ConfigBackend {
     }
 
     /**
-     * The translation key of one option, as {@code config.merlinlib.<section>.<option>}.
-     *
-     * <p>Handed to the spec instead of the loader's own {@code <modid>.configuration.<path>} fallback
-     * because the same keys already name these switches in the Cloth Config and Jupiter screens and in
-     * both language files: one key list, three screens. NeoForge's
-     * {@code ConfigurationSectionScreen} asks {@code ValueSpec#getTranslationKey()} first and only falls
-     * back to the concatenated default when it is unset, so setting it is the supported way to name an
-     * option - and the tooltip key it derives is this key plus {@code .tooltip}.
+     * The translation key of one option, as {@code merlinlib.configuration.<section>.<option>}, plus
+     * {@code .tooltip} for its tooltip.
      *
      * @param option the option path, relative to the open section
      * @return the translation key
      */
     private String label(String option) {
         return this.path.isEmpty()
-                ? "config.merlinlib." + option
-                : "config.merlinlib." + String.join(".", this.path) + "." + option;
+                ? ClientOptions.KEY_PREFIX + option
+                : ClientOptions.KEY_PREFIX + String.join(".", this.path) + "." + option;
     }
 
     NeoSpecBackend bool(String path, boolean defaultValue, String comment) {

@@ -7,10 +7,6 @@ import java.util.Set;
 
 /**
  * One rule that puts something into loot tables.
- *
- * <p>Immutable: built once through {@link LootInjectionBuilder} and read whenever a table is loaded. The shape
- * is deliberately the one a datapack author would write by hand - target tables, what to drop, which
- * enchantments, how often, and how it competes with the table's own entries.
  */
 public final class LootInjection {
 
@@ -31,9 +27,10 @@ public final class LootInjection {
     private final float chance;
     private final int weight;
     private final int quality;
+    private final boolean moddedTables;
 
     LootInjection(Set<String> targetTables, Form form, Item item, Set<String> enchantments, float chance,
-                  int weight, int quality) {
+                  int weight, int quality, boolean moddedTables) {
         this.targetTables = targetTables;
         this.form = form;
         this.item = item;
@@ -41,6 +38,12 @@ public final class LootInjection {
         this.chance = chance;
         this.weight = weight;
         this.quality = quality;
+        this.moddedTables = moddedTables;
+    }
+
+    /** @return whether this rule may also target tables owned by another mod */
+    public boolean allowsModdedTables() {
+        return this.moddedTables;
     }
 
     /** @return the full ids of the loot tables this rule applies to */
@@ -81,7 +84,8 @@ public final class LootInjection {
     @Override
     public String toString() {
         return "LootInjection[" + this.form + " " + this.enchantments + " into " + this.targetTables
-                + ", chance " + this.chance + ", weight " + this.weight + ", quality " + this.quality + "]";
+                + ", chance " + this.chance + ", weight " + this.weight + ", quality " + this.quality
+                + (this.moddedTables ? ", modded tables allowed" : "") + "]";
     }
 
     /** @return the book item, kept here so the builder and the injector agree on it */

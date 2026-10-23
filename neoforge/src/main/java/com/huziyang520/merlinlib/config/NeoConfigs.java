@@ -4,29 +4,8 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
 
 /**
- * Declares MerlinLib's switches as NeoForge configurations and registers them with the mod container.
- *
- * <h2>Two configurations, no third one</h2>
- *
- * <p>{@code CLIENT} holds the switches that only describe this client's display, and the shared
- * configuration holds the authoritative ones a server also needs - the toolkit permissions, the testing
- * ceilings, the join notice switches. {@code SERVER} is deliberately not used: a server configuration in
- * NeoForge is stored per world and only editable from inside a running save, which is the wrong place for
- * switches that also have to be readable before a world exists (the creative tab and the item registration
- * ask for them).
- *
- * <h2>Why the shared configuration's type is looked up, not named</h2>
- *
- * <p>FancyModLoader 12 (the loader 26.3 ships) deleted the {@code COMMON} constant from
- * {@code ModConfig.Type} and kept {@code LOCAL}, {@code CLIENT}, {@code SYNCED} and {@code STARTUP}:
- * {@code javap net.neoforged.fml.config.ModConfig$Type} on {@code loader-12.0.12.jar} lists exactly
- * those four. A field reference to the removed constant compiles against an older classpath and then
- * throws {@code NoSuchFieldError} while the mod is being loaded, which is a hard startup crash. The type
- * is therefore resolved by name at runtime: {@code COMMON} when the loader still has it (26.1, 26.2),
- * {@code LOCAL} otherwise. {@code LOCAL} is the same thing the old {@code COMMON} was for MerlinLib -
- * a configuration each side reads from its own file and nothing syncs.
- *
- * <p>NeoForge then produces both the files and the editing screen, so MerlinLib draws nothing itself.
+ * Declares MerlinLib's switches as two NeoForge configurations - the client half and the shared half -
+ * and hands them to the mod container, which writes the files and shows the editing screen.
  */
 public final class NeoConfigs {
 
@@ -42,17 +21,13 @@ public final class NeoConfigs {
     /**
      * Finds the type the shared switches are registered under on this loader.
      *
-     * <p>{@code Type.valueOf} is used instead of a reflective field read because it answers the question
-     * the same way for both generations of the enum and throws the one checked-by-catch exception the
-     * caller can handle: {@link IllegalArgumentException} when the constant is gone.
-     *
      * @return {@code COMMON} when the loader still declares it, {@code LOCAL} otherwise
      */
     private static ModConfig.Type resolveSharedType() {
         try {
             return ModConfig.Type.valueOf("COMMON");
         } catch (IllegalArgumentException removedOnThisLoader) {
-            // 26.3: the shared, unsynced half of a mod's configuration is called LOCAL.
+            // The shared, unsynced half of a mod's configuration is called LOCAL.
             return ModConfig.Type.valueOf("LOCAL");
         }
     }
@@ -63,8 +38,7 @@ public final class NeoConfigs {
     }
 
     /**
-     * Binds both specs to the mod, which is what makes NeoForge write their files and offer the
-     * configuration screen in the mod list.
+     * Binds both specs to the mod.
      *
      * @param container the mod container handed to the entrypoint
      */
@@ -84,18 +58,14 @@ public final class NeoConfigs {
     }
 
     /**
-     * Declares the client switches. The order and the names are the ones the documented
-     * {@code client.toml} uses, so an old file can be imported key by key.
+     * Declares the client switches, in the order {@code client.toml} documents them. The layout version is
+     * client only and therefore declared here, never in the shared half.
      *
      * @param spec the backend under construction
      */
     private static void client(NeoSpecBackend spec) {
         spec.push("general")
-                .number("config_version", 3, 0, Integer.MAX_VALUE,
-                        "File layout version, written by the mod. Leave it alone.")
-                .bool("notice_enabled", true,
-                        "Show MerlinLib's own join notices in chat, including the 0.9.0 note about the "
-                                + "configuration screen.")
+                .bool("notice_enabled", true, "Show MerlinLib's own join notice in chat.")
                 .pop();
 
         spec.push("hud")
@@ -179,8 +149,6 @@ public final class NeoConfigs {
                         "Allow editing the base damage of an ordinary weapon too.")
                 .bool("health_editor_requires_item", true,
                         "Only open the health editor while holding the health editor item.")
-                .number("config_version", 4, 0, Integer.MAX_VALUE,
-                        "File layout version, written by the mod. Leave it alone.")
                 .pop();
 
         spec.push("content")

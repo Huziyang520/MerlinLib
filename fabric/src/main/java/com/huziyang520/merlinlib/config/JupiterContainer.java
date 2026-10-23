@@ -18,25 +18,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * The Jupiter half of the optional configuration screen.
- *
- * <p>Jupiter's own list already holds a container per mod, so appearing in it is a matter of registering
- * one with {@code ConfigManager#registerConfigHandler}: the list screen reads
- * {@code ConfigManager.getInstance().getConfigs()}, and every container it finds becomes a row. This class
- * is that container.
- *
- * <h2>What the file is, and what it is not</h2>
- *
- * <p>The container is a {@code FileConfigContainer} writing {@code config/MerlinLib/settings.jcfg}, which is
- * what makes it a first class Jupiter configuration - Jupiter serialises it and shows it under the
- * "Jupiter" source. It is a <em>mirror</em>, not the store: {@code client.toml} stays authoritative, so
- * {@link #load()} rebuilds the tabs from {@link ClientOptions#values()} instead of reading the {@code jcfg}
- * back, and {@link #save()} writes the {@code jcfg} and then folds the same values into {@code client.toml}
- * through {@link ConfigManager#saveClient}. A player who hand edits {@code client.toml} therefore never
- * sees stale values here, and one who uses this screen never ends up with two files that disagree.
- *
- * <p>The keys, labels, defaults and ranges all come from {@link ClientOptions}, the same list the Cloth
- * Config screen walks: there is one key list, and adding an option to it adds a control to both.
+ * The Jupiter half of the optional configuration screen: a container registered with Jupiter that
+ * mirrors {@link ClientOptions} into {@code client.toml}, which stays the store.
  */
 public final class JupiterContainer extends FileConfigContainer {
 
@@ -48,7 +31,7 @@ public final class JupiterContainer extends FileConfigContainer {
 
     public JupiterContainer() {
         super(Identifier.fromNamespaceAndPath(Constants.MOD_ID, "settings"),
-                Component.translatable("config.merlinlib.title"), FILE);
+                Component.translatable(ClientOptions.titleKey()), FILE);
     }
 
     /**
@@ -58,14 +41,15 @@ public final class JupiterContainer extends FileConfigContainer {
     public void init() {
         Map<String, String> values = ClientOptions.values();
         for (String section : ClientOptions.sections()) {
-            ConfigGroup group = createTab(section, Component.translatable("config.merlinlib." + section));
+            ConfigGroup group = createTab(section,
+                    Component.translatable(ClientOptions.sectionKey(section)));
             for (ClientOptions.Option option : ClientOptions.in(section)) {
                 group.addEntry(entry(option, ClientOptions.valueOf(option, values)));
             }
         }
-        // One tab holding the way into the join notice page: the per mod switches are not values Jupiter can
-        // list, because the set of mods is only known at runtime.
-        ConfigGroup notices = createTab("notices", Component.translatable("config.merlinlib.notices"));
+        // The join notice page itself is a screen of MerlinLib's own, because the set of mods that
+        // registered one is only known at runtime; this tab holds the way into it.
+        ConfigGroup notices = createTab("notices", Component.translatable(ClientOptions.sectionKey("notices")));
         notices.addEntry(JupiterNoticesButton.create());
     }
 
@@ -119,20 +103,24 @@ public final class JupiterContainer extends FileConfigContainer {
      */
     private ConfigEntry<?> entry(ClientOptions.Option option, String value) {
         Component label = Component.translatable(option.labelKey());
+        Component tooltip = Component.translatable(option.labelKey() + ".tooltip");
         String key = option.key();
         return switch (option.kind()) {
             case BOOLEAN -> BooleanEntry.builder(label, Boolean.parseBoolean(value))
                     .key(key)
+                    .tooltip(tooltip)
                     .callback((chosen, initial, reset) -> this.pending.put(key, chosen.toString()))
                     .build();
             case INTEGER -> IntegerEntry.builder(label, parseInt(value, option.defaultInt()))
                     .key(key)
+                    .tooltip(tooltip)
                     .min(option.intMin())
                     .max(option.intMax())
                     .callback((chosen, initial, reset) -> this.pending.put(key, chosen.toString()))
                     .build();
             case DECIMAL -> DoubleEntry.builder(label, parseDouble(value, option.defaultDouble()))
                     .key(key)
+                    .tooltip(tooltip)
                     .min(option.min())
                     .max(option.max())
                     .callback((chosen, initial, reset) -> this.pending.put(key, chosen.toString()))
@@ -141,6 +129,7 @@ public final class JupiterContainer extends FileConfigContainer {
             // string client.toml accepts, palette name included.
             case COLOUR, TEXT -> StringEntry.builder(label, value)
                     .key(key)
+                    .tooltip(tooltip)
                     .callback((chosen, initial, reset) -> this.pending.put(key, chosen))
                     .build();
         };

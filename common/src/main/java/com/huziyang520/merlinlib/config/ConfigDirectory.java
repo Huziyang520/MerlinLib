@@ -12,9 +12,6 @@ import java.util.stream.Stream;
 
 /**
  * Locates and fingerprints the MerlinLib configuration directory.
- *
- * <p>The folder is resolved relative to the game working directory, which is the same place the
- * vanilla {@code config} directory lives on both loaders.
  */
 public final class ConfigDirectory {
 

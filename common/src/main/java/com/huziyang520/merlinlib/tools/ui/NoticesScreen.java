@@ -19,23 +19,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The join notice switches: the global switch, then one switch per mod that registered a notice.
- *
- * <h2>Why this screen exists</h2>
- *
- * <p>The per mod switches used to be one hand written string in {@code server.toml}
- * ({@code notices.per_mod = "modid=true;other=false"}). Every A/B choice in a text field has to be spelled
- * by hand, and a mod that was not mentioned in it silently kept its default, so the switch a player
- * thought they had turned off often was not the one they edited. The list of mods is only known at
- * runtime, which is exactly what a screen can show and a fixed configuration key cannot.
- *
- * <p>The rows come from {@link NoticeRegistry}, never from a list kept here: a mod that registers a notice
- * through the api appears on this screen by itself, and removing a mod removes its row. MerlinLib is
- * listed first because its own notice is the one every pack sees, the rest alphabetically.
- *
- * <p>The global switch is {@code notices.enabled} in {@code server.toml}; the per mod switches are the
- * {@code [mods]} table of {@code notices.toml}. Nothing is written until save is pressed, so cancelling
- * leaves both files exactly as they were.
+ * The join notice switches: one global switch, then one switch per mod that registered a notice,
+ * MerlinLib first and the rest alphabetically.
  */
 public class NoticesScreen extends VanillaScreen {
 
@@ -63,6 +48,9 @@ public class NoticesScreen extends VanillaScreen {
     private boolean enabled;
     private int hintY;
     private int hidden;
+    /** Whether no business mod registered a notice, so only MerlinLib's own row is listed. */
+    private boolean noBusinessMods;
+    private int emptyY;
 
     /**
      * @param parent the screen to return to, or {@code null} to resume the game
@@ -90,6 +78,7 @@ public class NoticesScreen extends VanillaScreen {
         for (String owner : this.owners) {
             this.perMod.put(owner, stored.getOrDefault(owner, defaults.get(owner)));
         }
+        this.noBusinessMods = this.owners.stream().allMatch(Constants.MOD_ID::equals);
     }
 
     @Override
@@ -99,7 +88,8 @@ public class NoticesScreen extends VanillaScreen {
 
     /** @return how many mod rows fit in the window, so the panel can never run off the bottom */
     private int capacity() {
-        int reserved = HEADER_HEIGHT + ROW + HINT_HEIGHT + 6 + VanillaUi.WIDGET_HEIGHT;
+        int reserved = HEADER_HEIGHT + ROW + HINT_HEIGHT + 6 + VanillaUi.WIDGET_HEIGHT
+                + (this.noBusinessMods ? ROW : 0);
         return Math.max(0, (contentHeightLimit() - reserved) / ROW);
     }
 
@@ -124,7 +114,8 @@ public class NoticesScreen extends VanillaScreen {
     @Override
     protected int contentHeight() {
         // The rows are the global switch plus every mod switch that fits, then the hint and the footer.
-        return HEADER_HEIGHT + (1 + visible()) * ROW + HINT_HEIGHT + 6 + VanillaUi.WIDGET_HEIGHT;
+        int rows = HEADER_HEIGHT + (1 + visible()) * ROW;
+        return rows + (this.noBusinessMods ? ROW : 0) + HINT_HEIGHT + 6 + VanillaUi.WIDGET_HEIGHT;
     }
 
     @Override
@@ -154,6 +145,11 @@ public class NoticesScreen extends VanillaScreen {
             this.rowLabels.add(owner);
             this.rowYs.add(y + 6);
             layout.gap(ROW - VanillaUi.WIDGET_HEIGHT);
+        }
+
+        this.emptyY = layout.cursor();
+        if (this.noBusinessMods) {
+            layout.gap(ROW);
         }
 
         this.hintY = layout.cursor();
@@ -197,15 +193,14 @@ public class NoticesScreen extends VanillaScreen {
         VanillaUi.text(graphics, this.font, this.title, left, layout.top(), VanillaUi.TEXT, content);
         VanillaUi.separator(graphics, left, layout.right(), layout.top() + 24);
 
-        if (this.owners.isEmpty()) {
-            // Nothing to switch, and saying so beats an empty panel that looks broken.
+        for (int index = 0; index < this.rowYs.size(); index++) {
+            VanillaUi.text(graphics, this.font, label(this.rowLabels.get(index)),
+                    left, this.rowYs.get(index), VanillaUi.TEXT, content - CONTROL_WIDTH - VanillaUi.GAP);
+        }
+        if (this.noBusinessMods) {
+            // One grey line instead of an empty panel that would look broken.
             VanillaUi.text(graphics, this.font, Component.translatable("gui.merlinlib.notices.empty"),
-                    left, layout.top() + HEADER_HEIGHT + 6, VanillaUi.TEXT_DISABLED, content);
-        } else {
-            for (int index = 0; index < this.rowYs.size(); index++) {
-                VanillaUi.text(graphics, this.font, label(this.rowLabels.get(index)),
-                        left, this.rowYs.get(index), VanillaUi.TEXT, content - CONTROL_WIDTH - VanillaUi.GAP);
-            }
+                    left, this.emptyY, VanillaUi.TEXT_DISABLED, content);
         }
 
         int hintTop = this.hintY;

@@ -6,9 +6,6 @@ import java.util.Set;
 
 /**
  * Registration entry point for potions.
- *
- * <p>Like mob effects, potions are a plain code registry: a config file can only override or disable
- * an existing potion, never create one.
  */
 public interface PotionApi {
 

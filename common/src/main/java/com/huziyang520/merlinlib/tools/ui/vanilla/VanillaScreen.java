@@ -7,22 +7,6 @@ import net.minecraft.network.chat.Component;
 
 /**
  * Base class of the MerlinLib toolkit screens.
- *
- * <p>It owns the three things that are easy to get wrong:
- * <ul>
- *     <li><b>the panel is drawn at the right moment</b> - in {@code extractBackground}, which vanilla
- *     calls after the world dimming and before the widgets. Drawing it in {@code extractRenderState}
- *     would paint over the controls, and skipping the background pass would let the world show
- *     through the panel;</li>
- *     <li><b>the panel is sized from measured content</b> - see {@link #contentWidth()}, so a screen
- *     fits every language instead of one hard coded width;</li>
- *     <li><b>the screen pauses the game</b> - otherwise the world keeps animating behind the panel and
- *     the screen reads as flicker.</li>
- * </ul>
- *
- * <p>Opening and closing are not animated. The toolkit screens are for looking at an item or a number
- * right now, and a window that slides into place only delays that; the interfaces this class backs are
- * unchanged otherwise.
  */
 public abstract class VanillaScreen extends Screen {
 

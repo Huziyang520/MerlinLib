@@ -4,9 +4,6 @@ import java.util.function.Consumer;
 
 /**
  * Client side sender for client to server payloads.
- *
- * <p>Each loader's client entrypoint installs one implementation; common code stays free of client
- * classes. The sink is {@code null} on a dedicated server.
  */
 public final class ServerSender {
 

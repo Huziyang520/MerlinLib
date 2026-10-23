@@ -24,6 +24,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
@@ -65,11 +66,14 @@ public class MerlinLibNeoForgeClient {
         MacroStorage.load();
         com.huziyang520.merlinlib.tools.HealthEditorItem.setOpener(target ->
                 MerlinScreens.openHealthEditor(null, target));
-        // NeoForge's own configuration screen holds every switch, so /merlinlib config simply opens it.
-        ConfigScreens.install(parent -> {
-            ModContainer container = ModList.get().getModContainerById(Constants.MOD_ID).orElse(null);
-            return container == null ? null : new ConfigurationScreen(container, parent);
-        });
+        ModContainer container = ModList.get().getModContainerById(Constants.MOD_ID).orElse(null);
+        if (container != null) {
+            container.registerExtensionPoint(IConfigScreenFactory.class,
+                    (IConfigScreenFactory) (mod, parent) ->
+                            new ConfigurationScreen(mod, parent, MerlinConfigSectionScreen::new));
+            ConfigScreens.install(parent ->
+                    new ConfigurationScreen(container, parent, MerlinConfigSectionScreen::new));
+        }
     }
 
     /**

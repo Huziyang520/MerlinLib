@@ -14,19 +14,8 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * A Cloth Config row that is one button instead of one value.
- *
- * <h2>Why a row of its own is needed</h2>
- *
- * <p>Cloth Config can edit a boolean, a number, a string and a colour, and that is the whole list. The join
- * notice switches are not a value at all - the set of mods is only known at runtime, so the page that shows
- * them is a screen of MerlinLib's own - and the only way to reach it from the Cloth screen is a button.
- * The builders of this Cloth version offer no button entry, so this class is the row: the label on the left,
- * the button the caller built on the right.
- *
- * <p>It is deliberately a leaf: no value, nothing to reset, nothing to save. Cloth asks every entry for a
- * value while it saves, which is why {@link #getValue()} answers {@code false} - the button does its work
- * when it is pressed, not while the screen is saved.
+ * A Cloth Config row that is one button instead of one value, with the label on the left and the
+ * button the caller built on the right. It holds no value and nothing to reset.
  */
 final class ClothNoticeButtonEntry extends TooltipListEntry<Boolean> {
 

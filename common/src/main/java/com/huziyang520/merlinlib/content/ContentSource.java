@@ -3,8 +3,6 @@ package com.huziyang520.merlinlib.content;
 /**
  * Where a piece of content came from. The declaration order is also the arbitration order: a value
  * with a higher priority overrides the same id declared by a lower one.
- *
- * <p>Overriding is never silent: every override is logged with both sources.
  */
 public enum ContentSource {
 

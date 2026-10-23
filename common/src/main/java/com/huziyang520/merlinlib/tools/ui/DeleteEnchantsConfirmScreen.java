@@ -12,10 +12,6 @@ import java.util.List;
 
 /**
  * Confirmation dialog for "remove every enchantment".
- *
- * <p>Small on purpose: one warning line and two buttons. The destructive button is on the left and the
- * cancel button is on the right <em>and</em> focused, so the default action of a stray Enter or Escape is
- * always the harmless one.
  */
 public class DeleteEnchantsConfirmScreen extends VanillaScreen {
 

@@ -14,22 +14,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Opens the health editor for the player themselves on a sneak right click into thin air.
- *
- * <h2>Why the existing entry points cannot cover this</h2>
- *
- * <p>The health editor already opens from two places: using it on an entity, and sneak using an entity.
- * Both need an entity under the crosshair, so "edit myself while nothing is in front of me" had no path at
- * all - vanilla only calls the use item callback when there is something to use it on.
- *
- * <p>{@code Minecraft.startUseItem} is the method the game runs for the use key, which is why the hook sits
- * there: it respects the player's own key binding, works with the key bound to a mouse button, and runs
- * before vanilla decides what to do with the click.
- *
- * <h2>Why only thin air</h2>
- *
- * <p>The hook stays out of the way unless the crosshair points at nothing. Sneak right clicking a block is
- * how a player opens a chest or places a block, and sneak right clicking an entity already belongs to the
- * entity path; hijacking either would break vanilla behaviour the player relies on.
  */
 @Mixin(Minecraft.class)
 public class MixinMinecraftUseItem {

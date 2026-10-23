@@ -13,27 +13,6 @@ import java.util.Map;
 
 /**
  * The per mod switches of the join notices, stored in {@code config/MerlinLib/notices.toml}.
- *
- * <h2>Why a file of its own</h2>
- *
- * <p>The list of mods that register a notice is only known at runtime, so the switches could not be
- * declared as fixed keys in {@code server.toml}: the configuration writer only puts a value back into a
- * line the template already contains, and a key invented at runtime would be dropped on the next save.
- * That is what forced one hand written string, {@code notices.per_mod}, into the file - and a string a
- * player has to spell {@code modid=true;other=false} by hand is not a switch, it is a syntax test.
- *
- * <p>This class therefore owns a small file with one {@code [mods]} table, where every key is a mod id and
- * every value is a boolean. The screen in {@code NoticesScreen} writes the whole file, the runtime reads
- * one key per notice, and the format is ordinary TOML, so it stays readable and editable with any tool.
- *
- * <h2>The one migration</h2>
- *
- * <p>{@link #init()} imports the old {@code notices.per_mod} string once, the first time this file is
- * missing and the old value is not empty. The value is read from the text of {@code server.toml} rather
- * than through the configuration: NeoForge rewrites that file from its own spec, which no longer declares
- * the key, so a read through the spec would already answer with the default by the time it happens. The
- * import is idempotent - an existing {@code notices.toml} always wins, so the old string can never
- * overwrite a choice made in the screen.
  */
 public final class NoticeSettings {
 

@@ -13,27 +13,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Caps how many particles the client draws, so a huge number cannot freeze it.
- *
- * <h2>The problem this solves</h2>
- *
- * <p>Several parts of the game ask for a particle per point of damage, and the health editor can put a mob's
- * health, and a test weapon's damage, into the thousands. One hit then asks for thousands of particles in a
- * single tick: the client spends the whole frame building particle objects, never finishes it, and the game
- * stops responding - which is what a "freeze on hitting a high health mob" turns out to be.
- *
- * <h2>Why the cap is here and not at the source</h2>
- *
- * <p>{@code doAddParticle} is the one door every particle goes through, on the client, closest to the cost that
- * actually hurts. Dropping a particle there costs nothing; dropping it at the source would mean guessing which
- * of the game's own paths - damage, healing, breeding, explosions, blocks - is the one to limit, and being
- * wrong the moment another one appears.
- *
- * <h2>The budget</h2>
- *
- * <p>The count is kept over a rolling window of one tick: whatever the limit is, it is the number of particles
- * <em>per tick</em>, and the window is only reset when a particle actually arrives, so an idle client does no
- * work at all. The limit lives in {@code client.toml} under {@code [particles]} and can be switched off, in
- * which case vanilla behaviour is restored exactly.
  */
 @Mixin(ClientLevel.class)
 public class MixinClientLevelParticles {

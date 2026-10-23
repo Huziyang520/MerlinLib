@@ -11,13 +11,6 @@ import java.util.Optional;
 
 /**
  * Immutable result of reading every content definition once.
- *
- * @param enchantments   the finally effective enchantments, after arbitration and after removing
- *                       everything that is explicitly disabled
- * @param disabled       ids that were explicitly disabled, kept for diagnostics
- * @param effectOverrides effect recolour and disable entries read from {@code effects.json}
- * @param errors         locatable problems; a snapshot with errors is still usable for the parts that
- *                       parsed successfully
  */
 public record ContentSnapshot(
         Map<Identifier, EnchantmentDraft> enchantments,

@@ -12,20 +12,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Fires {@link BuiltInEvents#POST_KILL} on the killer when a living entity dies.
- *
- * <h2>Why there is a second mixin for players</h2>
- *
- * <p>{@code ServerPlayer.die} overrides {@code LivingEntity.die} without calling it, so a hook on the base
- * method never sees a player die. That is the classic silent failure of this trigger: everything works in a
- * test against a zombie and nothing works the moment the victim is a player. {@link MixinServerPlayerDie}
- * covers that case, and because the override does not call the base method, one death produces exactly one
- * event.
- *
- * <h2>Why the killer, not the victim</h2>
- *
- * <p>The event is delivered to the equipment of {@code getEntity()}, and the enchantments that care about a
- * kill - beheading, frenzy, incinerate - sit on the weapon. The victim is on the event under its own name. A
- * death with no killer (falling, starvation) therefore produces no event at all.
  */
 @Mixin(LivingEntity.class)
 public class MixinLivingEntityDie {

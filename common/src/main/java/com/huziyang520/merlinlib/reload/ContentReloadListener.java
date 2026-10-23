@@ -13,9 +13,6 @@ import java.util.concurrent.Executor;
 /**
  * Re-reads the MerlinLib configuration on every resource reload, covering server startup and the
  * vanilla {@code /reload} command.
- *
- * <p>The files are read on the prepare executor (never on the game thread) and the change report is
- * logged once the reload barrier has been passed, so the log order stays readable.
  */
 public final class ContentReloadListener implements PreparableReloadListener {
 

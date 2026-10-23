@@ -6,14 +6,6 @@ import java.util.List;
 
 /**
  * A read only view of MerlinLib's switches.
- *
- * <p>Every option is addressed as {@code section.key} and comes with the value the caller wants when the
- * key is missing or cannot be understood, so a broken file can never stop the game from starting.
- *
- * <p>There are two implementations: {@link TomlFile}, which reads the commented files under
- * {@code config/MerlinLib}, and the platform configuration of a loader (NeoForge's {@code ModConfigSpec},
- * Fabric's optional Cloth Config screen), which is installed through {@link ConfigManager#setBackend}.
- * Consumers never care which one is in use.
  */
 public interface ConfigReader {
 

@@ -17,12 +17,6 @@ import net.minecraft.world.entity.player.Player;
 
 /**
  * The health editor: edits the current and maximum health of one living entity.
- *
- * <p>Opened by sneak-using an entity, or yourself while holding the health editor item when the server
- * asks for it. Values are whole numbers from 0 to the integer limit; a field that does not hold one is
- * outlined in red, its reason is printed under the fields, and the confirm button is switched off, so an
- * invalid edit cannot be sent at all. The write still happens on the server, which re-validates permission
- * and clamps the values before touching the entity.
  */
 public class HealthEditorScreen extends VanillaScreen {
 

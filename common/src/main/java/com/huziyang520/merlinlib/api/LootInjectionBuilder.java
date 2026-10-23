@@ -9,19 +9,6 @@ import java.util.Set;
 
 /**
  * Builds one {@link LootInjection}.
- *
- * <pre>{@code
- * MerlinApi.loot().register(LootInjectionBuilder.create()
- *         .toTables(LootTables.ANCIENT_CITY)
- *         .asBook()
- *         .withEnchantments("practical_enchantments:chinese")
- *         .chance(0.10F)
- *         .quality(2));
- * }</pre>
- *
- * <p>Defaults are the quiet ones: no table, a book, no enchantment, always rolled, weight 1, quality 0. A rule
- * with no table or no enchantment is rejected when it is built, because it could never do anything and a
- * silent no-op is the hardest kind of mistake to find.
  */
 public final class LootInjectionBuilder {
 
@@ -32,6 +19,7 @@ public final class LootInjectionBuilder {
     private float chance = 1.0F;
     private int weight = 1;
     private int quality;
+    private boolean moddedTables;
 
     private LootInjectionBuilder() {
     }
@@ -110,7 +98,7 @@ public final class LootInjectionBuilder {
     /**
      * Sets the enchantments the drop may carry, replacing any earlier ones.
      *
-     * @param enchantments full enchantment ids, e.g. {@code practical_enchantments:venom}
+     * @param enchantments full enchantment ids, e.g. {@code examplemod:venom}
      * @return this builder
      */
     public LootInjectionBuilder withEnchantments(String... enchantments) {
@@ -163,6 +151,19 @@ public final class LootInjectionBuilder {
     }
 
     /**
+     * Allows the rule to target tables owned by another mod, e.g. {@code twilightforest:chests/...}.
+     *
+     * <p>Off by default: injecting into a table another mod owns is a decision that mod's author has not
+     * agreed to, so it has to be asked for explicitly.
+     *
+     * @return this builder
+     */
+    public LootInjectionBuilder allowModdedTables() {
+        this.moddedTables = true;
+        return this;
+    }
+
+    /**
      * @return the rule
      * @throws IllegalStateException when the rule has no target table or no enchantment
      */
@@ -177,7 +178,7 @@ public final class LootInjectionBuilder {
             throw new IllegalStateException("[MerlinLib] an item loot injection needs the item to drop");
         }
         return new LootInjection(Set.copyOf(this.targetTables), this.form, this.item, Set.copyOf(this.enchantments),
-                clampChance(this.chance), Math.max(1, this.weight), this.quality);
+                clampChance(this.chance), Math.max(1, this.weight), this.quality, this.moddedTables);
     }
 
     /**

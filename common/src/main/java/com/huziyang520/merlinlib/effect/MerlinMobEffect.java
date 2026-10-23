@@ -8,13 +8,6 @@ import net.minecraft.world.entity.LivingEntity;
 
 /**
  * The concrete effect type every MerlinLib registered effect uses.
- *
- * <p>It exists for two reasons:
- * <ul>
- *     <li>{@link MobEffect} has a protected constructor, so a subclass is required anyway</li>
- *     <li>it makes both the colour and the tick behaviour overridable at runtime, which is what lets a
- *     config file recolour or neutralise an already registered effect without a restart</li>
- * </ul>
  */
 public class MerlinMobEffect extends MobEffect {
 

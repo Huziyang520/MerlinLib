@@ -12,20 +12,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 
 /**
- * A Jupiter row that is one button instead of one value.
- *
- * <h2>Why this needs the widget registry</h2>
- *
- * <p>Jupiter renders every entry through a {@code WidgetBuilder} chosen by the entry's {@link ConfigType},
- * and its own entry types cover booleans, numbers, strings, identifiers, enums and lists - no button. The
- * library does expose the registry behind that choice ({@code WidgetBuilderManager.register}), so a button
- * row is a custom type plus a builder for it. The type is a fresh {@code ConfigType} instance rather than a
- * shared one, because the registry is keyed by instance: taking an existing type would replace how every
- * boolean is drawn.
- *
- * <p>The row stores nothing. Jupiter still asks it for a value while it saves the mirror file, which is why
- * {@link #getCodec()} answers with a boolean that is simply written back - the mirror of
- * {@code client.toml} never carries a notice switch.
+ * A Jupiter row that is one button instead of one value: the way into the join notice page.
  */
 final class JupiterNoticesButton {
 
@@ -66,12 +53,12 @@ final class JupiterNoticesButton {
 
         @Override
         public Component getName() {
-            return Component.translatable("gui.merlinlib.notices.open");
+            return Component.translatable(ClientOptions.noticesKey());
         }
 
         @Override
         public Component getTooltip() {
-            return Component.translatable("gui.merlinlib.notices.hint");
+            return Component.translatable(ClientOptions.noticesKey() + ".tooltip");
         }
 
         @Override

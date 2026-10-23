@@ -19,29 +19,6 @@ import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
 /**
  * Draws very large health as one vanilla heart plus the numbers, instead of one heart per two points.
- *
- * <h2>The problem</h2>
- *
- * <p>Vanilla draws one heart per two points of health and loops from {@code ceil(maxHealth / 2)} down to
- * zero. The health editor can set the ceiling to the integer limit, so a max health of two billion asks for
- * a billion hearts and the game stops responding while it draws them. Vanilla already guards against this
- * shape of problem for vehicles, where the heart count is capped at thirty.
- *
- * <h2>The fix, and why it is not a clamp</h2>
- *
- * <p>Clamping the values would hide what the player set. Instead, above the configured fold threshold the
- * heart loop is asked for exactly <em>one</em> heart, and the exact numbers are drawn next to it. The heart
- * itself is still vanilla's own sprite and colour, so poison, wither, freezing and absorption stay visible at
- * a glance - which is the point of keeping a heart when the numbers are huge. The attribute, the health
- * value, the damage dealt and the network are untouched.
- *
- * <h2>The three injection points, and why each names two methods</h2>
- *
- * <p>The health row is drawn by {@code extractPlayerHealth} on Fabric, while NeoForge's patches split the same
- * code into {@code extractHealthLevel} (with a deprecated {@code extractPlayerHealth} that merely calls it).
- * A hook that names only one of them finds no target on the other loader and aborts the whole mixin - which is
- * exactly how the first version of this class crashed both clients. Naming both, with {@code require = 1},
- * means the injection lands wherever the call really is.
  */
 @Mixin(Hud.class)
 public class MixinHud {

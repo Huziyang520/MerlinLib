@@ -13,10 +13,6 @@ import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 
 /**
  * NeoForge implementation of {@link IPackBridge}.
- *
- * <p>Two different buses are involved and mixing them up results in a listener that never fires:
- * {@link AddPackFindersEvent} is a mod bus event, while {@link AddServerReloadListenersEvent} lives on
- * the game bus.
  */
 public class NeoForgePackBridge implements IPackBridge {
 

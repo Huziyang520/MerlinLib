@@ -13,22 +13,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Owns the two switch stores and their lifecycle.
- *
- * <p>Both are read on startup and re-read on every content reload (startup and {@code /reload}), so
- * editing a configuration and running {@code /reload} is enough to change behaviour.
- *
- * <h2>Where the values come from</h2>
- *
- * <p>By default the commented files under {@code config/MerlinLib} are the store, read through
- * {@link TomlFile}. A loader that has a configuration system of its own installs a {@link ConfigBackend}
- * with {@link #setBackend} (client switches) and {@link #setServerBackend} (server switches); from then on
- * the very same {@link ConfigReader} calls are answered by that backend instead. Nothing above this class
- * knows the difference.
- *
- * <p>The first time a backend is installed, the old TOML file of that half is imported into it and then
- * renamed to {@code *.imported}, so a player's previous settings survive the move and the import can never
- * happen twice.
+ * Owns the two switch stores: both are read on startup and re-read on every content reload. A loader
+ * that has a configuration system of its own installs a {@link ConfigBackend}, whose previous TOML
+ * file is imported once and then renamed to {@code *.imported}.
  */
 public final class ConfigManager {
 

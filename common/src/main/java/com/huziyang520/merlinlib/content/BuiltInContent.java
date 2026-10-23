@@ -8,9 +8,6 @@ import net.minecraft.resources.Identifier;
 
 /**
  * Content shipped by MerlinLib itself.
- *
- * <p>Built-in entries go through the very same api a dependent mod would use, so they are subject to
- * the same validation and can be disabled or overridden by a config file like anything else.
  */
 public final class BuiltInContent {
 

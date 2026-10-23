@@ -33,27 +33,6 @@ import java.util.List;
 /**
  * The item editor: rename any item, edit the enchantments of any item, and edit the base damage of a
  * MerlinLib test weapon.
- *
- * <h2>How a row is laid out</h2>
- *
- * <p>Every enchantment row is the same four things, left to right: the enchantment name, a number field
- * holding its level, a {@code -} and a {@code +} button, and an {@code X} that removes the row. The name is
- * clipped to the room that is actually left, so a long translation cannot push the controls off the panel.
- *
- * <p>The level can be changed four ways, which is what players expect from a number in a game:
- * <ul>
- *     <li>type a number into the field;</li>
- *     <li>click {@code -} / {@code +} (with shift, by the configured step);</li>
- *     <li>put the wheel over a row's name, which changes that row by {@code editor.scroll_step}, or by
- *     {@code editor.scroll_step_fast} while control is held;</li>
- *     <li>shift and wheel to scroll the list instead, or drag the scrollbar, or wheel over the scrollbar.</li>
- * </ul>
- *
- * <h2>Why nothing is rebuilt while editing</h2>
- *
- * <p>The visible rows are a fixed set of widgets; a click resolves its target from the row index at click
- * time. Rebuilding the screen on every change made the - / + buttons act on the wrong row and reset the
- * order, so that never happens now.
  */
 public class ItemEditorScreen extends VanillaScreen {
 

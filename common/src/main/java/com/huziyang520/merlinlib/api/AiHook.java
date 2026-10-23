@@ -5,33 +5,6 @@ import net.minecraft.world.entity.Mob;
 
 /**
  * A mod's say in what a mob is allowed to do about a living entity.
- *
- * <h2>What it is for</h2>
- *
- * <p>Content like "wear this skull and that mob will not attack you", "creepers keep their distance" or "cats
- * stop running from you" all come down to the same three questions, and the answers are spread across the
- * targeting goal, the navigation and the avoid goals. Answering them once, here, means a mod does not have to
- * find those places again - and a second mod can add its own answers without touching the first one's.
- *
- * <h2>The three questions</h2>
- *
- * <ul>
- *   <li>{@link #allowsTargeting} - the mob is about to take the entity as its attack target. Say no and it
- *       keeps looking. Note that vanilla sets a target for reasons other than aggression as well (being hurt,
- *       for one), so answer this by looking at the mob, not by assuming why it is asking.</li>
- *   <li>{@link #wantsToFlee} - the mob should actively keep away from the entity. The library does the moving:
- *       it steers the mob away and keeps a distance, roughly once a second.</li>
- *   <li>{@link #allowsAvoiding} - the mob's own "run away from this" behaviour. Say no and a mob that normally
- *       flees stays where it is, which is what "cats do not run from you any more" needs.</li>
- * </ul>
- *
- * <p>Every method has a default that changes nothing, so an implementation only writes the answers it has.
- * Hooks are asked in registration order by whichever mod registered one - the first hook that refuses is
- * enough - and they are never asked unless a mob actually does one of these things, so a world without any
- * hook pays nothing at all.
- *
- * <p>Hooks run on the server, inside the mob's own tick or its goal selection. They must be quick and must not
- * change the world in place: a hook decides, the mob acts.
  */
 public interface AiHook {
 

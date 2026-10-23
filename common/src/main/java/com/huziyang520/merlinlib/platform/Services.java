@@ -12,10 +12,6 @@ import java.util.ServiceLoader;
 
 /**
  * Locates the loader specific implementation of a service interface.
- *
- * <p>Java's built-in {@link ServiceLoader} is used so that the common code can call loader features
- * through a thin interface while each loader project supplies the real implementation. The binding
- * is declared in {@code META-INF/services/<service interface FQN>}.
  */
 public class Services {
 
@@ -48,8 +44,8 @@ public class Services {
     public static final ILootBridge LOOT = load(ILootBridge.class);
 
     /**
-     * Loader specific way of naming a mod, used by the join notice log line to show
-     * {@code Practical Enchantments} instead of {@code practical_enchantments}.
+     * Loader specific way of naming a mod, used by the join notice log line to show the display name a
+     * player sees in the mod list instead of the raw mod id.
      */
     public static final IModNameBridge MOD_NAMES = load(IModNameBridge.class);
 

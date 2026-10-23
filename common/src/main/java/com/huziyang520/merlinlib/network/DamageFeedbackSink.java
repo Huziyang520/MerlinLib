@@ -4,11 +4,6 @@ import java.util.function.Consumer;
 
 /**
  * Where the client side hands incoming damage feedback to.
- *
- * <p>The payload handler is registered on both logical sides (the network setup is symmetric in 26.3),
- * but the consumer is client only code. This indirection keeps every class that the dedicated server
- * loads free of client references: the sink is {@code null} on a server, and the handler call is a
- * no-op there.
  */
 public final class DamageFeedbackSink {
 

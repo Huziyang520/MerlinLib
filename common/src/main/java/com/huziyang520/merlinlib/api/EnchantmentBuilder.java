@@ -15,19 +15,6 @@ import java.util.List;
 
 /**
  * Fluent description of one enchantment.
- *
- * <p>Typical use:
- * <pre>{@code
- * MerlinApi.enchantments()
- *         .register(Identifier.fromNamespaceAndPath("mymod", "frostbite"))
- *         .maxLevel(3)
- *         .weight(5)
- *         .slots("mainhand")
- *         .supportedItems("#minecraft:enchantable/weapon")
- *         .submit();
- * }</pre>
- *
- * <p>{@link #build()} only produces the immutable draft, {@link #submit()} registers it.
  */
 public final class EnchantmentBuilder {
 

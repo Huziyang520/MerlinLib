@@ -7,16 +7,6 @@ import java.util.Optional;
 
 /**
  * Colour helpers for potions and effects.
- *
- * <p>Two things are provided:
- * <ul>
- *     <li>a small palette so authors can write {@code MerlinColor.RED} instead of a magic number</li>
- *     <li>{@link #gradient(int)} which derives the highlight and shadow tones of a base colour, so a
- *     potion liquid does not look like a flat block of colour</li>
- * </ul>
- *
- * <p>All values are packed ARGB with a fully opaque alpha channel, matching what
- * {@code MobEffect}/{@code Potion} expect.
  */
 public final class MerlinColor {
 

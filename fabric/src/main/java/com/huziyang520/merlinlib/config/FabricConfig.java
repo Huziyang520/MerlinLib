@@ -5,23 +5,6 @@ import com.huziyang520.merlinlib.tools.ui.ConfigScreens;
 
 /**
  * Wiring of the optional configuration screens on Fabric.
- *
- * <h2>Optional means optional</h2>
- *
- * <p>MerlinLib draws no configuration interface of its own: it keeps its switches in {@code client.toml}
- * and lets whichever screen builder the pack already has show them. Two are supported, in this order:
- *
- * <ol>
- *   <li><b>Cloth Config</b> - the screen this line has always shipped with, editing {@code client.toml}
- *       through its own widget set;</li>
- *   <li><b>Jupiter</b> - used when Cloth is absent, which also lists MerlinLib in Jupiter's own
- *       configuration list, so the switches are reachable from there as well as from
- *       {@code /merlinlib config} and the Mod Menu button.</li>
- * </ol>
- *
- * <p>Order matters: a pack that has both keeps the Cloth screen it already knew, and nothing is installed
- * twice. With neither installed the TOML file is read directly, no configuration class is ever resolved,
- * and the command says which mods would give the switches a screen.
  */
 public final class FabricConfig {
 

@@ -10,16 +10,6 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 /**
  * Fires {@link GlobalEvents#FOOD_REGEN} before a player heals from a full hunger bar.
- *
- * <h2>Why the heal call is redirected rather than the whole tick</h2>
- *
- * <p>Cancelling {@code FoodData.tick} would be easy and wrong: the same method also burns exhaustion, spends
- * saturation and starves a player at zero hunger. Redirecting the heal instead leaves every other part of
- * eating and hunger exactly as vanilla has it, and gives the event the amount that was about to be restored -
- * which is what a "no natural regeneration, something else instead" enchantment needs.
- *
- * <p>The redirect covers both call sites in the method: the fast regeneration from saturation and the slower
- * one from an empty stomach, so neither can slip past.
  */
 @Mixin(FoodData.class)
 public class MixinFoodDataTick {

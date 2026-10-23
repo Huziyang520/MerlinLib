@@ -8,13 +8,6 @@ import java.util.List;
 
 /**
  * A screen's panel rectangle plus the row cursor used to lay its content out.
- *
- * <p>A panel is defined by the size of its <em>content</em>: the frame, the padding and the centring
- * are derived from it. That is the whole point, because it lets a screen size itself from measured
- * text (see {@link VanillaUi#measureWidth}) rather than from a constant that only fits one language.
- *
- * <p>Rows are handed out by {@link #row(int)} in the order they are requested, so a screen never
- * computes a y coordinate itself and rows can never overlap.
  */
 public final class PanelLayout {
 

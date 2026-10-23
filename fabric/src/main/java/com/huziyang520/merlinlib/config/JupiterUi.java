@@ -6,18 +6,6 @@ import net.minecraft.client.gui.screens.Screen;
 
 /**
  * Wiring of the optional Jupiter dependency on Fabric.
- *
- * <h2>Second choice, never a requirement</h2>
- *
- * <p>Jupiter is a configuration library: it owns a list of the configurations of every installed mod and a
- * screen to edit them, and a pack that has it expects to find a mod's switches there. It is therefore
- * declared as a recommendation rather than a dependency, and every class that mentions it is behind the
- * classpath check below - a game without Jupiter never resolves one of them, and {@link FabricConfig} simply
- * falls through to the message that says which mods would give the switches a screen.
- *
- * <p>Order matters and is deliberate: Cloth Config first, Jupiter second. Cloth's screen edits
- * {@code client.toml} directly and is what this line has always shipped with, so a pack that has both keeps
- * the interface it already knew; Jupiter takes over only where Cloth is absent.
  */
 public final class JupiterUi {
 

@@ -15,17 +15,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Builds the Cloth Config screen over the client switches.
- *
- * <p>This class is the only one that mentions Cloth Config types, and it is only ever loaded after
- * {@link FabricConfig} has found the mod on the classpath, so a game without Cloth Config never has to
- * resolve a single Cloth class.
- *
- * <p>The keys, the ranges and the labels are not repeated here: they come from {@link ClientOptions}, the
- * same list the Jupiter screen walks, so a switch added there appears in both interfaces and a range can
- * only be declared once. Nothing is written until the player presses save: the entries collect their values
- * into a local map and that map is handed to {@link ConfigManager#saveClient} in one go, which is also what
- * makes the change visible immediately.
+ * Builds the Cloth Config screen over the client switches. Keys, ranges and labels come from {@link
+ * ClientOptions}, so this screen and the Jupiter one can never drift apart.
  */
 public final class ClothScreen {
 
@@ -41,25 +32,25 @@ public final class ClothScreen {
     public static Screen create(Screen parent) {
         ConfigBuilder builder = ConfigBuilder.create()
                 .setParentScreen(parent)
-                .setTitle(Component.translatable("config.merlinlib.title"));
+                .setTitle(Component.translatable(ClientOptions.titleKey()));
         ConfigEntryBuilder entries = builder.entryBuilder();
         Map<String, String> pending = new LinkedHashMap<>();
         Map<String, String> current = ClientOptions.values();
 
         for (String section : ClientOptions.sections()) {
             ConfigCategory category = builder.getOrCreateCategory(
-                    Component.translatable("config.merlinlib." + section));
+                    Component.translatable(ClientOptions.sectionKey(section)));
             for (ClientOptions.Option option : ClientOptions.in(section)) {
                 category.addEntry(entry(entries, option, ClientOptions.valueOf(option, current), pending));
             }
         }
 
-        // The per mod join notice switches cannot be listed here: which mods registered a notice is only
-        // known at runtime, so that page is MerlinLib's own screen and this tab is the way into it.
+        // The join notice page is MerlinLib's own screen: which mods registered a notice is only known at
+        // runtime, so this tab holds the way into it rather than a list of values.
         ConfigCategory notices = builder.getOrCreateCategory(
-                Component.translatable("config.merlinlib.notices"));
-        notices.addEntry(new ClothNoticeButtonEntry(Component.translatable("config.merlinlib.notices"),
-                Button.builder(Component.translatable("gui.merlinlib.notices.open"),
+                Component.translatable(ClientOptions.sectionKey("notices")));
+        notices.addEntry(new ClothNoticeButtonEntry(Component.translatable(ClientOptions.noticesKey() + ".tooltip"),
+                Button.builder(Component.translatable(ClientOptions.noticesKey()),
                                 button -> MerlinScreens.openNoticesScreen(parent))
                         .bounds(0, 0, 150, VanillaUi.WIDGET_HEIGHT)
                         .build()));
@@ -87,30 +78,36 @@ public final class ClothScreen {
     private static AbstractConfigListEntry<?> entry(ConfigEntryBuilder entries, ClientOptions.Option option,
                                                     String value, Map<String, String> pending) {
         Component label = Component.translatable(option.labelKey());
+        Component[] tooltip = {Component.translatable(option.labelKey() + ".tooltip")};
         return switch (option.kind()) {
             case BOOLEAN -> entries.startBooleanToggle(label, Boolean.parseBoolean(value))
                     .setDefaultValue(option.defaultBoolean())
+                    .setTooltip(tooltip)
                     .setSaveConsumer(chosen -> pending.put(option.key(), chosen.toString()))
                     .build();
             case INTEGER -> entries.startIntField(label, parseInt(value, option.defaultInt()))
                     .setDefaultValue(option.defaultInt())
                     .setMin(option.intMin())
                     .setMax(option.intMax())
+                    .setTooltip(tooltip)
                     .setSaveConsumer(chosen -> pending.put(option.key(), chosen.toString()))
                     .build();
             case DECIMAL -> entries.startDoubleField(label, parseDouble(value, option.defaultDouble()))
                     .setDefaultValue(option.defaultDouble())
                     .setMin(option.min())
                     .setMax(option.max())
+                    .setTooltip(tooltip)
                     .setSaveConsumer(chosen -> pending.put(option.key(), chosen.toString()))
                     .build();
             case COLOUR -> entries.startColorField(label, MerlinColor.parse(value).orElse(MerlinColor.WHITE))
                     .setDefaultValue(MerlinColor.parse(option.defaultValue()).orElse(MerlinColor.WHITE))
                     .setAlphaMode(true)
+                    .setTooltip(tooltip)
                     .setSaveConsumer(chosen -> pending.put(option.key(), asColour(chosen)))
                     .build();
             case TEXT -> entries.startStrField(label, value)
                     .setDefaultValue(option.defaultValue())
+                    .setTooltip(tooltip)
                     .setSaveConsumer(chosen -> pending.put(option.key(), chosen))
                     .build();
         };

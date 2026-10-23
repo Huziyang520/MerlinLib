@@ -11,16 +11,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Client only switches: display options and interaction tuning. Nothing here is authoritative, so a
- * client may edit it freely and the change is visible immediately.
- *
- * <p>Every option here is read at the moment it is used, never cached in a field of a screen or of the
- * renderer. That is deliberate: a switch in this file that only takes effect after a restart would be
- * a lie.
- *
- * <p>Where the values come from depends on the platform: the hand written {@code client.toml} unless a
- * loader installed a {@link ConfigBackend}, in which case that store is read through the same
- * {@link ConfigReader} interface and nothing below changes.
+ * Client only switches: display options and interaction tuning, read at the moment they are used so a
+ * change is visible immediately.
  */
 public final class ClientConfig {
 
@@ -33,11 +25,10 @@ public final class ClientConfig {
 
             [general]
             # File layout version. Written by the mod, read only to bring a file from an older build up to the
-            # current layout. Leave it alone; setting it back only repeats the migration.
+            # current layout. Client only: the server half carries no layout marker.
             config_version = 3
-            # Show MerlinLib's own join notices in chat. The 0.9.0 note about the configuration screen is one of
-            # them; turn this off to stop seeing it. Notices of business mods have their own switches in
-            # server.toml, because the server is what sends them.
+            # Show MerlinLib's own join notice in chat. Business mods' notices have their own switches in
+            # server.toml and on the join notice page, because the server is what sends them.
             notice_enabled = true
 
             [hud]
@@ -168,13 +159,8 @@ public final class ClientConfig {
     /**
      * Brings a file written by an older build up to the current layout, once.
      *
-     * <p>The file is rebuilt from the template instead of being patched key by key, which is what removes
-     * the {@code [gui]} section: its switches drove MerlinLib's own drawn configuration screens, and those
-     * screens no longer exist. Every value whose key still exists is carried over, so a hand picked setting
-     * is never lost by a layout change.
-     *
-     * <p>One default is moved as well, and only while the file still holds the old one: the floating damage
-     * numbers used to be on by default, and a file always wins over the template.
+     * <p>The file is rebuilt from the template, which is what drops sections that no longer exist, while
+     * every value whose key still exists is carried over so no hand picked setting is lost.
      *
      * @param file the file the configuration was read from
      * @return {@code true} when the file was rewritten and has to be read again

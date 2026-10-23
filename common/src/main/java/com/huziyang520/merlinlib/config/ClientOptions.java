@@ -6,33 +6,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The list of client switches, declared once for every optional configuration screen.
- *
- * <h2>Why the keys are not declared inside a screen</h2>
- *
- * <p>MerlinLib ships two optional screen builders on Fabric - Cloth Config and Jupiter - and a modpack may
- * have either, both or neither. A screen that carries its own copy of the keys drifts from the other one the
- * first time an option is added, and the drift shows up as a switch that exists in one interface and not in
- * the other. The keys are therefore declared here, in the order the file documents them, and both screens
- * only walk this list.
- *
- * <p>The values themselves live in the same {@code client.toml} either way: {@link TomlFile} stays the
- * store, so removing both mods loses nothing and a hand edited file is still the truth. {@link #values()}
- * is how a screen reads the current state - it is the same file the mod itself reads, through the same
- * reader.
- *
- * <p>Internal to the optional screens. The NeoForge module does not use it: its labels come from the spec
- * itself (see {@code NeoSpecBackend}), with the very same {@code config.merlinlib.*} keys.
+ * The client switches, declared once for every configuration screen: Cloth Config, Jupiter and
+ * NeoForge all walk this list, so one key list and one set of ranges serve three screens.
  */
 public final class ClientOptions {
 
-    /**
-     * What kind of control an option needs.
-     *
-     * <p>Only the shapes both screen builders can express: a toggle, a whole number with a range, a decimal
-     * with a range, and free text. A colour is text on purpose - the file documents {@code 0xRRGGBB} and a
-     * palette name, and Jupiter has no colour picker at all.
-     */
+    /** Prefix of every translation key of the configuration screens. */
+    public static final String KEY_PREFIX = "merlinlib.configuration.";
+
+    /** The control an option needs: a toggle, a ranged number, a colour or text. */
     public enum Kind {
         /** A box that is ticked or not. */
         BOOLEAN,
@@ -47,25 +29,18 @@ public final class ClientOptions {
     }
 
     /**
-     * One switch.
-     *
-     * @param section      the section of {@code client.toml} it belongs to, which is also the screen tab
-     * @param key          the key as the file spells it, {@code section.key}
-     * @param kind         the control it needs
-     * @param defaultValue the value used when the file does not hold one
-     * @param min          the lowest accepted value, for the numeric kinds
-     * @param max          the highest accepted value, for the numeric kinds
-     */
+ * One switch.
+ */
     public record Option(String section, String key, Kind kind, String defaultValue, double min, double max) {
 
         /** @return the translation key of the label shown in a configuration screen */
         public String labelKey() {
-            return "config.merlinlib." + this.key;
+            return KEY_PREFIX + this.key;
         }
 
         /** @return the translation key of the section tab */
         public String sectionKey() {
-            return "config.merlinlib." + this.section;
+            return ClientOptions.sectionKey(this.section);
         }
 
         /** @return the lowest accepted value of a whole number option */
@@ -142,6 +117,24 @@ public final class ClientOptions {
     /** @return every option, in file order */
     public static List<Option> all() {
         return ALL;
+    }
+
+    /**
+     * @param section the section of {@code client.toml}
+     * @return the translation key of that section's tab
+     */
+    public static String sectionKey(String section) {
+        return KEY_PREFIX + section;
+    }
+
+    /** @return the translation key of the screen title */
+    public static String titleKey() {
+        return KEY_PREFIX + "title";
+    }
+
+    /** @return the translation key of the entry that opens the join notice page */
+    public static String noticesKey() {
+        return KEY_PREFIX + "notices.open";
     }
 
     /**

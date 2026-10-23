@@ -13,19 +13,6 @@ import java.util.List;
 
 /**
  * Finds the enchantments an event should be delivered to.
- *
- * <h2>Two paths, and why both are needed</h2>
- *
- * <p>{@link #scan} walks the equipment of a living entity. It is the right path for anything the entity is
- * wearing or holding at the moment the event fires.
- *
- * <p>{@link #scanStack} walks one item stack, with no entity at all. It exists for the case that made a whole
- * class of enchantments silently do nothing: when a projectile hits, a thrown trident has already left the
- * hand, so the weapon is no longer in any slot and an equipment scan finds nothing. The event carries a
- * snapshot of the weapon instead, and this path reads it.
- *
- * <p>Both paths return contexts in a stable order - slot order, then the order the item's own enchantment
- * component lists them - so a callback that changes the world makes its changes in a reproducible sequence.
  */
 public final class EnchantmentScanner {
 

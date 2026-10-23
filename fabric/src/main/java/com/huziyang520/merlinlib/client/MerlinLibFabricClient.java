@@ -29,9 +29,6 @@ import net.minecraft.resources.Identifier;
 
 /**
  * Fabric client entrypoint: the single key binding and the editor opening.
- *
- * <p>Kept apart from the main entrypoint so a dedicated server never loads a class that mentions
- * {@code net.minecraft.client}.
  */
 public class MerlinLibFabricClient implements ClientModInitializer {
 

@@ -8,20 +8,6 @@ import java.util.function.Consumer;
 
 /**
  * Server lifecycle hooks, reached through {@link MerlinApi#lifecycle()}.
- *
- * <p>The intended use is the one thing every mod has to do and none of the loaders make easy: run a piece of
- * setup once per server, on both loaders, without writing the same two platform hooks twice.
- *
- * <pre>{@code
- * MerlinApi.lifecycle().onServerStarting(() -> {
- *     MyConfig.load();
- *     MyNotice.register();
- * });
- * }</pre>
- *
- * <p>Registration is safe from a mod constructor, before MerlinLib has bootstrapped, and safe to call more
- * than once: the callbacks are collected and run at each server start, in registration order. A callback that
- * throws is logged and does not stop the others.
  */
 public final class LifecycleApi {
 

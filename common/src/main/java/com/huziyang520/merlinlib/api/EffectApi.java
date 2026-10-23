@@ -11,10 +11,6 @@ import java.util.Set;
 
 /**
  * Registration entry point for mob effects.
- *
- * <p>Important boundary that the documentation repeats on purpose: {@code MobEffect} is a plain code
- * registry, so a config file <b>cannot create</b> a new effect. It can only recolour or disable one
- * that was declared in code.
  */
 public interface EffectApi {
 

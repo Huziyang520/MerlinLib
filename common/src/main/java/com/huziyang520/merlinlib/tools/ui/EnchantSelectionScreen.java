@@ -24,20 +24,6 @@ import java.util.function.Consumer;
 
 /**
  * Second level picker: every enchantment of the running game, one row per level.
- *
- * <p>The list is built when the screen opens and released when it closes, so a world with hundreds of
- * enchantments costs nothing while the player is not picking one.
- *
- * <p>Three behaviours are deliberate:
- * <ul>
- *     <li><b>the filter follows the server switch.</b> With mismatched enchantments disabled the picker only
- *     offers enchantments the target item can really carry, so the screen cannot add an enchantment that
- *     would silently do nothing. With it enabled every registry entry is offered.</li>
- *     <li><b>scrolling never recreates widgets.</b> The row buttons are bound to a slot and resolve their
- *     target at click time, which keeps typing in the search box from losing focus.</li>
- *     <li><b>the list area is painted before the widgets.</b> Painting it afterwards covered the "add"
- *     buttons of every row: they were clickable but invisible.</li>
- * </ul>
  */
 public class EnchantSelectionScreen extends VanillaScreen {
 

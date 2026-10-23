@@ -5,20 +5,12 @@ import net.minecraft.client.gui.screens.Screen;
 
 /**
  * Holds the platform configuration screen, when the platform has one.
- *
- * <p>MerlinLib no longer draws a configuration interface of its own. Each loader installs a factory here -
- * NeoForge its native configuration screen, Fabric a Cloth Config screen when that mod is present - and
- * {@code /merlinlib config} opens whatever the factory answers with. Without one there is nothing to open,
- * and the command says which mod is missing instead of pretending.
- *
- * <p>This class is only referenced from client code, so a dedicated server never loads it and the client
- * types it uses cannot break server startup.
  */
 public final class ConfigScreens {
 
     /**
-     * Builds the configuration screen of one platform.
-     */
+ * Builds the configuration screen of one platform.
+ */
     @FunctionalInterface
     public interface Opener {
 

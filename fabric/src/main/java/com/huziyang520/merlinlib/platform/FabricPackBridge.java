@@ -9,11 +9,6 @@ import net.minecraft.server.packs.resources.PreparableReloadListener;
 
 /**
  * Fabric implementation of {@link IPackBridge}.
- *
- * <p>The generated pack itself is installed by {@code PackRepositoryMixin}: Fabric has no public way
- * to append a repository source, and the pack has to be known before the world is loaded, which is
- * earlier than any Fabric lifecycle event. Reload listeners do have a public api, so they are
- * registered here.
  */
 public class FabricPackBridge implements IPackBridge {
 

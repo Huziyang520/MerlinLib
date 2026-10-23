@@ -15,21 +15,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Drops an oversized particle packet before the client walks it.
- *
- * <h2>The cost is the loop, not the particle</h2>
- *
- * <p>{@code handleParticleEvent} runs {@code for (int i = 0; i < packet.count(); i++)}. Every iteration is
- * cheap, but the count is proportional to the damage a combat effect dealt and the testing weapons can deal
- * the integer limit, so a single hit can put a count of hundreds of millions on the wire. The cap in
- * {@code ClientLevel.doAddParticle} throws away the particle the loop is about to build, which does nothing
- * about the loop: the client still visits every one of those iterations before the frame ends.
- *
- * <p>So the packet is intercepted here instead: a bounded number of particles is spawned with the packet's own
- * parameters - keeping the visual - and the packet is then cancelled, skipping the loop entirely.
- *
- * <p>This also covers particles that did not come from this server: the same clamp on the sending side stops
- * our own server from building such a packet, but a mod, a command or another server's data can still send
- * one, and the client is the last place that can say no.
  */
 @Mixin(ClientPacketListener.class)
 public class MixinClientPacketListenerParticles {

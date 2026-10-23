@@ -18,9 +18,6 @@ import java.util.TreeMap;
 
 /**
  * Turns {@link EnchantmentDraft drafts} into the files of the generated datapack.
- *
- * <p>Everything produced here uses the vanilla enchantment format unchanged, so the result behaves
- * exactly like a hand written datapack and stays compatible with datapack inspection tools.
  */
 public final class EnchantmentJsonWriter {
 

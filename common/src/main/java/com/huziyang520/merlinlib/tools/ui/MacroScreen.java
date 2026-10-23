@@ -22,21 +22,6 @@ import java.util.Set;
 
 /**
  * The command macro screen.
- *
- * <p>A macro is a name, a key combination and a list of commands. The commands are edited in a vanilla
- * multi line text area - one command per line - and the combination is captured by pressing keys.
- *
- * <h2>Capturing a combination</h2>
- *
- * <p>Clicking the key button starts a <em>fresh</em> capture (the old binding is dropped, so a new binding
- * cannot silently inherit the previous keys), and the capture ends on Escape or on a click anywhere else.
- * While it is running, keys - Enter included, since it is a key like any other - are added to the
- * combination; pressing a key that is already in it removes it, so a mistake is corrected by pressing the
- * wrong key again. Clicking the key button itself binds a mouse button the same way. The current combination
- * is shown on the button the whole time.
- *
- * <p>Ending on a click is not decoration: a capture that never ends swallows every keystroke, which makes the
- * name and command fields impossible to type into and quietly binds every letter the player types.
  */
 public class MacroScreen extends VanillaScreen {
 

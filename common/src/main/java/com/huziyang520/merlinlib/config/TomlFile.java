@@ -8,26 +8,17 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
- * Tiny reader for the TOML subset MerlinLib writes: comments, blank lines, {@code [section]} headers
- * and {@code key = value} pairs of booleans, integers, floats and quoted strings.
- *
- * <p>Why not a full TOML library: it would have to be bundled into the Fabric jar (NeoForge provides
- * one, Fabric does not), and the only thing MerlinLib needs from TOML is a flat, commented switch
- * file. The supported syntax is a strict subset of TOML, so the files stay readable and editable with
- * any other TOML tooling.
- *
- * <p>Files are only ever written when missing, never rewritten: hand written comments are never lost.
- * Reading problems are collected as {@link ContentError}s and the affected key silently falls back to
- * its default, so one typo cannot stop the game from starting.
- *
- * <p>This is the {@link ConfigReader} used whenever no platform configuration is installed; see
- * {@link ConfigBackend} for the other case.
+ * Reader and writer of the small, commented TOML subset MerlinLib keeps its switches in: comments,
+ * blank lines, {@code [section]} headers and {@code key = value} pairs of booleans, integers, floats
+ * and strings.
  */
 public final class TomlFile implements ConfigReader {
 
@@ -196,11 +187,70 @@ public final class TomlFile implements ConfigReader {
     }
 
     /**
+     * Deletes keys from a file, together with the comment lines that introduce them.
+     *
+     * <p>Used for a value a build no longer has: {@link #rewrite} can only replace or add a line, so a key
+     * that must disappear would otherwise stay in the file for good. Everything else is left alone.
+     *
+     * @param path the file to edit, ignored when it is missing
+     * @param keys the keys to delete, as {@code section.key}
+     */
+    public static void remove(Path path, Set<String> keys) {
+        if (keys.isEmpty() || !Files.isRegularFile(path)) {
+            return;
+        }
+        List<String> lines;
+        try {
+            lines = new ArrayList<>(Files.readAllLines(path, StandardCharsets.UTF_8));
+        } catch (IOException exception) {
+            return;
+        }
+
+        List<Integer> doomed = new ArrayList<>();
+        String section = "";
+        for (int index = 0; index < lines.size(); index++) {
+            String trimmed = lines.get(index).trim();
+            if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+                section = trimmed.substring(1, trimmed.length() - 1).trim();
+                continue;
+            }
+            if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+                continue;
+            }
+            int equals = trimmed.indexOf('=');
+            if (equals < 0) {
+                continue;
+            }
+            String key = trimmed.substring(0, equals).trim();
+            String full = section.isEmpty() ? key : section + "." + key;
+            if (!keys.contains(full)) {
+                continue;
+            }
+            doomed.add(index);
+            for (int above = index - 1; above >= 0 && lines.get(above).trim().startsWith("#"); above--) {
+                doomed.add(above);
+            }
+        }
+        if (doomed.isEmpty()) {
+            return;
+        }
+        doomed.sort(Comparator.reverseOrder());
+        for (int index : doomed) {
+            lines.remove(index);
+        }
+        try {
+            Files.write(path, lines, StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            // A read only file must not break startup; the stale line simply stays.
+        }
+    }
+
+    /**
      * @param template the commented template of a configuration file
      * @return every key the template declares, as {@code section.key}
      */
-    public static java.util.Set<String> keysOf(String template) {
-        java.util.Set<String> keys = new java.util.LinkedHashSet<>();
+    public static Set<String> keysOf(String template) {
+        Set<String> keys = new java.util.LinkedHashSet<>();
         String section = "";
         for (String raw : template.split("\\R")) {
             String line = raw.trim();
