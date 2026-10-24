@@ -110,6 +110,9 @@ public class MerlinLib {
     /**
      * Registers MerlinLib's own join notice about the rebuilt configuration screen.
      *
+     * <p>Sent on every entry into a save, like a plain join message: it explains where the configuration
+     * screen went, which a player looks for more than once.
+     *
      * <p>Registered as a notice rather than as a plain chat message, so the server's switches - the global
      * one in {@code server.toml} and MerlinLib's own row in {@code notices.toml}, which the join notice
      * page edits - apply to it exactly like they apply to a business mod's notice. Nothing is checked here:
@@ -118,7 +121,7 @@ public class MerlinLib {
     private static void registerOwnNotices() {
         MerlinApi.notices().register(
                 Identifier.fromNamespaceAndPath(Constants.MOD_ID, "config_ui"),
-                NoticeMode.ONCE_PER_SAVE,
+                NoticeMode.EVERY_JOIN,
                 Component.translatable("merlinlib.notice.config_ui"));
     }
 
