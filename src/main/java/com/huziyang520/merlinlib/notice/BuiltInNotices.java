@@ -14,8 +14,8 @@ public final class BuiltInNotices {
     /**
      * The notice about the rebuilt configuration screen.
      *
-     * <p>Shown once per save and per player: it is an announcement, not a warning, and repeating it on
-     * every join would be the fastest way to make players switch all notices off.
+     * <p>Shown on every entry into a save, like a plain join message: it explains where the configuration
+     * screen went, which a player looks for more than once.
  */
     public static final ResourceLocation CONFIG_UI = new ResourceLocation(Constants.MOD_ID, "config_ui");
 
@@ -33,7 +33,7 @@ public final class BuiltInNotices {
     public static void register() {
         MerlinApi.notices().register(
                 CONFIG_UI,
-                NoticeMode.ONCE_PER_SAVE,
+                NoticeMode.EVERY_JOIN,
                 Component.translatable("merlinlib.notice.config_ui"),
                 true);
     }
