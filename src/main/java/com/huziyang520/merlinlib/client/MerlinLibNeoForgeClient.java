@@ -3,7 +3,6 @@ package com.huziyang520.merlinlib.client;
 import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.network.DamageFeedbackSink;
 import com.huziyang520.merlinlib.network.ServerSender;
-import com.huziyang520.merlinlib.notice.ClientNotice;
 import com.huziyang520.merlinlib.tools.hud.CombatFeedback;
 import com.huziyang520.merlinlib.tools.macro.MacroStorage;
 import com.huziyang520.merlinlib.tools.ui.ConfigScreens;
@@ -19,7 +18,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
@@ -71,7 +69,6 @@ public class MerlinLibNeoForgeClient {
         NeoForge.EVENT_BUS.addListener(this::onRegisterClientCommands);
         NeoForge.EVENT_BUS.addListener(this::onClientTick);
         NeoForge.EVENT_BUS.addListener(this::onUseEntity);
-        NeoForge.EVENT_BUS.addListener(this::onLoggingIn);
         DamageFeedbackSink.setClientSink(payload ->
                 CombatFeedback.instance().onServerDamage(payload.damage(), payload.critical(), payload.targetId()));
         // 1.21.1 sends through the common PacketDistributor; the client-only distributor class is a
@@ -203,16 +200,6 @@ public class MerlinLibNeoForgeClient {
             CombatFeedback.instance().tick(net.minecraft.client.Minecraft.getInstance());
             MacroStorage.tick(net.minecraft.client.Minecraft.getInstance());
         }
-    }
-
-    /**
-     * Shows MerlinLib's own join notice, if the player has not switched it off.
-     *
-     * @param event the login event
-     */
-    private void onLoggingIn(ClientPlayerNetworkEvent.LoggingIn event) {
-
-        ClientNotice.showOnJoin(event.getPlayer());
     }
 
     /**

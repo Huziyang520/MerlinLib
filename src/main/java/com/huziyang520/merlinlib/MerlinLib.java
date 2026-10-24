@@ -8,7 +8,10 @@ import com.huziyang520.merlinlib.tools.TestWeapons;
 import com.huziyang520.merlinlib.mixin.RangedAttributeAccessor;
 import com.huziyang520.merlinlib.api.MerlinApi;
 import com.huziyang520.merlinlib.loot.LootInjector;
+import com.huziyang520.merlinlib.api.NoticeMode;
 import com.huziyang520.merlinlib.notice.NoticeManager;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import com.mojang.serialization.Lifecycle;
 import net.minecraft.world.flag.FeatureFlagSet;
 import net.minecraft.world.flag.FeatureFlags;
@@ -26,6 +29,21 @@ public class MerlinLib {
     private static boolean initialized;
 
     private MerlinLib() {
+    }
+
+    /**
+     * Registers the library's own join notice.
+     *
+     * <p>Sent on every entry into a save, like a plain join message: it explains where the configuration
+     * screen went, which a player looks for more than once. Going through the notice system rather than the
+     * client keeps one delivery path: the server's global switch and MerlinLib's own row of
+     * {@code notices.toml}, the row the join notice page edits, both apply.
+     */
+    private static void registerOwnNotices() {
+        MerlinApi.notices().register(
+                ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "config_ui"),
+                NoticeMode.EVERY_JOIN,
+                Component.translatable("merlinlib.notice.config_ui"));
     }
 
     /**
@@ -54,6 +72,7 @@ public class MerlinLib {
         LootInjector.install();
         // Join notices: registered from here, so a business mod may have registered its own before or after.
         NoticeManager.install();
+        registerOwnNotices();
         // Says which feature flags put a world in the "experimental settings" category. The generated datapack
         // declares none, so when this line appears the flag came from a data pack the world has selected - and
         // the log names it, instead of leaving it to be guessed.
