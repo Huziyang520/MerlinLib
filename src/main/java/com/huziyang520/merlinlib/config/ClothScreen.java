@@ -1,3 +1,5 @@
+// Builds the Cloth Config screen over both switch files.
+
 package com.huziyang520.merlinlib.config;
 
 import com.huziyang520.merlinlib.util.MerlinColor;
@@ -10,28 +12,13 @@ import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Builds the Cloth Config screen over both switch files. Keys, ranges and labels come from {@link
- * ClientOptions} and {@link ServerOptions}, so this screen and the Jupiter one can never drift apart.
- */
 public final class ClothScreen {
-
     private ClothScreen() {
     }
 
-    /**
-     * Builds the screen.
-     *
-     * <p>The client tabs come first and the authoritative ones after them, which is the order the two files
-     * document their tables in; the join notice tab is the last one either way.
-     *
-     * @param parent the screen to return to, or {@code null} to resume the game
-     * @return the screen to show
-*/
     public static Screen create(Screen parent) {
         ConfigBuilder builder = ConfigBuilder.create()
                 .setParentScreen(parent)
@@ -64,8 +51,6 @@ public final class ClothScreen {
             }
         }
 
-        // The join notice page is MerlinLib's own screen: which mods registered a notice is only known at
-        // runtime, so the tab holds the way into it in addition to the global switch above it.
         if (notices != null) {
             notices.addEntry(new ClothNoticeButtonEntry(
                     Component.translatable(ClientOptions.noticesKey() + ".tooltip"),
@@ -88,15 +73,6 @@ public final class ClothScreen {
         return builder.build();
     }
 
-    /**
-     * Builds the control one option needs, bound to the staged map of the file it belongs to.
-     *
-     * @param entries the entry builder of the screen
-     * @param option  the option being shown
-     * @param value   its value in the file, as the file spells it
-     * @param pending the map values are staged in until the player saves
-     * @return the finished entry
-*/
     private static AbstractConfigListEntry<?> entry(ConfigEntryBuilder entries, ConfigOption option,
                                                     String value, Map<String, String> pending) {
         Component label = Component.translatable(option.labelKey());
@@ -135,11 +111,6 @@ public final class ClothScreen {
         };
     }
 
-    /**
-     * @param text     the text from the file
-     * @param fallback the value to use when it is not a number
-     * @return the number
- */
     private static int parseInt(String text, int fallback) {
         try {
             return Integer.parseInt(text.trim());
@@ -148,11 +119,6 @@ public final class ClothScreen {
         }
     }
 
-    /**
-     * @param text     the text from the file
-     * @param fallback the value to use when it is not a number
-     * @return the number
- */
     private static double parseDouble(String text, double fallback) {
         try {
             return Double.parseDouble(text.trim());
@@ -161,12 +127,6 @@ public final class ClothScreen {
         }
     }
 
-    /**
-     * Writes a colour the way {@code client.toml} documents it.
-     *
-     * @param value the ARGB value from the colour picker
-     * @return {@code 0xRRGGBB} for opaque colours, {@code 0xAARRGGBB} otherwise
- */
     private static String asColour(int value) {
         return (value >>> 24) == 0xFF
                 ? String.format("0x%06X", value & 0xFFFFFF)

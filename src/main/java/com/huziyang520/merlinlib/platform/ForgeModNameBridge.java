@@ -1,13 +1,11 @@
+// Forge implementation of IModNameBridge.
+
 package com.huziyang520.merlinlib.platform;
 
 import com.huziyang520.merlinlib.platform.services.IModNameBridge;
 import net.minecraftforge.fml.ModList;
 
-/**
- * Forge implementation of {@link IModNameBridge}.
- */
 public final class ForgeModNameBridge implements IModNameBridge {
-
     public static final ForgeModNameBridge INSTANCE = new ForgeModNameBridge();
 
     private ForgeModNameBridge() {
@@ -15,7 +13,6 @@ public final class ForgeModNameBridge implements IModNameBridge {
 
     @Override
     public void bootstrap(Object loaderContext) {
-        // Nothing to install: the lookup below is a plain query.
     }
 
     @Override

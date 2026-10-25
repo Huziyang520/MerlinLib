@@ -1,3 +1,5 @@
+// Finds the enchantments an event should be delivered to.
+
 package com.huziyang520.merlinlib.event;
 
 import net.minecraft.resources.ResourceLocation;
@@ -8,26 +10,14 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.EnchantmentInstance;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Finds the enchantments an event should be delivered to.
- */
 public final class EnchantmentScanner {
-
     private EnchantmentScanner() {
     }
 
-    /**
-     * Scans the slots an event type cares about.
-     *
-     * @param entity the living entity
-     * @param type   the event type, whose {@link EnchantmentEventType#relevantSlots()} decides what is read
-     * @return the enchantments found, in slot order; empty when there are none
- */
     public static List<EnchantmentContext> scan(LivingEntity entity, EnchantmentEventType<?> type) {
         List<EnchantmentContext> found = new ArrayList<>();
         if (entity == null) {
@@ -39,12 +29,6 @@ public final class EnchantmentScanner {
         return found;
     }
 
-    /**
-     * Scans every equipment slot.
-     *
-     * @param entity the living entity
-     * @return the enchantments found, in slot order
- */
     public static List<EnchantmentContext> scanAllSlots(LivingEntity entity) {
         List<EnchantmentContext> found = new ArrayList<>();
         if (entity == null) {
@@ -56,13 +40,6 @@ public final class EnchantmentScanner {
         return found;
     }
 
-    /**
-     * Scans one slot.
-     *
-     * @param entity the living entity
-     * @param slot   the slot to read
-     * @return the enchantments found on that slot's item
- */
     public static List<EnchantmentContext> scanSlot(LivingEntity entity, EquipmentSlot slot) {
         List<EnchantmentContext> found = new ArrayList<>();
         if (entity != null) {
@@ -71,28 +48,12 @@ public final class EnchantmentScanner {
         return found;
     }
 
-    /**
-     * Scans one item stack, for the events whose weapon is no longer worn.
-     *
-     * @param stack the stack, may be empty
-     * @return the enchantments found on it, each with a {@code null} slot
- */
     public static List<EnchantmentContext> scanStack(ItemStack stack) {
         List<EnchantmentContext> found = new ArrayList<>();
         addFromStack(stack, null, found);
         return found;
     }
 
-    /**
-     * Reads the enchantments of one stack into a list.
-     *
-     * <p>Stored enchantments are read as well: an enchanted book carries its contents there, and a book in a
-     * hand should behave like a book everywhere else.
-     *
-     * @param stack the stack, may be {@code null} or empty
-     * @param slot  the slot to record, or {@code null} when the item is not worn
-     * @param into  the list to add to
- */
     private static void addFromStack(ItemStack stack, EquipmentSlot slot, List<EnchantmentContext> into) {
         if (stack == null || stack.isEmpty()) {
             return;
@@ -105,21 +66,9 @@ public final class EnchantmentScanner {
         }
     }
 
-    /**
-     * Reads both enchantment storages of a stack.
-     *
-     * <p>The applied list first, then the stored list, so a book that is also enchanted directly keeps
-     * whichever level is higher - the union rule described in the class Javadoc.
-     *
-     * @param stack the stack
-     * @return the enchantments, keyed by enchantment; empty when it has none
- */
     private static Map<Enchantment, Integer> enchantmentsOf(ItemStack stack) {
         Map<Enchantment, Integer> merged = new java.util.LinkedHashMap<>(EnchantmentHelper.getEnchantments(stack));
         if (stack.getItem() instanceof EnchantedBookItem) {
-            // An enchanted book keeps its contents in its own NBT list rather than in the applied one,
-            // and the 1.20.1 helper for it returns the raw ListTag rather than a map. Each element is a
-            // {id, lvl} compound, which is the same shape EnchantmentHelper writes.
             for (EnchantmentInstance instance : storedEnchantments(stack)) {
                 merged.merge(instance.enchantment, instance.level, Math::max);
             }
@@ -127,17 +76,6 @@ public final class EnchantmentScanner {
         return merged;
     }
 
-    /**
-     * Turns an enchanted book's stored enchantment list into instances.
-     *
-     * <p>Written by hand rather than through a helper because 1.20.1 has none:
-     * {@code EnchantedBookItem.getEnchantments} hands back the {@code ListTag} itself. Elements that do
-     * not name a registered enchantment are skipped - a book can outlive the mod that made it, and a
-     * stale id must not stop the rest of the list from being read.
-     *
-     * @param stack the book
-     * @return the stored enchantments, in list order
- */
     private static List<EnchantmentInstance> storedEnchantments(ItemStack stack) {
         List<EnchantmentInstance> instances = new ArrayList<>();
         net.minecraft.nbt.ListTag list = EnchantedBookItem.getEnchantments(stack);

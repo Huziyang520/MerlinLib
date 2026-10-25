@@ -1,3 +1,5 @@
+// A Jupiter row that is one button instead of one value: the way into the join notice page.
+
 package com.huziyang520.merlinlib.config;
 
 import com.huziyang520.merlinlib.tools.ui.MerlinScreens;
@@ -12,26 +14,13 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 
-/**
- * A Jupiter row that is one button instead of one value: the way into the join notice page. Built on
- * Jupiter's own button row, so the widget follows the row it belongs to when the list is scrolled.
- */
 final class JupiterNoticesButton {
-
-    /** The type every instance of this row shares; also the registry key of its widget builder. */
     private static final ConfigType<Boolean> TYPE = new ConfigType<>(ConfigType.Type.DUMMY);
-
-    /** Registration must happen once; Jupiter keeps the builder in a static map. */
     private static boolean registered;
 
     private JupiterNoticesButton() {
     }
 
-    /**
-     * Builds the row and, on the first call, teaches Jupiter how to draw it.
-     *
-     * @return the entry to add to a tab
- */
     static synchronized ConfigEntry<Boolean> create() {
         if (!registered) {
             registered = true;
@@ -40,9 +29,7 @@ final class JupiterNoticesButton {
         return new Entry();
     }
 
-    /** The row: a name, a tooltip, and nothing to store. */
     private static final class Entry implements ConfigEntry<Boolean> {
-
         @Override
         public ConfigType<Boolean> getType() {
             return TYPE;
@@ -70,7 +57,6 @@ final class JupiterNoticesButton {
 
         @Override
         public void registerCallback(ValueChangeCallback<Boolean> callback) {
-            // Nothing changes here: the button opens a screen, it does not hold a value to react to.
         }
 
         @Override
@@ -85,7 +71,6 @@ final class JupiterNoticesButton {
 
         @Override
         public void setValue(Boolean value) {
-            // Deliberately empty; see the class comment.
         }
 
         @Override
@@ -95,7 +80,6 @@ final class JupiterNoticesButton {
 
         @Override
         public void reset() {
-            // Nothing to reset.
         }
 
         @Override
@@ -104,17 +88,13 @@ final class JupiterNoticesButton {
         }
     }
 
-    /** Draws the row as one button that fills the value column. */
     private static final class ButtonBuilder extends AbstractButtonWidgetBuilder<Boolean> {
-
         ButtonBuilder(ConfigMetaProvider provider, ConfigEntry<Boolean> config) {
             super(provider, config, config::getName);
         }
 
         @Override
         protected Button createButton(Context context, int x, int y, int width, int height) {
-            // The parent screen is what the button returns to, so the notice page closes back into Jupiter
-            // instead of back into the world.
             Button.Builder builder = Button.builder(this.config.getName(),
                             pressed -> MerlinScreens.openNoticesScreen(context.parent()))
                     .bounds(x, y, width, height);

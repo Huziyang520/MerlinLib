@@ -1,18 +1,12 @@
+// The testing trident, with the one extra hook a custom trident needs to render like the vanilla one.
+
 package com.huziyang520.merlinlib.tools;
 
 import net.minecraft.world.item.TridentItem;
 import net.minecraftforge.client.extensions.common.IClientItemExtensions;
-
 import java.util.function.Consumer;
 
-/**
- * The testing trident, with the one extra hook a custom trident needs to render like the vanilla one.
- */
 public class TestTridentItem extends TridentItem {
-
-    /**
-     * @param properties the item properties, as passed by {@link TestWeapons}
- */
     public TestTridentItem(Properties properties) {
         super(properties);
     }

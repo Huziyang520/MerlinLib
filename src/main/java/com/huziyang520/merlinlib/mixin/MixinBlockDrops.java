@@ -1,3 +1,5 @@
+// Fires BuiltInEvents#MODIFY_BLOCK_DROPS on the drops of a block a player broke.
+
 package com.huziyang520.merlinlib.mixin;
 
 import com.huziyang520.merlinlib.event.BuiltInEvents;
@@ -17,27 +19,11 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Fires {@link BuiltInEvents#MODIFY_BLOCK_DROPS} on the drops of a block a player broke.
- */
 @Mixin(Block.class)
 public class MixinBlockDrops {
-
-    /**
-     * Lets the breaker's enchantments change the drops, then awards any extra experience.
-     *
-     * @param state       the block that was broken
-     * @param level       the level
-     * @param pos         where the block was
-     * @param blockEntity the block entity, when the block had one
-     * @param breaker     the entity that broke it, when there was one
-     * @param tool        the tool that broke it, empty when there was none
-     * @param cir         the injection callback carrying vanilla's drops
- */
     @Inject(method = "getDrops(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/entity/BlockEntity;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/item/ItemStack;)Ljava/util/List;",
             at = @At("RETURN"), cancellable = true, require = 1)
     private static void merlinlib$modifyBlockDrops(BlockState state, ServerLevel level, BlockPos pos,

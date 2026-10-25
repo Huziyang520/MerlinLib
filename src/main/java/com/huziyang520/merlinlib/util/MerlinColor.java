@@ -1,3 +1,5 @@
+// Colour helpers for potions and effects.
+
 package com.huziyang520.merlinlib.util;
 
 import java.util.LinkedHashMap;
@@ -5,14 +7,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Colour helpers for potions and effects.
- */
 public final class MerlinColor {
-
-    /** Named palette, deliberately vanilla-ish and readable. */
     private static final Map<String, Integer> NAMED = new LinkedHashMap<>();
-
     public static final int WHITE = rgb(0xFFFFFF);
     public static final int LIGHT_GRAY = rgb(0xC0C0C0);
     public static final int GRAY = rgb(0x808080);
@@ -56,24 +52,10 @@ public final class MerlinColor {
     private MerlinColor() {
     }
 
-    /**
-     * Builds an opaque packed colour from a {@code 0xRRGGBB} value.
-     *
-     * @param rgb the red, green and blue channels
-     * @return packed ARGB with alpha 0xFF
- */
     public static int rgb(int rgb) {
         return 0xFF000000 | (rgb & 0xFFFFFF);
     }
 
-    /**
-     * Resolves a colour written by a user: {@code "#RRGGBB"}, {@code "0xRRGGBB"}, {@code "RRGGBB"},
-     * their eight digit alpha carrying forms ({@code "0xAARRGGBB"}), a decimal number, or one of the
-     * named palette colours such as {@code "red"}.
-     *
-     * @param value the textual colour
-     * @return the packed colour, empty when the text cannot be understood
- */
     public static Optional<Integer> parse(String value) {
         if (value == null || value.isBlank()) {
             return Optional.empty();
@@ -97,35 +79,16 @@ public final class MerlinColor {
                 return Optional.of(rgb(Integer.parseInt(text)));
             }
         } catch (NumberFormatException ignored) {
-            // Falls through to the empty result below.
         }
         return Optional.empty();
     }
 
-    /**
-     * Parses a hex colour written with six digits (RGB) or eight (ARGB).
-     *
-     * <p>Eight digits are accepted because the generated sample files write their defaults in the
-     * {@code 0xAARRGGBB} form, and a config reader that rejects its own defaults is a trap.
-     *
-     * @param hex the hex digits, without any prefix
-     * @return the packed colour, with the alpha kept when eight digits were given
- */
     private static int parseHex(String hex) {
-        // Long, not Integer: eight hex digits such as 0xFFFFFFFF exceed Integer.MAX_VALUE and would
-        // make Integer.parseInt throw, which silently turned a valid colour into a config warning.
         long packed = Long.parseLong(hex, 16);
         int value = (int) packed;
         return hex.length() >= 8 ? value : rgb(value);
     }
 
-    /**
-     * Derives the three tones used to keep a potion liquid from looking flat: a slightly brightened
-     * highlight, the base colour itself and a darkened shadow.
-     *
-     * @param base the base colour
-     * @return {@code [highlight, base, shadow]}
- */
     public static int[] gradient(int base) {
         return new int[] { brighten(base, 0.28F), base, darken(base, 0.32F) };
     }
@@ -138,14 +101,6 @@ public final class MerlinColor {
         return mix(color, BLACK, amount);
     }
 
-    /**
-     * Linear interpolation between two packed colours.
-     *
-     * @param from   colour at {@code t = 0}
-     * @param to     colour at {@code t = 1}
-     * @param t      blend factor, clamped to {@code [0, 1]}
-     * @return the blended colour, alpha taken from {@code from}
- */
     public static int mix(int from, int to, float t) {
         float factor = clamp(t, 0.0F, 1.0F);
         int r = channel(from, 16) + Math.round((channel(to, 16) - channel(from, 16)) * factor);
@@ -154,7 +109,6 @@ public final class MerlinColor {
         return 0xFF000000 | (r << 16) | (g << 8) | b;
     }
 
-    /** {@code Math.clamp} only exists from Java 21; this is the same thing for Java 17. */
     private static float clamp(float value, float min, float max) {
         return value < min ? min : Math.min(value, max);
     }
@@ -163,7 +117,6 @@ public final class MerlinColor {
         return (color >> shift) & 0xFF;
     }
 
-    /** @return the readable palette, for documentation and command suggestions. */
     public static Map<String, Integer> named() {
         return Map.copyOf(NAMED);
     }

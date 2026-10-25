@@ -1,3 +1,5 @@
+// Reads config/MerlinLib/*.json into immutable enchantment drafts.
+
 package com.huziyang520.merlinlib.config;
 
 import com.google.gson.JsonArray;
@@ -14,7 +16,6 @@ import com.huziyang520.merlinlib.effect.EffectOverrides;
 import com.huziyang520.merlinlib.impl.IdValidator;
 import com.huziyang520.merlinlib.util.MerlinColor;
 import net.minecraft.resources.ResourceLocation;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -28,36 +29,19 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * Reads {@code config/MerlinLib/*.json} into immutable enchantment drafts.
- */
 public final class ContentConfigLoader {
-
     private ContentConfigLoader() {
     }
 
-    /**
-     * Reads every file and merges the content with the java api registrations.
-     *
-     * @param apiEntries    enchantments registered through {@code MerlinApi}
-     * @param disabledByApi ids disabled through {@code MerlinApi}
-     * @return the effective snapshot, never {@code null}
- */
     public static ContentSnapshot load(Collection<EnchantmentDraft> apiEntries, Set<ResourceLocation> disabledByApi) {
         List<ContentError> errors = new ArrayList<>();
         Map<ResourceLocation, EnchantmentDraft> fromConfig = new LinkedHashMap<>();
         Set<ResourceLocation> disabled = new LinkedHashSet<>(disabledByApi);
-
         ensureDirectory();
-
         Map<ResourceLocation, EffectOverrides.Entry> effectOverrides = new LinkedHashMap<>();
         for (Path file : ConfigDirectory.jsonFiles()) {
             String name = file.getFileName().toString();
             if (RESERVED_FILES.contains(name)) {
-                // MerlinLib's own files sit in the same folder as the content files. Reading one of them as a
-                // list of enchantments does not fail loudly - it fails per entry, so a macro file with two
-                // macros produced two "this definition could not be loaded" warnings on every load, which
-                // made a healthy configuration look broken. Names listed here are simply not content.
                 continue;
             }
             if (EFFECTS_FILE.equals(name)) {
@@ -163,18 +147,13 @@ public final class ContentConfigLoader {
             return;
         }
         ResourceLocation id = IdValidator.parse(rawId).orElseThrow();
-
         boolean enabled = boolField(object, "enabled", true, file, path, id.toString(), errors);
-
         String translationKey = translationKeyField(object, id);
-
         int weight = intField(object, "weight", 10, 1, 1024, file, path, id, errors);
         int maxLevel = intField(object, "max_level", 1, 1, 255, file, path, id, errors);
         int anvilCost = intField(object, "anvil_cost", 1, 0, Integer.MAX_VALUE, file, path, id, errors);
-
         int[] minCost = costField(object, "min_cost", 1, 11, file, path, id, errors);
         int[] maxCost = costField(object, "max_cost", 21, 11, file, path, id, errors);
-
         List<String> slots = stringList(object, "slots", List.of("any"), file, path, id, errors);
         validateSlots(slots, file, path, id, errors);
         JsonElement supportedItems = elementOrDefault(object, "supported_items", EnchantmentJson.tag("minecraft:enchantable/durability"));
@@ -184,10 +163,6 @@ public final class ContentConfigLoader {
         Acquisition acquisition = acquisitionField(object, file, path, id, errors);
 
         if (effects.size() > 0) {
-            // Reported here, per id, because the alternative is an enchantment that exists, shows up in
-            // every list, and does nothing whatsoever when used. The numeric effect system these entries
-            // are written for (minecraft:add, LevelBasedValue) arrives in 1.20.5; on 1.20.1 behaviour
-            // comes from the event api. Saying so once per entry beats saying nothing at all.
             Constants.LOG.warn("[MerlinLib] {} declares {} numeric effect(s); 1.20.1 has no data driven enchantment "
                             + "effects, so they are recorded but not applied. Give the enchantment its behaviour through "
                             + "MerlinApi.events() instead.", id, effects.size());
@@ -211,8 +186,7 @@ public final class ContentConfigLoader {
                 exclusiveSet,
                 effects,
                 acquisition,
-                // A config file has no way to name a vanilla category, and the declared item set is
-                // what actually filters this enchantment, so the default (accept anything) stands.
+
                 null
         );
 
@@ -227,14 +201,6 @@ public final class ContentConfigLoader {
         }
     }
 
-    /**
-     * Reads the language key, from either the {@code translation_key} field or a {@code description}
-     * component.
-     *
-     * <p>A {@code description} written as a literal {@code text} is accepted and ignored: 1.20.1 looks
-     * the name up by key, and a hard coded string would show up untranslated in every language. The
-     * documented spelling on this version is {@code translation_key}.
- */
     private static String translationKeyField(JsonObject object, ResourceLocation id) {
         JsonElement key = object.get("translation_key");
         if (key != null && key.isJsonPrimitive()) {
@@ -250,13 +216,6 @@ public final class ContentConfigLoader {
         return EnchantmentDraft.defaultTranslationKey(id);
     }
 
-    /**
-     * Reports slot names that cannot be resolved.
-     *
-     * <p>A name the draft does not recognise is not fatal - the draft falls back to "every slot" - but it
-     * almost always means a typo, and an enchantment that quietly applies to everything is far harder to
-     * notice than one that reports its own misspelling.
- */
     private static void validateSlots(List<String> slots, String file, String path, ResourceLocation id, List<ContentError> errors) {
         for (String slot : slots) {
             String value = slot == null ? "" : slot.trim().toLowerCase(java.util.Locale.ROOT);
@@ -405,13 +364,6 @@ public final class ContentConfigLoader {
         return "'" + element.getAsString() + "'";
     }
 
-    /**
-     * Creates {@code config/MerlinLib} together with a documented sample file on first launch so the
-     * feature is discoverable without reading the source code.
-     *
-     * <p>The two {@code .toml} files are written by {@code ClientConfig}/{@code ServerConfig} themselves
-     * when they are first read, so this only writes the content samples.
- */
     public static void ensureDirectory() {
         Path root = ConfigDirectory.root();
         try {
@@ -429,25 +381,9 @@ public final class ContentConfigLoader {
         }
     }
 
-    /** File name holding effect colour and disable overrides. */
     public static final String EFFECTS_FILE = "effects.json";
-
-    /**
-     * Files in the configuration folder that are not enchantment content.
-     *
-     * <p>{@code macros.json} belongs to the macro toolkit ({@code MacroStorage}); anything else added here
-     * must be a file MerlinLib itself owns and writes.
- */
     private static final Set<String> RESERVED_FILES = Set.of("macros.json");
 
-    /**
-     * Reads {@code effects.json}: a list of entries shaped
-     * {@code {"id": ..., "enabled": true, "color": "cyan"}}.
-     *
-     * <p>Effects are a code registry, so this file can only recolour or disable an effect that a mod
-     * declared in code; it can never create a new one. That boundary is intentional and documented in
-     * the README.
- */
     private static void readEffectOverrides(Path file, Map<ResourceLocation, EffectOverrides.Entry> into, List<ContentError> errors) {
         String fileName = file.getFileName().toString();
         String text;
@@ -498,7 +434,6 @@ public final class ContentConfigLoader {
             }
             ResourceLocation id = parsed.get();
             boolean enabled = boolField(object, "enabled", true, fileName, path, id.toString(), errors);
-
             Optional<Integer> color = Optional.empty();
             JsonElement colorElement = object.get("color");
             if (colorElement != null) {
@@ -519,14 +454,6 @@ public final class ContentConfigLoader {
         }
     }
 
-    /**
-     * The sample content file, written once on first launch.
-     *
-     * <p>Written as concatenated literals rather than a text block: this text is embedded in a class that
-     * is compiled for Java 17, and every other string constant in this project is written the same way so a
-     * future re-target stays mechanical. Backslashes are doubled where the sample itself has to contain
-     * one.
- */
     private static final String SAMPLE_EFFECTS =
             "{\n"
             + "  \"_comment\": \"MerlinLib effect overrides. Effects are registered in code by mods; this file can only recolour or disable them.\",\n"
@@ -540,9 +467,6 @@ public final class ContentConfigLoader {
             + "  ]\n"
             + "}\n";
 
-    /**
-     * The sample enchantment file, written once on first launch.
- */
     private static final String SAMPLE_ENCHANTMENTS =
             "{\n"
             + "  \"_comment\": \"MerlinLib enchantment definitions. Delete or rename this file to start from scratch.\",\n"

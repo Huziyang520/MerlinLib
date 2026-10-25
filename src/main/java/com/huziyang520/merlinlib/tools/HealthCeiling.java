@@ -1,3 +1,5 @@
+// The health ceiling the health editor writes, and how it survives a death.
+
 package com.huziyang520.merlinlib.tools;
 
 import com.huziyang520.merlinlib.Constants;
@@ -6,38 +8,18 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
-
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
-/**
- * The health ceiling the health editor writes, and how it survives a death.
- */
 public final class HealthCeiling {
-
-    /**
-     * The name the modifier carries, so it is recognisable in a debug screen.
-     *
-     * <p>Decoration on this version: the game addresses the modifier by {@link #ID} alone. It is still set
-     * because the tooltip in a vanilla attribute dump shows it.
- */
     private static final String MODIFIER_NAME = Constants.MOD_ID + ":health_editor";
 
-    /**
-     * The modifier id shared by the editor, the servers and the respawn copy.
- */
     public static final UUID ID = UUID.nameUUIDFromBytes(
             (Constants.MOD_ID + ":health_editor").getBytes(StandardCharsets.UTF_8));
 
     private HealthCeiling() {
     }
 
-    /**
-     * Writes a new maximum health onto a living entity.
-     *
-     * @param target the entity to edit
-     * @param max    the new maximum, at least 0; {@code 0} removes the ceiling instead of writing it
- */
     public static void apply(LivingEntity target, int max) {
         AttributeInstance attribute = target.getAttribute(Attributes.MAX_HEALTH);
         if (attribute == null) {
@@ -50,15 +32,6 @@ public final class HealthCeiling {
         }
     }
 
-    /**
-     * Carries the ceiling over to a player that replaced another one.
-     *
-     * <p>Called from the respawn/clone hook of each loader. The amount is copied verbatim rather than
-     * recomputed, because the base value it was measured against does not change.
-     *
-     * @param oldPlayer the player that is going away, may be {@code null}
-     * @param newPlayer the player taking its place, may be {@code null}
- */
     public static void copyTo(Player oldPlayer, Player newPlayer) {
         if (oldPlayer == null || newPlayer == null || oldPlayer == newPlayer) {
             return;

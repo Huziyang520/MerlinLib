@@ -1,3 +1,5 @@
+// Forge implementation of ILootBridge.
+
 package com.huziyang520.merlinlib.platform;
 
 import com.huziyang520.merlinlib.Constants;
@@ -7,19 +9,12 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.LootTableLoadEvent;
 import net.minecraftforge.event.server.ServerAboutToStartEvent;
-
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Forge implementation of {@link ILootBridge}.
- */
 public final class ForgeLootBridge implements ILootBridge {
-
     public static final ForgeLootBridge INSTANCE = new ForgeLootBridge();
-
     private final List<TableListener> listeners = new ArrayList<>();
-
     private RegistryAccess registryAccess;
     private boolean installed;
 
@@ -55,7 +50,6 @@ public final class ForgeLootBridge implements ILootBridge {
             try {
                 listener.onTable(event.getName(), sink, registries);
             } catch (RuntimeException failure) {
-                // One bad rule must not take the rest of the table down with it.
                 Constants.LOG.error("[MerlinLib] loot rule failed for table {}", event.getName(), failure);
             }
         }

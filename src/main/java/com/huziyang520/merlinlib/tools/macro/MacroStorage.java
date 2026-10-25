@@ -1,3 +1,5 @@
+// Client local command macros: named command lists bound to a combination of keys, stored next to the other MerlinLib ...
+
 package com.huziyang520.merlinlib.tools.macro;
 
 import com.google.gson.Gson;
@@ -7,7 +9,6 @@ import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.tools.hotkey.HotkeyRegistry;
 import com.huziyang520.merlinlib.tools.hotkey.KeyCombo;
 import net.minecraft.client.Minecraft;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -18,28 +19,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * Client local command macros: named command lists bound to a combination of keys, stored next to the
- * other MerlinLib files so they follow this computer rather than the server.
- */
 public final class MacroStorage {
-
-/**
- * One macro.
- */
     public record Macro(String name, List<Integer> keys, List<String> commands) {
-
-        /**
-         * @return the combination these keys form, empty when the macro is not bound
- */
         public KeyCombo combo() {
             return KeyCombo.of(keys).orElseGet(KeyCombo::of);
         }
 
-        /**
-         * @param newKeys the new key codes
-         * @return a copy of this macro bound to those keys
- */
         public Macro withKeys(List<Integer> newKeys) {
             return new Macro(this.name, List.copyOf(newKeys), this.commands);
         }
@@ -48,130 +33,91 @@ public final class MacroStorage {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path FILE = Path.of("config", Constants.CONFIG_DIRECTORY, "macros.json");
     private static final List<Macro> MACROS = new ArrayList<>();
-
-    /**
-     * The value written into the file's {@code codec} field once the key codes are GLFW.
-     *
-     * <p>Any file without this marker predates the marker, so its codes are HID and are converted on
-     * read. See the class Javadoc for why the marker - rather than a heuristic on every load - is what
-     * makes the conversion a one-off.
- */
     private static final String CODEC_GLFW = "glfw";
-
-    /** Marker for a key written as HID codes; written out so the intent is readable in the file. */
     private static final String CODEC_HID = "hid";
-
-    /**
-     * USB HID usage id to GLFW key code, for the keys a macro can realistically be bound to.
-     *
-     * <p>Hand written because {@code InputConstants} no longer carries the HID table on this version.
-     * The table is deliberately conservative: it covers letters, digits, the function row, the modifier
-     * and navigation keys, and the numpad. A code outside it is left alone and logged rather than
-     * guessed at - see the class Javadoc.
- */
     private static final java.util.Map<Integer, Integer> HID_TO_GLFW = buildHidTable();
 
     private MacroStorage() {
     }
 
-    /**
-     * Builds the HID to GLFW table.
-     *
-     * <p>Written from the two published layouts rather than copied from a library, because the library
-     * that used to expose the HID table is gone on this version. The regularities are used where they
-     * genuinely exist - the letters and the digits are contiguous runs in both layouts - and every
-     * irregular key is listed once, explicitly. There are no "guess then correct" overrides: a table
-     * whose later lines silently undo earlier ones cannot be checked by reading it.
-     *
-     * @return the mapping, immutable
- */
     private static java.util.Map<Integer, Integer> buildHidTable() {
         java.util.Map<Integer, Integer> table = new java.util.HashMap<>();
 
-        // Letters: HID 4..29 = A..Z, GLFW 65..90 = A..Z. Same order.
         for (int index = 0; index < 26; index++) {
             table.put(4 + index, 65 + index);
         }
-        // Digits on the top row: HID 30..38 = 1..9 and 39 = 0; GLFW 49..57 = 1..9 and 48 = 0.
+
         for (int index = 0; index < 9; index++) {
             table.put(30 + index, 49 + index);
         }
         table.put(39, 48);
-        // Function row: HID 58..69 = F1..F12, GLFW 290..301 = F1..F12.
+
         for (int index = 0; index < 12; index++) {
             table.put(58 + index, 290 + index);
         }
 
-        // Everything else, one line per key: {HID, GLFW}.
         int[][] irregular = {
-                // Punctuation and the main typing keys.
-                {40, 257},  // enter
-                {41, 256},  // escape
-                {42, 259},  // backspace
-                {43, 258},  // tab
-                {44, 32},   // space
-                {45, 45},   // minus
-                {46, 61},   // equals
-                {47, 91},   // left bracket
-                {48, 93},   // right bracket
-                {49, 92},   // backslash
-                {51, 59},   // semicolon
-                {52, 39},   // apostrophe
-                {53, 96},   // grave accent
-                {54, 44},   // comma
-                {55, 46},   // period
-                {56, 47},   // slash
-                // Lock and system keys.
-                {57, 280},  // caps lock
-                {70, 283},  // print screen
-                {71, 281},  // scroll lock
-                {72, 284},  // pause
-                // Navigation cluster. GLFW numbers these in a different order from HID, which is the
-                // single easiest thing to get wrong here: HID runs insert, home, page up, delete, end,
-                // page down, and GLFW runs insert, delete, right, left, down, up, page up, page down,
-                // home, end.
-                {73, 260},  // insert
-                {74, 268},  // home
-                {75, 266},  // page up
-                {76, 261},  // delete
-                {77, 269},  // end
-                {78, 267},  // page down
-                {79, 262},  // right arrow
-                {80, 263},  // left arrow
-                {81, 264},  // down arrow
-                {82, 265},  // up arrow
-                // Keypad.
-                {83, 282},  // num lock
-                {84, 331},  // keypad divide
-                {85, 332},  // keypad multiply
-                {86, 333},  // keypad subtract
-                {87, 334},  // keypad add
-                {88, 335},  // keypad enter
-                {89, 321},  // keypad 1
-                {90, 322},  // keypad 2
-                {91, 323},  // keypad 3
-                {92, 324},  // keypad 4
-                {93, 325},  // keypad 5
-                {94, 326},  // keypad 6
-                {95, 327},  // keypad 7
-                {96, 328},  // keypad 8
-                {97, 329},  // keypad 9
-                {98, 320},  // keypad 0
-                {99, 330},  // keypad decimal
-                {100, 92},  // keypad non-US backslash (no distinct GLFW key; the main backslash)
-                {101, 348}, // application / menu
-                // Modifiers. GLFW puts the left and right pairs in an order that is not the HID order:
-                // left shift/control/alt/super are 340..343 and right shift/control/alt/super are
-                // 344..347, while HID runs control, shift, alt, super on the left and control, shift,
-                // alt, super on the right.
-                {224, 341}, // left control
-                {225, 340}, // left shift
-                {226, 342}, // left alt
-                {227, 343}, // left super
-                {228, 345}, // right control
-                {229, 344}, // right shift
-                {230, 346}, // right alt
-                {231, 347}, // right super
+                {40, 257},
+                {41, 256},
+                {42, 259},
+                {43, 258},
+                {44, 32},
+                {45, 45},
+                {46, 61},
+                {47, 91},
+                {48, 93},
+                {49, 92},
+                {51, 59},
+                {52, 39},
+                {53, 96},
+                {54, 44},
+                {55, 46},
+                {56, 47},
+
+                {57, 280},
+                {70, 283},
+                {71, 281},
+                {72, 284},
+
+                {73, 260},
+                {74, 268},
+                {75, 266},
+                {76, 261},
+                {77, 269},
+                {78, 267},
+                {79, 262},
+                {80, 263},
+                {81, 264},
+                {82, 265},
+
+                {83, 282},
+                {84, 331},
+                {85, 332},
+                {86, 333},
+                {87, 334},
+                {88, 335},
+                {89, 321},
+                {90, 322},
+                {91, 323},
+                {92, 324},
+                {93, 325},
+                {94, 326},
+                {95, 327},
+                {96, 328},
+                {97, 329},
+                {98, 320},
+                {99, 330},
+                {100, 92},
+                {101, 348},
+
+                {224, 341},
+                {225, 340},
+                {226, 342},
+                {227, 343},
+                {228, 345},
+                {229, 344},
+                {230, 346},
+                {231, 347},
         };
         for (int[] pair : irregular) {
             table.put(pair[0], pair[1]);
@@ -180,35 +126,21 @@ public final class MacroStorage {
         return java.util.Map.copyOf(table);
     }
 
-    /** @return the live list of macros, in the order the screen shows them. */
     public static List<Macro> macros() {
         return List.copyOf(MACROS);
     }
 
-    /**
-     * Replaces every macro and re-registers the bindings.
-     *
-     * @param macros the new macros
- */
     public static void replaceAll(List<Macro> macros) {
         MACROS.clear();
         MACROS.addAll(macros);
         rebind();
     }
 
-    /**
-     * Appends one unbound, empty macro, which is what the "new macro" button does.
- */
     public static void add() {
         MACROS.add(new Macro("Macro " + (MACROS.size() + 1), List.of(), List.of()));
         rebind();
     }
 
-    /**
-     * Removes one macro.
-     *
-     * @param index the index to remove, ignored when out of range
- */
     public static void remove(int index) {
         if (index >= 0 && index < MACROS.size()) {
             MACROS.remove(index);
@@ -216,16 +148,6 @@ public final class MacroStorage {
         }
     }
 
-    /**
-     * Writes the macros to disk.
-     *
-     * <p>Failures are logged rather than thrown: a read only file must not take the game down, and the
-     * macros keep working for this session.
-     *
-     * <p>The file is always written with the {@code codec} marker, because everything this method writes
-     * is already in GLFW codes. That marker is what stops the migration in {@link #load()} from running a
-     * second time on the next launch.
- */
     public static void save() {
         StoredFile file = new StoredFile();
         file.codec = CODEC_GLFW;
@@ -245,10 +167,6 @@ public final class MacroStorage {
         }
     }
 
-    /**
-     * Reads the macros from disk, migrating the key codes when the file predates this build, and
-     * registers their bindings.
- */
     public static void load() {
         MACROS.clear();
         boolean migrated = false;
@@ -258,7 +176,6 @@ public final class MacroStorage {
                 String json = Files.readString(FILE, StandardCharsets.UTF_8);
                 List<StoredMacro> stored = null;
                 String codec = null;
-
                 com.google.gson.JsonElement root = com.google.gson.JsonParser.parseString(json);
                 if (root.isJsonArray()) {
                     stored = GSON.fromJson(root, new TypeToken<List<StoredMacro>>() { }.getType());
@@ -284,9 +201,6 @@ public final class MacroStorage {
         }
 
         if (migrated) {
-            // Written back at once so the conversion happens exactly once. If this write fails the
-            // macros still work for this session, and the next launch converts again from the same
-            // original file - which is the safe direction to fail in.
             Constants.LOG.info("[MerlinLib] {} macro(s) were read from a file written before 1.20.1; their "
                     + "key codes were converted from USB HID to GLFW and the file was rewritten", MACROS.size());
             save();
@@ -294,16 +208,6 @@ public final class MacroStorage {
         rebind();
     }
 
-    /**
-     * Converts one macro's key codes from USB HID to GLFW.
-     *
-     * <p>A code the table does not know is kept unchanged and named in the log. Guessing would be worse
-     * than leaving it: a wrong code is a macro that fires on a key the player never chose, while an
-     * unconverted one is a macro that visibly does not fire and can be re-bound by hand.
-     *
-     * @param macro the macro as it was stored
-     * @return the same macro with GLFW codes
- */
     private static Macro migrate(Macro macro) {
         List<Integer> converted = new ArrayList<>(macro.keys().size());
         for (Integer code : macro.keys()) {
@@ -323,14 +227,6 @@ public final class MacroStorage {
         return macro.withKeys(converted);
     }
 
-    /**
-     * The key codes that two or more macros share.
-     *
-     * <p>Used by the macro screen to mark the affected rows in red: overlapping combinations cannot both
-     * be completed unambiguously, and the player should see that before wondering why a key does not work.
-     *
-     * @return every key code involved in a clash
- */
     public static Set<Integer> conflictingKeys() {
         Set<Integer> clashing = new HashSet<>();
         for (int first = 0; first < MACROS.size(); first++) {
@@ -349,21 +245,10 @@ public final class MacroStorage {
         return clashing;
     }
 
-    /**
-     * The name of a key code, as vanilla labels it.
-     *
-     * @param keyCode the GLFW key code, negative for unbound
-     * @return the display name
- */
     public static String keyDisplayName(int keyCode) {
         return HotkeyRegistry.keyName(keyCode);
     }
 
-    /**
-     * Advances the hotkey layer by one client tick.
-     *
-     * @param minecraft the client
- */
     public static void tick(Minecraft minecraft) {
         if (minecraft.player == null) {
             return;
@@ -371,15 +256,10 @@ public final class MacroStorage {
         HotkeyRegistry.tick();
     }
 
-    /**
-     * @param commands the commands
-     * @return the commands joined for display, one per line
- */
     public static String describe(List<String> commands) {
         return commands.stream().filter(command -> !command.isBlank()).collect(Collectors.joining(" / "));
     }
 
-    /** Re-registers every binding from the current macro list. */
     private static void rebind() {
         HotkeyRegistry.clear();
         for (Macro macro : MACROS) {
@@ -391,11 +271,6 @@ public final class MacroStorage {
         }
     }
 
-    /**
-     * Runs one macro as the player.
-     *
-     * @param macro the macro to run
- */
     private static void run(Macro macro) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null) {
@@ -409,23 +284,11 @@ public final class MacroStorage {
         }
     }
 
-    /**
-     * The on disk file.
-     *
-     * <p>{@code codec} names the key code encoding. Its absence means the file predates this build and
-     * its codes are USB HID; see the class Javadoc.
- */
     private static final class StoredFile {
         private String codec;
         private List<StoredMacro> macros;
     }
 
-    /**
-     * The on disk shape of one macro.
-     *
-     * <p>{@code key} is the field earlier versions wrote; it is still read so upgrading does not lose a
-     * binding, and it is never written back.
- */
     private static final class StoredMacro {
         private String name;
         private List<Integer> keys;

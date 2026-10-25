@@ -1,22 +1,15 @@
+// One rule that puts something into loot tables.
+
 package com.huziyang520.merlinlib.api;
 
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
-
 import java.util.Set;
 
-/**
- * One rule that puts something into loot tables.
- */
 public final class LootInjection {
-
-    /** What the injected entry spawns. */
     public enum Form {
-
-        /** An enchanted book carrying one of the listed enchantments. */
         BOOK,
 
-        /** The configured item, carrying one of the listed enchantments. */
         ITEM
     }
 
@@ -41,42 +34,34 @@ public final class LootInjection {
         this.moddedTables = moddedTables;
     }
 
-    /** @return whether this rule may also target tables owned by another mod */
     public boolean allowsModdedTables() {
         return this.moddedTables;
     }
 
-    /** @return the full ids of the loot tables this rule applies to */
     public Set<String> getTargetTables() {
         return this.targetTables;
     }
 
-    /** @return what the entry spawns */
     public Form getForm() {
         return this.form;
     }
 
-    /** @return the item for {@link Form#ITEM}, or {@code null} for {@link Form#BOOK} */
     public Item getItem() {
         return this.item;
     }
 
-    /** @return the full ids of the enchantments the drop may carry */
     public Set<String> getEnchantments() {
         return this.enchantments;
     }
 
-    /** @return the chance of the entry rolling at all, 0.0 to 1.0 */
     public float getChance() {
         return this.chance;
     }
 
-    /** @return the entry's weight against the table's own entries, at least 1 */
     public int getWeight() {
         return this.weight;
     }
 
-    /** @return the entry's quality, which raises its weight when the player has luck */
     public int getQuality() {
         return this.quality;
     }
@@ -88,7 +73,6 @@ public final class LootInjection {
                 + (this.moddedTables ? ", modded tables allowed" : "") + "]";
     }
 
-    /** @return the book item, kept here so the builder and the injector agree on it */
     public static Item bookItem() {
         return Items.ENCHANTED_BOOK;
     }

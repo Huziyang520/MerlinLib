@@ -1,9 +1,10 @@
+// Watches key combinations and runs the action bound to each of them.
+
 package com.huziyang520.merlinlib.tools.hotkey;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.network.chat.Component;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -12,32 +13,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Watches key combinations and runs the action bound to each of them.
- */
 public final class HotkeyRegistry {
-
-    /**
-     * The highest code that stands for a mouse button.
-     *
-     * <p>Mouse buttons are numbered 0..7 by the input layer, and GLFW leaves that range free for keyboard
-     * keys (the lowest keyboard code is 32), so one integer space covers both without a second lookup and
-     * without changing the format macros are stored in.
- */
     public static final int MAX_MOUSE_CODE = 7;
-
-    /**
-     * The vanilla category these mappings belong to if they are ever displayed.
-     *
-     * <p>{@code key.categories.misc} is the vanilla translation key for the "Miscellaneous" group; 1.20.1
-     * takes the category as a string rather than as an enum, so this is a plain constant instead of a
-     * {@code KeyMapping.Category} reference.
- */
     private static final String CATEGORY = "key.categories.misc";
-
-    /** One mapping per key code, created on first use. */
     private static final Map<Integer, KeyMapping> MAPPINGS = new HashMap<>();
-    /** Every binding, longest combination first so the specific one wins. */
     private static final List<Binding> BINDINGS = new ArrayList<>();
 
     private record Binding(KeyCombo combo, Runnable action) {
@@ -46,22 +25,10 @@ public final class HotkeyRegistry {
     private HotkeyRegistry() {
     }
 
-    /**
-     * Removes every binding, keeping the mappings.
-     *
-     * <p>Called before a screen or a configuration reload rebuilds the bindings, so a stale action can
-     * never fire.
- */
     public static void clear() {
         BINDINGS.clear();
     }
 
-    /**
-     * Binds an action to a combination.
-     *
-     * @param combo  the keys that must be held together; an empty combination is ignored
-     * @param action what to run when the combination is completed
- */
     public static void add(KeyCombo combo, Runnable action) {
         if (combo == null || combo.isEmpty() || action == null) {
             return;
@@ -70,12 +37,6 @@ public final class HotkeyRegistry {
         BINDINGS.sort(Comparator.comparingInt((Binding binding) -> binding.combo().size()).reversed());
     }
 
-    /**
-     * Whether every key of a combination is held right now.
-     *
-     * @param combo the combination
-     * @return true when all of its keys are down
- */
     public static boolean isHeld(KeyCombo combo) {
         if (combo == null || combo.isEmpty()) {
             return false;
@@ -88,9 +49,6 @@ public final class HotkeyRegistry {
         return true;
     }
 
-    /**
-     * Runs the actions whose combination was completed during this tick. Call once per client tick.
- */
     public static void tick() {
         if (BINDINGS.isEmpty()) {
             return;
@@ -120,11 +78,6 @@ public final class HotkeyRegistry {
         }
     }
 
-    /**
-     * Empties the click counters of every watched key and reports which of them were pressed.
-     *
-     * @return the key codes pressed since the last tick
- */
     private static Set<Integer> drainClicks() {
         Set<Integer> pressed = new HashSet<>();
         for (Map.Entry<Integer, KeyMapping> entry : MAPPINGS.entrySet()) {
@@ -139,42 +92,19 @@ public final class HotkeyRegistry {
         return pressed;
     }
 
-    /**
-     * The mapping watching one key code.
-     *
-     * <p>Also used by the capture button, which needs the key's translated name.
-     *
-     * @param keyCode a GLFW key code
-     * @return the mapping, created on first use
- */
     public static KeyMapping mapping(int keyCode) {
         return MAPPINGS.computeIfAbsent(keyCode, code -> code <= MAX_MOUSE_CODE
                 ? new KeyMapping("key.merlinlib.hotkey.mouse." + code, InputConstants.Type.MOUSE, code, CATEGORY)
                 : new KeyMapping("key.merlinlib.hotkey." + code, InputConstants.Type.KEYSYM, code, CATEGORY));
     }
 
-    /**
-     * Releases a key's state.
-     *
-     * <p>Used after a capture: while the macro screen is open the key was pressed to bind it, and without
-     * this the binding would fire the moment the screen closes if the player is still holding it.
-     *
-     * @param keyCode a GLFW key code
- */
     public static void release(int keyCode) {
         KeyMapping mapping = mapping(keyCode);
         mapping.setDown(false);
         while (mapping.consumeClick()) {
-            // drained on purpose: the press belonged to the capture, not to the action
         }
     }
 
-    /**
-     * The translated name of a key code, as vanilla labels it in the controls screen.
-     *
-     * @param keyCode a GLFW key code, or a negative value for "unbound"
-     * @return the name to show on a button
- */
     public static String keyName(int keyCode) {
         if (keyCode < 0) {
             return Component.translatable("key.merlinlib.unbound").getString();
@@ -182,12 +112,6 @@ public final class HotkeyRegistry {
         return mapping(keyCode).getTranslatedKeyMessage().getString();
     }
 
-    /**
-     * The label of a combination, keys joined the way a player reads them.
-     *
-     * @param combo the combination
-     * @return e.g. {@code Left Arrow + A}, or the unbound text when the combination is empty
- */
     public static String comboName(KeyCombo combo) {
         if (combo == null || combo.isEmpty()) {
             return Component.translatable("key.merlinlib.unbound").getString();

@@ -1,3 +1,5 @@
+// The combat feedback overlay: the nominal damage above the crosshair and the floating damage numbers.
+
 package com.huziyang520.merlinlib.tools.hud;
 
 import com.huziyang520.merlinlib.Constants;
@@ -11,44 +13,26 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.ForgeHooksClient;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-/**
- * The combat feedback overlay: the nominal damage above the crosshair and the floating damage numbers.
- */
 public final class CombatFeedback {
-
-    /** Base scale of the floating damage numbers, multiplied by the configured size. */
     private static final float POPUP_SCALE = 1.6F;
-    /** Extra scale per point of damage, so big hits read as big hits. */
     private static final float POPUP_SCALE_PER_DAMAGE = 0.012F;
-    /** Maximum scale of a floating number. */
     private static final float POPUP_MAX_SCALE = 2.4F;
-    /** Scale of the crosshair number. */
     private static final float HUD_SCALE = 2.0F;
-    /** Vertical distance from the screen centre to the crosshair number. */
     private static final int HUD_OFFSET_Y = 30;
-    /** How long a crit flag stays attached to a target after our swing, in ticks. */
     private static final int CRIT_MEMORY_TICKS = 10;
-    /** How far a floating number drifts towards the player over its lifetime, in blocks. */
     private static final double POPUP_DRIFT = 1.25D;
-    /** The z axis of a pose scale, which is never scaled: text and fills are two dimensional. */
     private static final float FLAT = 1.0F;
-
     private static final CombatFeedback INSTANCE = new CombatFeedback();
-
     private final List<Popup> popups = new ArrayList<>();
-    /** Last seen health of every tracked living entity, keyed by entity id. */
     private final Map<Integer, Float> lastHealth = new HashMap<>();
-    /** Until which tick a target is marked as critically hit by the local player. */
     private final Map<Integer, Integer> criticalUntil = new HashMap<>();
     private long tickCounter;
-
     private Float hudDamage;
     private boolean hudCritical;
     private int hudTicks;
@@ -56,18 +40,12 @@ public final class CombatFeedback {
     private CombatFeedback() {
     }
 
-    /**
-     * @return the shared overlay state.
- */
     public static CombatFeedback instance() {
         return INSTANCE;
     }
 
-    /** A floating damage number. */
     private static final class Popup {
-        /** The entity that took the hit, kept so the number can ride its interpolated position. */
         private final LivingEntity target;
-        /** Last known anchor, used once the entity is gone. */
         private Vec3 lastAnchor;
         private final float damage;
         private final float scale;
@@ -85,55 +63,19 @@ public final class CombatFeedback {
         }
     }
 
-    // ------------------------------------------------------------------ input
-
-    /**
-     * Receives the server's verdict for one resolved hit and arms the crosshair number with it.
-     *
-     * <p>The server resolves enchantments, the weapon's own bonus and every modded override while it
-     * applies the hit, so its number is the truth; the client cannot recompute it because the
-     * enchantment pipeline needs a {@code ServerLevel}.
-     *
-     * <p>The display duration is read here rather than at draw time, because it is the length of the
-     * countdown that is being started.
-     *
-     * @param damage   the unclamped swing damage the server resolved
-     * @param critical whether the server classified the swing as critical
-     * @param targetId the id of the entity that was hit
- */
     public void onServerDamage(float damage, boolean critical, int targetId) {
-
         this.hudDamage = Math.max(0.5F, damage);
         this.hudCritical = critical;
         this.hudTicks = Math.max(1, ConfigManager.client().crosshairDamageTicks());
         this.criticalUntil.put(targetId, (int) (this.tickCounter + CRIT_MEMORY_TICKS));
     }
 
-    /**
-     * Records one local swing so a resulting popup can be coloured as critical. The number itself comes
-     * from the server, see {@link #onServerDamage(float, boolean, int)}.
-     *
-     * @param player   the local player
-     * @param target   the entity being hit
-     * @param critical whether the swing looks critical on the client
- */
     public void onLocalSwing(Player player, Entity target, boolean critical) {
-
         if (critical) {
             this.criticalUntil.put(target.getId(), (int) (this.tickCounter + CRIT_MEMORY_TICKS));
         }
     }
 
-    /**
-     * Evaluates vanilla's critical hit condition for the local player.
-     *
-     * <p>Direct port: every member read here kept its name on 1.20.1. {@code fallDistance} is still a
-     * public field of {@code Entity} and {@code MobEffects.BLINDNESS} still a public static field, both
-     * confirmed with {@code javap -p}.
-     *
-     * @param player the attacker
-     * @return {@code true} when the swing counts as critical
- */
     public static boolean isCritical(Player player) {
         return player.fallDistance > 0.0F
                 && !player.onGround()
@@ -144,19 +86,7 @@ public final class CombatFeedback {
                 && !player.isSprinting();
     }
 
-    // ------------------------------------------------------------------ tick
-
-    /**
-     * Advances the overlay by one client tick and samples the health of every nearby living entity, so
-     * damage from any player or source shows up, not just the local player's own hits.
-     *
-     * <p>Sampling is skipped entirely while damage numbers are switched off, which is the point of the
-     * switch: an overlay that is not wanted costs nothing.
-     *
-     * @param minecraft the client
- */
     public void tick(Minecraft minecraft) {
-
         this.tickCounter++;
 
         if (this.hudTicks > 0) {
@@ -182,13 +112,12 @@ public final class CombatFeedback {
                     }
                 }
             }
-            // Forget entities that are gone so the map cannot grow without bound.
+
             this.lastHealth.keySet().removeIf(id -> !seen.contains(id));
         } else if (!numbersEnabled) {
             this.lastHealth.clear();
         }
         this.criticalUntil.values().removeIf(until -> until < this.tickCounter);
-
         int lifetime = Math.max(1, ConfigManager.client().floatingTextDurationTicks());
         for (Iterator<Popup> it = this.popups.iterator(); it.hasNext(); ) {
             Popup popup = it.next();
@@ -199,10 +128,8 @@ public final class CombatFeedback {
     }
 
     private void addPopup(LivingEntity target, float damage, boolean critical) {
-
         float base = POPUP_SCALE * (float) ConfigManager.client().floatingTextBaseScale();
         float scale = Math.min(POPUP_MAX_SCALE, base + damage * POPUP_SCALE_PER_DAMAGE);
-        // Every hit gets its own vertical slot so simultaneous hits stay readable.
         int index = this.popups.size();
         this.popups.add(new Popup(target, anchorOf(target), damage, scale, critical, index));
         int limit = Math.max(1, ConfigManager.client().floatingTextMaxConcurrent());
@@ -211,32 +138,15 @@ public final class CombatFeedback {
         }
     }
 
-    /**
-     * The anchor above a living entity's head; kept well clear of the body so the number is easy to
-     * read even when the camera is close.
-     *
-     * @param target the hit entity
-     * @return the world position the number starts at
- */
     private static Vec3 anchorOf(LivingEntity target) {
         return target.position().add(0.0D, target.getBbHeight() * 1.1D + 0.4D, 0.0D);
     }
 
-    // ------------------------------------------------------------------ render
-
-    /**
-     * Draws the whole overlay.
- *
-     * @param graphics    the draw context
-     * @param partialTick the frame's partial tick, used to interpolate entity positions
- */
     public void render(GuiGraphics graphics, float partialTick) {
-
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.level == null) {
             return;
         }
-        // The HUD is skipped by the game itself while Options.hideGui is set, which is the 1.20.1
 
         int guiWidth = minecraft.getWindow().getGuiScaledWidth();
         int guiHeight = minecraft.getWindow().getGuiScaledHeight();
@@ -249,11 +159,7 @@ public final class CombatFeedback {
         }
     }
 
-    /**
-     * Draws the damage of the last swing, centred directly above the crosshair.
- */
     private void drawHudDamage(GuiGraphics graphics, Minecraft minecraft, int guiWidth, int guiHeight) {
-
         Float damage = this.hudDamage;
         if (damage == null || this.hudTicks <= 0) {
             return;
@@ -264,13 +170,10 @@ public final class CombatFeedback {
                 ? ConfigManager.client().floatingTextCriticalColor() & 0xFFFFFF
                 : damageColour(damage);
         int colour = (Math.max(24, alpha) << 24) | rgb;
-
         String text = format(damage);
         int textWidth = minecraft.font.width(text);
         int x = guiWidth / 2 - (int) (textWidth * HUD_SCALE / 2.0F);
         int y = guiHeight / 2 - HUD_OFFSET_Y;
-
-        // pushMatrix / popMatrix / scale(float, float). The z axis is unscaled, as it was implicitly.
         graphics.pose().pushPose();
         graphics.pose().scale(HUD_SCALE, HUD_SCALE, FLAT);
         graphics.drawString(minecraft.font, text, (int) (x / HUD_SCALE), (int) (y / HUD_SCALE), colour, true);
@@ -279,21 +182,17 @@ public final class CombatFeedback {
 
     private void drawPopups(GuiGraphics graphics, Minecraft minecraft, float partialTick,
                             int guiWidth, int guiHeight) {
-
         if (this.popups.isEmpty()) {
             return;
         }
         int lifetime = Math.max(1, ConfigManager.client().floatingTextDurationTicks());
         int normalColour = ConfigManager.client().floatingTextNormalColor() & 0xFFFFFF;
         int criticalColour = ConfigManager.client().floatingTextCriticalColor() & 0xFFFFFF;
-
         Camera camera = minecraft.gameRenderer.getMainCamera();
         Vec3 eye = camera.getPosition();
         double fov = fieldOfView(minecraft, camera, partialTick);
         double aspect = (double) guiWidth / (double) guiHeight;
         double focal = 1.0D / Math.tan(Math.toRadians(fov) * 0.5D);
-        // The camera already moves with the partial tick, so the anchor must too; sampling the raw tick
-        // position made every number wobble whenever the view moved. The partial tick is the render
         float partial = partialTick;
 
         for (Popup popup : this.popups) {
@@ -308,7 +207,6 @@ public final class CombatFeedback {
             }
             Vec3 towards = eye.subtract(origin).normalize().scale(POPUP_DRIFT * progress);
             Vec3 world = origin.add(towards).add(0.0D, 0.35D * progress + 0.02D * popup.riseIndex, 0.0D);
-
             double[] screen = project(world, eye, camera, focal, aspect, guiWidth, guiHeight);
             if (screen == null) {
                 continue;
@@ -316,12 +214,10 @@ public final class CombatFeedback {
             int alpha = (int) (255.0F * (1.0F - progress * progress));
             int rgb = popup.critical ? criticalColour : normalColour;
             int colour = (Math.max(16, alpha) << 24) | rgb;
-
             String text = format(popup.damage);
             int textWidth = (int) (minecraft.font.width(text) * popup.scale);
             int x = (int) screen[0] - textWidth / 2;
             int y = (int) screen[1];
-
             graphics.pose().pushPose();
             graphics.pose().scale(popup.scale, popup.scale, FLAT);
             graphics.drawString(minecraft.font, text, (int) (x / popup.scale), (int) (y / popup.scale),
@@ -330,38 +226,7 @@ public final class CombatFeedback {
         }
     }
 
-    /**
-     * The vertical field of view in degrees, for the frame being drawn.
- *
-     * <pre>
-     * private double getFov(net.minecraft.client.Camera, float, boolean);
-     *   ...
-     *   11: ldc2_w  70.0d                      // the base used when the setting is not consulted
-     *   20: Minecraft.options / Options.fov()  // the player's field of view setting
-     *   44: fload_2 / oldFov / fov -> Mth.lerp(FFF)   // the smoothed field of view multiplier
-     *   60: Camera.getEntity() instanceof LivingEntity, isDeadOrDying() ...
-     *  126: Camera.getFluidInCamera() == LAVA || == WATER ...
-     *  179: ForgeHooksClient.getFieldOfView(GameRenderer, Camera, double, double, boolean)
-     *  189: dreturn
-     * </pre>
- *
-     * <p>The result is finally passed through Forge's own {@code getFieldOfView} hook, which is the call
-     * vanilla's method ends in. That matters: it posts {@code ViewportEvent.ComputeFov}, so a mod that
-     * changes the field of view moves these numbers with the view instead of leaving them misaligned -
-     * and it is the same door vanilla itself uses, so the two can never disagree.
- *
-     * <p>What is deliberately <em>not</em> reproduced: the death zoom and the lava/water narrowing, both
-     * of which only apply while the camera entity is dying or submerged. A damage number drifting over an
-     * entity while the player is drowning is not a case worth a second copy of vanilla's arithmetic, and
-     * the error is a few percent of the projection scale.
- *
-     * @param minecraft   the client
-     * @param camera      the camera being projected through
-     * @param partialTick the frame's partial tick
-     * @return the vertical field of view in degrees
- */
     private static double fieldOfView(Minecraft minecraft, Camera camera, float partialTick) {
-
         double configured = minecraft.options.fov().get();
         if (minecraft.player != null) {
             configured *= Mth.lerp(partialTick, 1.0F, minecraft.player.getFieldOfViewModifier());
@@ -369,26 +234,18 @@ public final class CombatFeedback {
         return ForgeHooksClient.getFieldOfView(minecraft.gameRenderer, camera, partialTick, configured, true);
     }
 
-    /**
-     * Projects a world position onto the GUI, or returns {@code null} when it is behind the camera.
- */
     private static double[] project(Vec3 world, Vec3 eye, Camera camera, double focal, double aspect,
                                     int guiWidth, int guiHeight) {
-
         double yaw = Math.toRadians(camera.getYRot());
         double pitch = Math.toRadians(camera.getXRot());
-
         double forwardX = -Math.sin(yaw) * Math.cos(pitch);
         double forwardY = -Math.sin(pitch);
         double forwardZ = Math.cos(yaw) * Math.cos(pitch);
-
         double rightX = Math.cos(yaw);
         double rightZ = Math.sin(yaw);
-
         double upX = -forwardY * rightZ;
         double upY = forwardZ * rightX - forwardX * rightZ;
         double upZ = forwardY * rightX;
-
         Vec3 delta = world.subtract(eye);
         double depth = delta.x * forwardX + delta.y * forwardY + delta.z * forwardZ;
         if (depth < 0.06D) {
@@ -396,10 +253,8 @@ public final class CombatFeedback {
         }
         double side = delta.x * rightX + delta.z * rightZ;
         double up = delta.x * upX + delta.y * upY + delta.z * upZ;
-
         double ndcX = (side / depth) * (focal / aspect);
         double ndcY = (up / depth) * focal;
-
         double x = (ndcX + 1.0D) * 0.5D * guiWidth;
         double y = (1.0D - ndcY) * 0.5D * guiHeight;
         if (x < -96.0D || y < -96.0D || x > guiWidth + 96.0D || y > guiHeight + 96.0D) {
@@ -408,19 +263,7 @@ public final class CombatFeedback {
         return new double[] { x, y };
     }
 
-    /**
-     * The crosshair number's colour by swing damage: white at low damage, through yellow, to red for
-     * heavy hits (40+), so the number itself communicates the scale of the swing.
-     *
-     * <p>Only a normal hit uses this gradient; a critical hit uses the configured critical colour, so one
-     * switch controls how criticals look everywhere.
-     *
-     * @param damage the swing damage
-     * @return an RGB colour
- */
     private static int damageColour(float damage) {
-
-        // two segments: white -> yellow over 0..20, yellow -> red over 20..40
         float ratio = Math.min(1.0F, damage / 40.0F);
         float r;
         float g;
@@ -446,9 +289,6 @@ public final class CombatFeedback {
         return String.format(java.util.Locale.ROOT, "%.1f", damage);
     }
 
-    /**
-     * Logs the overlay being registered, once, so the log proves the HUD hook is live.
- */
     public static void announce() {
         Constants.LOG.info("[MerlinLib] combat overlay registered on the HUD (nominal damage + floating damage numbers)");
     }

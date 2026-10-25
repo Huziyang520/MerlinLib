@@ -1,3 +1,5 @@
+// Registration state of every effect MerlinLib knows about, plus the runtime colour overrides.
+
 package com.huziyang520.merlinlib.impl;
 
 import com.huziyang520.merlinlib.Constants;
@@ -9,7 +11,6 @@ import com.huziyang520.merlinlib.effect.MerlinMobEffect;
 import com.huziyang520.merlinlib.platform.Services;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
-
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -17,13 +18,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * Registration state of every effect MerlinLib knows about, plus the runtime colour overrides.
- */
 public final class EffectRegistry implements EffectApi {
-
     public static final EffectRegistry INSTANCE = new EffectRegistry();
-
     private final Map<ResourceLocation, MerlinMobEffect> registered = new LinkedHashMap<>();
     private final Map<ResourceLocation, Integer> colorOverrides = new LinkedHashMap<>();
     private final Set<ResourceLocation> disabled = new LinkedHashSet<>();
@@ -43,18 +39,9 @@ public final class EffectRegistry implements EffectApi {
         return new EffectBuilder(this, id);
     }
 
-    /**
-     * Registers the built effect through the loader bridge.
-     *
-     * @param id      effect id
-     * @param builder the builder that produced it
-     * @return the created instance, the same object the game will hold
- */
     public MerlinMobEffect submit(ResourceLocation id, EffectBuilder builder) {
         MerlinMobEffect effect = builder.build();
         this.registered.put(id, effect);
-        // The very same instance is handed to the loader, so disabling it later affects the live object
-        // even though Forge only puts it in the registry during the registry event.
         Services.REGISTRATIONS.register(BuiltInRegistries.MOB_EFFECT, id, () -> effect);
         this.pushOverrides();
         Constants.LOG.debug("[MerlinLib] registered effect {}", id);
@@ -104,9 +91,6 @@ public final class EffectRegistry implements EffectApi {
                 .variants();
     }
 
-    /**
-     * @return {@code true} when the effect was disabled through the api or a config file.
- */
     public boolean isDisabled(ResourceLocation id) {
         return this.disabled.contains(id);
     }

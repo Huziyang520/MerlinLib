@@ -1,7 +1,8 @@
+// Locates and fingerprints the MerlinLib configuration directory.
+
 package com.huziyang520.merlinlib.config;
 
 import com.huziyang520.merlinlib.Constants;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,24 +11,14 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
-/**
- * Locates and fingerprints the MerlinLib configuration directory.
- */
 public final class ConfigDirectory {
-
     private ConfigDirectory() {
     }
 
-    /**
-     * @return {@code <gameDir>/config/MerlinLib}, created on first use.
- */
     public static Path root() {
         return Path.of("config", Constants.CONFIG_DIRECTORY).toAbsolutePath().normalize();
     }
 
-    /**
-     * @return every {@code .json} file in the directory, sorted by file name for stable ordering.
- */
     public static List<Path> jsonFiles() {
         Path root = root();
         if (!Files.isDirectory(root)) {
@@ -46,12 +37,6 @@ public final class ConfigDirectory {
         }
     }
 
-    /**
-     * Builds a cheap fingerprint of the current configuration state. Any change of file set, size or
-     * modification time invalidates the cached content snapshot.
- *
-     * @return an opaque string, equal while the files are unchanged
- */
     public static String fingerprint() {
         StringBuilder builder = new StringBuilder();
         for (Path file : jsonFiles()) {

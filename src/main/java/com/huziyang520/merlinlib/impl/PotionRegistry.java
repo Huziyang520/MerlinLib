@@ -1,3 +1,5 @@
+// Registration state of every potion MerlinLib knows about.
+
 package com.huziyang520.merlinlib.impl;
 
 import com.huziyang520.merlinlib.Constants;
@@ -8,20 +10,14 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.item.alchemy.Potion;
-
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-/**
- * Registration state of every potion MerlinLib knows about.
- */
 public final class PotionRegistry implements PotionApi {
-
     public static final PotionRegistry INSTANCE = new PotionRegistry();
-
     private final Map<ResourceLocation, PotionBuilder> registered = new LinkedHashMap<>();
     private final Set<ResourceLocation> disabled = new LinkedHashSet<>();
 
@@ -52,30 +48,14 @@ public final class PotionRegistry implements PotionApi {
         return Set.copyOf(this.registered.keySet());
     }
 
-    /**
-     * @param id potion id
-     * @return {@code true} when the potion was disabled and is therefore not registered at all.
- */
     public boolean isDisabled(ResourceLocation id) {
         return this.disabled.contains(id);
     }
 
-    /**
-     * Disables a potion so it is never written into the registry.
-     *
-     * @param id potion id
-     * @return {@code true} when the state changed
- */
     public boolean disable(ResourceLocation id) {
         return this.disabled.add(id);
     }
 
-    /**
-     * Registers the potion and, when requested, its {@code long_} and {@code strong_} variants.
-     *
-     * @param builder the declaring builder
-     * @return the id of the main potion
- */
     public ResourceLocation submit(PotionBuilder builder) {
         ResourceLocation id = builder.id();
         if (this.isDisabled(id)) {

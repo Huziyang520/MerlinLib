@@ -1,3 +1,5 @@
+// Forge implementation of IPackBridge.
+
 package com.huziyang520.merlinlib.platform;
 
 import com.huziyang520.merlinlib.platform.services.IPackBridge;
@@ -5,19 +7,12 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.AddReloadListenerEvent;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Forge implementation of {@link IPackBridge}.
- */
 public final class ForgePackBridge implements IPackBridge {
-
     public static final ForgePackBridge INSTANCE = new ForgePackBridge();
-
     private final Map<ResourceLocation, PreparableReloadListener> listeners = new LinkedHashMap<>();
-
     private boolean installed;
 
     private ForgePackBridge() {
@@ -34,7 +29,6 @@ public final class ForgePackBridge implements IPackBridge {
 
     @Override
     public void registerServerReloadListener(ResourceLocation id, PreparableReloadListener listener) {
-        // Registering the same id twice must be a no-op: /reload may re-run the caller.
         listeners.putIfAbsent(id, listener);
     }
 

@@ -1,3 +1,5 @@
+// Draws the testing trident the way the vanilla renderer draws Items.TRIDENT.
+
 package com.huziyang520.merlinlib.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -11,14 +13,8 @@ import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
-/**
- * Draws the testing trident the way the vanilla renderer draws {@code Items.TRIDENT}.
- */
 public final class TestTridentRenderer extends BlockEntityWithoutLevelRenderer {
-
-    /** The shared instance; built on first use, see the class comment. */
     private static TestTridentRenderer instance;
-
     private final TridentModel model;
 
     private TestTridentRenderer() {
@@ -26,11 +22,6 @@ public final class TestTridentRenderer extends BlockEntityWithoutLevelRenderer {
         this.model = new TridentModel(Minecraft.getInstance().getEntityModels().bakeLayer(ModelLayers.TRIDENT));
     }
 
-    /**
-     * The renderer instance, built on first request.
-     *
-     * @return the shared renderer
- */
     public static TestTridentRenderer instance() {
         TestTridentRenderer active = instance;
         if (active == null) {
@@ -40,16 +31,6 @@ public final class TestTridentRenderer extends BlockEntityWithoutLevelRenderer {
         return active;
     }
 
-    /**
-     * Paints one trident, in whatever display context the item renderer asked for.
-     *
-     * @param stack   the stack being rendered
-     * @param context where it is being drawn
-     * @param pose    the pose stack
-     * @param buffer  the buffer source
-     * @param light   packed light
-     * @param overlay packed overlay
- */
     @Override
     public void renderByItem(ItemStack stack, ItemDisplayContext context, PoseStack pose,
                              MultiBufferSource buffer, int light, int overlay) {

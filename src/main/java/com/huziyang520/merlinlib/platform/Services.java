@@ -1,3 +1,5 @@
+// Locates the loader specific implementation of a service interface.
+
 package com.huziyang520.merlinlib.platform;
 
 import com.huziyang520.merlinlib.platform.services.ILifecycleBridge;
@@ -7,42 +9,12 @@ import com.huziyang520.merlinlib.platform.services.IPackBridge;
 import com.huziyang520.merlinlib.platform.services.IPlatformHelper;
 import com.huziyang520.merlinlib.platform.services.IRegistrationBridge;
 
-/**
- * Locates the loader specific implementation of a service interface.
- */
 public final class Services {
-
-    /**
-     * Information about the platform MerlinLib is currently running on.
- */
     public static final IPlatformHelper PLATFORM = ForgePlatformHelper.INSTANCE;
-
-    /**
-     * Loader specific hooks for resource reload listeners.
- */
     public static final IPackBridge PACK = ForgePackBridge.INSTANCE;
-
-    /**
-     * Loader specific way of writing into the plain (non datapack) game registries. On 1.20.1 this
-     * carries enchantments, mob effects and potions alike.
- */
     public static final IRegistrationBridge REGISTRATIONS = ForgeRegistrationBridge.INSTANCE;
-
-    /**
-     * Loader specific hooks for the server lifecycle, used by
-     * {@link com.huziyang520.merlinlib.api.MerlinApi#lifecycle()}.
- */
     public static final ILifecycleBridge LIFECYCLE = ForgeLifecycleBridge.INSTANCE;
-
-    /**
-     * Loader specific hooks for loot table loading, used by
-     * {@link com.huziyang520.merlinlib.api.MerlinApi#loot()}.
- */
     public static final ILootBridge LOOT = ForgeLootBridge.INSTANCE;
-
-    /**
-     * Loader specific lookup of a mod's display name, used when a notice has to name its owner.
- */
     public static final IModNameBridge MOD_NAMES = ForgeModNameBridge.INSTANCE;
 
     private Services() {

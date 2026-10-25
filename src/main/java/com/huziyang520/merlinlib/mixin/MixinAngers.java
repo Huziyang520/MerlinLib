@@ -1,3 +1,5 @@
+// Asks the AI hooks about anger, and about target choice, in the piglin family.
+
 package com.huziyang520.merlinlib.mixin;
 
 import com.huziyang520.merlinlib.ai.AiRouter;
@@ -12,28 +14,14 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
 import java.util.Optional;
 
-/**
- * Asks the AI hooks about anger, and about target choice, in the piglin family.
- */
 public final class MixinAngers {
-
     private MixinAngers() {
     }
 
-    /** Piglin anger and target choice, both resolved by {@code PiglinAi}. */
     @Mixin(PiglinAi.class)
     public static class PiglinAnger {
-
-        /**
-         * Refuses to record anger a hook does not want.
-         *
-         * @param piglin the piglin about to become angry
-         * @param target who it is about to be angry at
-         * @param info   the injection callback, cancelled to refuse
- */
         @Inject(method = "setAngerTarget(Lnet/minecraft/world/entity/monster/piglin/AbstractPiglin;"
                         + "Lnet/minecraft/world/entity/LivingEntity;)V",
                 at = @At("HEAD"), cancellable = true, require = 1)
@@ -47,20 +35,11 @@ public final class MixinAngers {
             }
         }
 
-        /**
-         * Drops a chosen attack target a hook refuses.
-         *
-         * @param piglin the piglin choosing
-         * @param info   the injection callback holding the choice
- */
         @Inject(method = "findNearestValidAttackTarget(Lnet/minecraft/world/entity/monster/piglin/Piglin;)"
                         + "Ljava/util/Optional;",
                 at = @At("RETURN"), cancellable = true, require = 1)
         private static void merlinlib$vetoChosenTarget(Piglin piglin,
                                                        CallbackInfoReturnable<Optional<LivingEntity>> info) {
-            // Written out rather than shared through a helper on the holder class: the body of this
-            // method is copied into PiglinAi itself, which lives in another package, so a private or
-            // package-private helper would be an access violation once the game is running.
             if (!AiRouter.hasHooks()) {
                 return;
             }
@@ -74,17 +53,8 @@ public final class MixinAngers {
         }
     }
 
-    /** Piglin brute anger and target choice, resolved by its own {@code PiglinBruteAi}. */
     @Mixin(PiglinBruteAi.class)
     public static class BruteAnger {
-
-        /**
-         * Refuses to record anger a hook does not want.
-         *
-         * @param brute  the brute about to become angry
-         * @param target who it is about to be angry at
-         * @param info   the injection callback, cancelled to refuse
- */
         @Inject(method = "setAngerTarget(Lnet/minecraft/world/entity/monster/piglin/PiglinBrute;"
                         + "Lnet/minecraft/world/entity/LivingEntity;)V",
                 at = @At("HEAD"), cancellable = true, require = 1)
@@ -98,12 +68,6 @@ public final class MixinAngers {
             }
         }
 
-        /**
-         * Drops a chosen attack target a hook refuses.
-         *
-         * @param brute the brute choosing
-         * @param info  the injection callback holding the choice
- */
         @Inject(method = "findNearestValidAttackTarget(Lnet/minecraft/world/entity/monster/piglin/"
                         + "AbstractPiglin;)Ljava/util/Optional;",
                 at = @At("RETURN"), cancellable = true, require = 1)

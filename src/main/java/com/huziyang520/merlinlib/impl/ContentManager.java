@@ -1,3 +1,5 @@
+// Single source of truth for "what content exists right now".
+
 package com.huziyang520.merlinlib.impl;
 
 import com.huziyang520.merlinlib.Constants;
@@ -11,7 +13,6 @@ import com.huziyang520.merlinlib.content.ContentSource;
 import com.huziyang520.merlinlib.content.EnchantmentDraft;
 import com.huziyang520.merlinlib.effect.EffectOverrides;
 import net.minecraft.resources.ResourceLocation;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -20,11 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * Single source of truth for "what content exists right now".
- */
 public final class ContentManager {
-
     private static volatile ContentSnapshot cached;
     private static volatile String registeredFingerprint = "";
     private static volatile ContentReport lastReport = ContentReport.EMPTY;
@@ -32,23 +29,11 @@ public final class ContentManager {
     private ContentManager() {
     }
 
-    /**
-     * @return the snapshot this process registered, or an empty one before {@link #refresh()} ran.
- */
     public static ContentSnapshot current() {
         ContentSnapshot local = cached;
         return local == null ? ContentSnapshot.EMPTY : local;
     }
 
-    /**
-     * Reads every content definition and registers what it finds.
-     *
-     * <p>Called exactly once, from the mod bootstrap, before the registry event fires. Calling it
-     * again would read the files again and register a second time, which the registry rejects; the
-     * method is therefore guarded rather than merely documented as "call once".
-     *
-     * @return the change report, already logged
- */
     public static ContentReport refresh() {
         synchronized (ContentManager.class) {
             ContentSnapshot built = build();
@@ -62,20 +47,10 @@ public final class ContentManager {
         }
     }
 
-    /**
-     * @return the report produced by the most recent {@link #refresh()}, empty before the first one.
- */
     public static Optional<ContentReport> lastReport() {
         return Optional.of(lastReport);
     }
 
-    /**
-     * @return the fingerprint of the content files as they were when this process registered them.
-     *
-     * <p>Compared against the live {@link ConfigDirectory#fingerprint()} by the command, so an author
-     * who edited a file and has not restarted is told exactly that instead of being shown a
-     * definition the game is not running.
- */
     public static String registeredFingerprint() {
         return registeredFingerprint;
     }
@@ -86,7 +61,6 @@ public final class ContentManager {
                 EnchantmentRegistry.INSTANCE.disabledIds()
         );
 
-        // The generated content can be switched off entirely; code api registrations stay unaffected.
         if (ConfigManager.server().disableGeneratedEnchantments()
                 && snapshot.enchantments().values().stream().anyMatch(draft -> draft.source() == ContentSource.CONFIG)) {
             Map<ResourceLocation, EnchantmentDraft> kept = new LinkedHashMap<>();
@@ -103,11 +77,6 @@ public final class ContentManager {
         return snapshot;
     }
 
-    /**
-     * Writes every effective enchantment into the game registry, through the loader bridge.
- *
-     * @param snapshot the effective content
- */
     private static void registerAll(ContentSnapshot snapshot) {
         for (EnchantmentDraft draft : snapshot.enchantments().values()) {
             EnchantmentRegistry.submitRegistration(draft);
@@ -141,7 +110,6 @@ public final class ContentManager {
             }
         }
         failed.addAll(broken);
-
         return new ContentReport(List.copyOf(added), List.copyOf(updated), List.copyOf(removed), List.copyOf(failed), next.errors());
     }
 

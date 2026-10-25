@@ -1,3 +1,5 @@
+// /merlinlib diagnostics and helpers.
+
 package com.huziyang520.merlinlib.command;
 
 import com.huziyang520.merlinlib.api.EnchantmentInfo;
@@ -28,30 +30,13 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.EnchantedBookItem;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentInstance;
-
 import java.util.List;
 import java.util.Optional;
 
-/**
- * {@code /merlinlib} diagnostics and helpers.
- */
 public final class MerlinCommand {
-
     private MerlinCommand() {
     }
 
-    /**
-     * Registers the command tree.
- *
-     * <p>The three toolkit subcommands ({@code editor}, {@code health}, {@code macro}) are the only way to
-     * open those screens besides the key bindings: the library no longer ships a screen of its own, and a
-     * command is available without one. They validate on this side - toolkit switch, operator switch - and
-     * then ask the player's client to open the screen, because a {@code Screen} exists on the client only.
- *
-     * @param dispatcher   the server command dispatcher
-     * @param buildContext registry access of the running server
-     * @param selection    which command set is being built, unused
- */
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext buildContext,
                                 Commands.CommandSelection selection) {
         dispatcher.register(Commands.literal("merlinlib")
@@ -84,18 +69,6 @@ public final class MerlinCommand {
                                 .executes(context -> setEditorHotkey(context, false)))));
     }
 
-    /**
-     * Asks the caller's client to open one toolkit screen.
-     *
-     * <p>The checks are the server's own: the toolkit master switch, the operator-only switch and the
-     * per-editor permission switch. The client repeats them, because it is the side that opens the screen and
-     * its copy of the switches may differ - so a refusal here is the authoritative one and a refusal there
-     * is the safe one.
-     *
-     * @param context the command context
-     * @param tool    which screen, one of {@link OpenToolPayload}'s constants
-     * @return 1 when the request was sent, 0 when it was refused
- */
     private static int openTool(CommandContext<CommandSourceStack> context, int tool) {
         CommandSourceStack source = context.getSource();
         ServerPlayer player = source.getPlayer();
@@ -106,8 +79,6 @@ public final class MerlinCommand {
         boolean allowed = switch (tool) {
             case OpenToolPayload.EDITOR -> PermissionGate.canOpenEditor(player);
             case OpenToolPayload.HEALTH -> PermissionGate.canOpenHealthEditor(player);
-            // The notice switches are a settings page, not a toolkit action, so they need the same answer as
-            // the macro screen - the toolkit switch and the operator switch - and nothing stricter.
             case OpenToolPayload.NOTICES -> PermissionGate.canUseTools(player);
             default -> PermissionGate.canUseTools(player);
         };
@@ -119,21 +90,6 @@ public final class MerlinCommand {
         return 1;
     }
 
-    /**
-     * Switches the item editor hotkey on or off.
-     *
-     * <p>The binding itself always exists, so this only decides whether pressing it opens the editor. It
-     * writes {@code editor.hotkey_enabled} into {@code client.toml} and reloads, which is why the switch
-     * takes effect immediately: the client reads that value when the key is pressed, not at startup.
-     *
-     * <p>On a dedicated server the file that is written is the one next to the server, which belongs to
-     * the machine running the command; a player's own hotkey is their own file and their own configuration
-     * screen.
-     *
-     * @param context the command context
-     * @param enabled the value to write
-     * @return 1, the standard success code
- */
     private static int setEditorHotkey(CommandContext<CommandSourceStack> context, boolean enabled) {
         ConfigManager.saveClient(java.util.Map.of("editor.hotkey_enabled", Boolean.toString(enabled)));
         context.getSource().sendSuccess(() -> Component.translatable(enabled
@@ -144,7 +100,6 @@ public final class MerlinCommand {
 
     private static boolean mayManage(CommandSourceStack source) {
         ServerPlayer player = source.getPlayer();
-        // The console is always allowed; players need operator rights when the server asks for them.
         return player == null || PermissionGate.isOperator(player);
     }
 
@@ -158,10 +113,6 @@ public final class MerlinCommand {
                 .filter(registry::containsKey)
                 .toList();
 
-        // Everything else in the registry that is not vanilla's, and that MerlinLib does not manage itself.
-        // Another mod's enchantments are registered in that mod's own code, so they never appear in
-        // MerlinLib's snapshot - which made this list read as if MerlinLib were the only mod with any. They
-        // are listed by registry id, so a mod that failed to load is just as obvious as one that did.
         List<ResourceLocation> others = registry.keySet().stream()
                 .filter(id -> !id.getNamespace().equals("minecraft"))
                 .filter(id -> !present.contains(id))
@@ -191,14 +142,12 @@ public final class MerlinCommand {
     private static int info(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
         String raw = StringArgumentType.getString(context, "id");
-
         Optional<ResourceLocation> parsed = IdValidator.parse(raw);
         if (parsed.isEmpty()) {
             source.sendFailure(Component.translatable("command.merlinlib.invalid_id", raw));
             return 0;
         }
         ResourceLocation id = parsed.get();
-
         Optional<EnchantmentInfo> info = MerlinApi.enchantments().describe(id);
         if (info.isEmpty()) {
             source.sendFailure(Component.translatable("command.merlinlib.unknown", id.toString()));
@@ -230,7 +179,6 @@ public final class MerlinCommand {
             return 0;
         }
         ResourceLocation id = parsed.get();
-
         Enchantment enchantment = enchantmentRegistry(source).get(id);
         if (enchantment == null) {
             source.sendFailure(Component.translatable("command.merlinlib.not_in_registry", id.toString()));
@@ -239,27 +187,11 @@ public final class MerlinCommand {
 
         ItemStack book = new ItemStack(Items.ENCHANTED_BOOK);
         EnchantedBookItem.addEnchantment(book, new EnchantmentInstance(enchantment, level));
-
         player.addItem(book);
         source.sendSuccess(() -> Component.translatable("command.merlinlib.book.given", id.toString(), level), false);
         return 1;
     }
 
-    /**
-     * Reports whether the content files on disk are the ones this process registered.
- *
-     * <h2>Why this replaced the pack status command</h2>
- *
-     * <p>On 1.20.1 the content does not travel. It is read once while the game starts and written
-     * straight into the enchantment registry, which is then frozen for the life of the process. The
-     * chain to walk is two links long, and the interesting one is the second: an author who edits
-     * {@code config/MerlinLib/enchantments.json} and types {@code /merlinlib list} will see the old
-     * definition, because the new one cannot be registered without a restart. Nothing else in the game
-     * says so, and a silent no-op is the exact failure this project keeps writing commands to prevent.
- *
-     * <p>So this command prints the fingerprint the process registered alongside the one the files have
-     * now, and says plainly which of the two situations the caller is in.
- */
     private static int contentStatus(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
         String registered = ContentManager.registeredFingerprint();
@@ -274,17 +206,11 @@ public final class MerlinCommand {
         if (registered.equals(current)) {
             source.sendSuccess(() -> Component.translatable("command.merlinlib.content.current"), false);
         } else {
-            // Not a failure: it is the normal state after an edit, and the honest instruction is a restart.
             source.sendSuccess(() -> Component.translatable("command.merlinlib.content.stale"), false);
         }
         return 1;
     }
 
-    /**
-     * @param fingerprint the opaque fingerprint string
-     * @return its length and first characters, which is enough to tell two states apart in chat without
-     *         printing a line per file
- */
     private static String summarize(String fingerprint) {
         String trimmed = fingerprint.length() <= 48 ? fingerprint : fingerprint.substring(0, 45) + "...";
         return "[" + fingerprint.length() + "b] " + trimmed;

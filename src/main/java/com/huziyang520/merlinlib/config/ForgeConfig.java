@@ -1,25 +1,16 @@
+// Wiring of the optional configuration screens on Forge: Cloth Config first, Jupiter otherwise.
+
 package com.huziyang520.merlinlib.config;
 
 import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.tools.ui.ConfigScreens;
 
-/**
- * Wiring of the optional configuration screens on Forge: Cloth Config first, Jupiter otherwise.
- */
 public final class ForgeConfig {
-
-    /** The class that proves Cloth Config is installed, asked for by name so nothing is linked. */
     private static final String CLOTH_API = "me.shedaniel.clothconfig2.api.ConfigBuilder";
 
     private ForgeConfig() {
     }
 
-    /**
-     * Installs the first available screen builder, and nothing when there is none.
-     *
-     * <p>Cloth Config and Jupiter both write through a {@link TomlBackend}, so the switches keep living in
-     * the one documented file no matter which screen is in use, and removing either mod loses nothing.
- */
     public static void install() {
         if (clothPresent()) {
             ConfigManager.setBackend(new TomlBackend("cloth"));
@@ -35,12 +26,10 @@ public final class ForgeConfig {
                 + "directly and the mod list has no configuration screen");
     }
 
-    /** @return whether a configuration screen can be built at all */
     public static boolean available() {
         return ConfigScreens.available();
     }
 
-    /** @return whether Cloth Config is on the classpath */
     private static boolean clothPresent() {
         try {
             Class.forName(CLOTH_API);

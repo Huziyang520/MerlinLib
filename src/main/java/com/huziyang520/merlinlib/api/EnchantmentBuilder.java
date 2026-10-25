@@ -1,3 +1,5 @@
+// Fluent description of one enchantment.
+
 package com.huziyang520.merlinlib.api;
 
 import com.google.gson.JsonObject;
@@ -8,19 +10,13 @@ import com.huziyang520.merlinlib.content.EnchantmentJson;
 import com.huziyang520.merlinlib.impl.EnchantmentRegistry;
 import com.google.gson.JsonElement;
 import net.minecraft.resources.ResourceLocation;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Fluent description of one enchantment.
- */
 public final class EnchantmentBuilder {
-
     private final EnchantmentRegistry owner;
     private final ResourceLocation id;
-
     private boolean enabled = true;
     private String translationKey;
     private int weight = 10;
@@ -38,24 +34,17 @@ public final class EnchantmentBuilder {
     private Acquisition acquisition = Acquisition.DEFAULT;
     private net.minecraft.world.item.enchantment.EnchantmentCategory category;
 
-    /**
-     * Public only so the registry implementation in another package can construct it; use
-     * {@link EnchantmentApi#register(ResourceLocation)} instead of calling this directly.
- */
     public EnchantmentBuilder(EnchantmentRegistry owner, ResourceLocation id) {
         this.owner = owner;
         this.id = id;
         this.translationKey = EnchantmentDraft.defaultTranslationKey(id);
     }
 
-    /** Sets the language key the tooltip reads, e.g. {@code enchantment.mymod.frostbite}. */
     public EnchantmentBuilder translationKey(String translationKey) {
         this.translationKey = translationKey;
         return this;
     }
 
-    /**
- */
     public EnchantmentBuilder description(JsonElement description) {
         if (description != null && description.isJsonObject()) {
             JsonElement key = description.getAsJsonObject().get("translate");
@@ -66,7 +55,6 @@ public final class EnchantmentBuilder {
         return this;
     }
 
-    /** Uses {@link EnchantmentDraft#defaultTranslationKey(ResourceLocation)} as description. */
     public EnchantmentBuilder defaultDescription() {
         this.translationKey = EnchantmentDraft.defaultTranslationKey(this.id);
         return this;
@@ -82,7 +70,6 @@ public final class EnchantmentBuilder {
         return this;
     }
 
-    /** Sets both cost ranges at once, mirroring the usual vanilla values. */
     public EnchantmentBuilder cost(int minBase, int minPerLevel, int maxBase, int maxPerLevel) {
         this.minCostBase = minBase;
         this.minCostPerLevel = minPerLevel;
@@ -96,14 +83,12 @@ public final class EnchantmentBuilder {
         return this;
     }
 
-    /** Replaces the slot list, e.g. {@code "mainhand"}, {@code "armor"}, {@code "any"}. */
     public EnchantmentBuilder slots(String... slots) {
         this.slots.clear();
         this.slots.addAll(Arrays.asList(slots));
         return this;
     }
 
-    /** Item id, {@code #tag} reference or a raw json array. */
     public EnchantmentBuilder supportedItems(String items) {
         this.supportedItems = EnchantmentJson.tag(items);
         return this;
@@ -119,15 +104,11 @@ public final class EnchantmentBuilder {
         return this;
     }
 
-    /** Tag reference, single id or raw json array, matches vanilla {@code exclusive_set}. */
     public EnchantmentBuilder exclusiveSet(JsonElement exclusiveSet) {
         this.exclusiveSet = exclusiveSet;
         return this;
     }
 
-    /**
-     * Records the declared numeric effects.
- */
     public EnchantmentBuilder effects(JsonObject effects) {
         this.effects = effects;
         return this;
@@ -143,27 +124,11 @@ public final class EnchantmentBuilder {
         return this;
     }
 
-    /**
-     * Sets the vanilla {@code EnchantmentCategory}.
-     *
-     * <p>1.20.1 takes a category in the enchantment's constructor and uses it for two things: the
-     * enchanting table asks {@code EnchantmentCategory#canEnchant(Item)} before it offers an entry,
-     * and the anvil's book rules look at it. A MerlinLib enchantment declares its own item set
-     * through {@code supported_items}, so the default ({@code VANISHABLE}, which accepts anything) is
-     * normally right and this is only needed to opt out of a vanilla list - which is exactly what
-     * {@code merlinlib:unbreakable} does with {@code BREAKABLE}.
-     *
-     * @param category the vanilla category
-     * @return this builder
- */
     public EnchantmentBuilder category(net.minecraft.world.item.enchantment.EnchantmentCategory category) {
         this.category = category;
         return this;
     }
 
-    /**
-     * @return the immutable draft, without registering it.
- */
     public EnchantmentDraft build() {
         return new EnchantmentDraft(
                 this.id,
@@ -187,12 +152,6 @@ public final class EnchantmentBuilder {
         );
     }
 
-    /**
-     * Validates and registers the enchantment.
-     *
-     * @return the registered draft
-     * @throws IllegalArgumentException when a field is out of range; the message names the field
- */
     public EnchantmentDraft submit() {
         return this.owner.submit(this.build());
     }
