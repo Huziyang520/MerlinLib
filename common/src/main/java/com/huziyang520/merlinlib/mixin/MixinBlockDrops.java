@@ -1,3 +1,5 @@
+// Fires BuiltInEvents#MODIFY_BLOCK_DROPS on the drops of a block a player broke.
+
 package com.huziyang520.merlinlib.mixin;
 
 import com.huziyang520.merlinlib.event.BuiltInEvents;
@@ -18,27 +20,11 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Fires {@link BuiltInEvents#MODIFY_BLOCK_DROPS} on the drops of a block a player broke.
- */
 @Mixin(Block.class)
 public class MixinBlockDrops {
-
-    /**
-     * Lets the breaker's enchantments change the drops, then awards any extra experience.
-     *
-     * @param state      the block that was broken
-     * @param level      the level
-     * @param pos        where the block was
-     * @param blockEntity the block entity, when the block had one
-     * @param breaker    the entity that broke it, when there was one
-     * @param tool       the tool as an item instance
-     * @param cir        the injection callback carrying vanilla's drops
-     */
     @Inject(method = "getDrops(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/entity/BlockEntity;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/item/ItemInstance;)Ljava/util/List;",
             at = @At("RETURN"), cancellable = true)
     private static void merlinlib$modifyBlockDrops(BlockState state, ServerLevel level, BlockPos pos,
@@ -52,8 +38,6 @@ public class MixinBlockDrops {
         }
         List<ItemStack> drops = new ArrayList<>(cir.getReturnValue());
         MutableInt bonusXp = new MutableInt(0);
-        // The tool is handed over as a plain stack when it is one, and as an empty stack otherwise: the event
-        // promises a stack, and a broken or missing tool is exactly "no tool".
         ItemStack toolStack = tool instanceof ItemStack stack ? stack : ItemStack.EMPTY;
         EnchantmentEventDispatcher.dispatch(BuiltInEvents.MODIFY_BLOCK_DROPS,
                 new BuiltInEvents.ModifyBlockDropsEvent(level, player, pos, state, toolStack, drops, bonusXp),

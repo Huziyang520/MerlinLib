@@ -1,3 +1,5 @@
+// Fluent description of one potion.
+
 package com.huziyang520.merlinlib.api;
 
 import com.huziyang520.merlinlib.impl.PotionRegistry;
@@ -5,23 +7,14 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
-
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Fluent description of one potion.
- */
 public final class PotionBuilder {
-
-    /** Vanilla duration of a normal potion, in ticks. */
     public static final int DURATION_NORMAL = 3600;
-    /** Vanilla duration of a {@code long_} potion, in ticks. */
     public static final int DURATION_LONG = 9600;
-    /** Vanilla duration of a {@code strong_} potion, in ticks. */
     public static final int DURATION_STRONG = 1800;
 
-    /** One declared effect: either a direct instance or an id resolved at registration time. */
     record EffectSpec(Identifier effectId, MobEffectInstance direct, int durationTicks, int amplifier) {
     }
 
@@ -38,24 +31,15 @@ public final class PotionBuilder {
         this.id = id;
     }
 
-    /**
-     * Adds an effect resolved by id when the potion is registered.
-     *
-     * @param effectId      the effect to apply
-     * @param durationTicks how long it lasts
-     * @param amplifier     0 for level I, 1 for level II, and so on
-     */
     public PotionBuilder effect(Identifier effectId, int durationTicks, int amplifier) {
         this.specs.add(new EffectSpec(effectId, null, durationTicks, amplifier));
         return this;
     }
 
-    /** Adds an effect resolved by id at level I. */
     public PotionBuilder effect(Identifier effectId, int durationTicks) {
         return effect(effectId, durationTicks, 0);
     }
 
-    /** Adds a fully built instance; the caller is responsible for holding a valid effect holder. */
     public PotionBuilder effect(MobEffectInstance instance) {
         this.specs.add(new EffectSpec(null, instance, instance.getDuration(), instance.getAmplifier()));
         return this;
@@ -76,23 +60,11 @@ public final class PotionBuilder {
         return this;
     }
 
-    /**
-     * Also registers the {@code long_} and {@code strong_} variants of this potion, following vanilla
-     * duration and amplifier conventions.
-     */
     public PotionBuilder variants() {
         this.variants = true;
         return this;
     }
 
-    /**
-     * Resolves every declared effect into instances.
-     *
-     * @param durationOverride duration to use instead of the declared one, or {@code -1} to keep it
-     * @param amplifierBonus   added to every amplifier, used by the {@code strong_} variant
-     * @return the instances, in declaration order
-     * @throws IllegalStateException when a declared effect id is not in the effect registry
-     */
     public List<MobEffectInstance> buildInstances(int durationOverride, int amplifierBonus) {
         List<MobEffectInstance> instances = new ArrayList<>(this.specs.size());
         for (EffectSpec spec : this.specs) {
@@ -129,23 +101,14 @@ public final class PotionBuilder {
         return this.id;
     }
 
-    /**
-     * @return the declared effects, for validation before registration.
-     */
     public List<Identifier> declaredEffectIds() {
         return this.specs.stream().filter(spec -> spec.effectId() != null).map(EffectSpec::effectId).toList();
     }
 
-    /**
-     * Registers the potion, and the variants when {@link #variants()} was called.
-     *
-     * @return the id of the main potion
-     */
     public Identifier submit() {
         return this.owner.submit(this);
     }
 
-    /** @return the effect type of a spec, used to decide which registry entry a variant belongs to. */
     static MobEffect effectOf(EffectSpec spec) {
         return spec.direct() == null ? null : spec.direct().getEffect().value();
     }

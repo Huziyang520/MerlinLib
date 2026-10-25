@@ -1,21 +1,17 @@
+// The NeoForge store for MerlinLib's switches: one spec per half, answered through ConfigReader.
+
 package com.huziyang520.merlinlib.config;
 
 import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.content.ContentError;
 import com.huziyang520.merlinlib.util.MerlinColor;
 import net.neoforged.neoforge.common.ModConfigSpec;
-
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-/**
- * The NeoForge store for MerlinLib's switches: one spec per half, answered through {@link
- * ConfigReader}.
- */
 final class NeoSpecBackend implements ConfigBackend {
-
     private final String name;
     private final ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
     private final java.util.Deque<String> path = new java.util.ArrayDeque<>();
@@ -29,13 +25,6 @@ final class NeoSpecBackend implements ConfigBackend {
         this.name = name;
     }
 
-    /**
-     * Declares one half of the configuration.
-     *
-     * @param name        the name used in the log
-     * @param definitions receives this backend, and declares the keys on it
-     * @return the finished backend
-     */
     static NeoSpecBackend declare(String name, Consumer<NeoSpecBackend> definitions) {
         NeoSpecBackend backend = new NeoSpecBackend(name);
         definitions.accept(backend);
@@ -43,48 +32,22 @@ final class NeoSpecBackend implements ConfigBackend {
         return backend;
     }
 
-    /** @return the spec to register with the mod container */
     ModConfigSpec spec() {
         return this.spec;
     }
 
-    /**
-     * Opens a section.
-     *
-     * @param path the section name
-     * @return this backend, for chaining
-     */
     NeoSpecBackend push(String path) {
         this.builder.push(path);
         this.path.addLast(path);
         return this;
     }
 
-    /**
-     * Closes the innermost section.
-     *
-     * @return this backend, for chaining
-     */
     NeoSpecBackend pop() {
         this.builder.pop();
         this.path.removeLast();
         return this;
     }
 
-    /**
-     * The translation key of one option, as {@code merlinlib.configuration.<section>.<option>}, plus
-     * {@code .tooltip} for its tooltip.
-     *
-     * @param option the option path, relative to the open section
-     * @return the translation key
-     */
-    /**
-     * Qualifies an option name with the open sections, so the map is keyed the way the readers ask:
-     * {@code section.option}. Keying it by the bare name would silently answer every read with the default.
-     *
-     * @param option the option path, relative to the open section
-     * @return the qualified key
-     */
     private String fullKey(String option) {
         return this.path.isEmpty() ? option : String.join(".", this.path) + "." + option;
     }
@@ -131,8 +94,6 @@ final class NeoSpecBackend implements ConfigBackend {
     @Override
     public void write(String key, String value) {
         if (!this.spec.isLoaded()) {
-            // Nothing can be written before the configuration has been read; the value is simply not carried
-            // over, which is the same answer the reader would give for a key it does not know.
             return;
         }
         try {
@@ -146,7 +107,6 @@ final class NeoSpecBackend implements ConfigBackend {
                 this.strings.get(key).set(value);
             }
         } catch (RuntimeException exception) {
-            // A value the spec's own range check rejects must not break the caller: the default stays.
             Constants.LOG.warn(
                     "[MerlinLib] {} rejected {}={}: {}", this.name, key, value, exception.getMessage());
         }
@@ -164,11 +124,7 @@ final class NeoSpecBackend implements ConfigBackend {
         return this.name;
     }
 
-    /**
-     * Reads one value at a time, so a reload of the configuration is visible immediately.
-     */
     private record View(NeoSpecBackend backend) implements ConfigReader {
-
         @Override
         public boolean getBoolean(String key, boolean fallback) {
             ModConfigSpec.BooleanValue value = this.backend.booleans.get(key);
@@ -212,8 +168,6 @@ final class NeoSpecBackend implements ConfigBackend {
 
         @Override
         public List<ContentError> errors() {
-            // The spec validates every value it reads and corrects what it can, so there is nothing left to
-            // report by the time it is asked.
             return List.of();
         }
     }

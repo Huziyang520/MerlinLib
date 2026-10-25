@@ -1,3 +1,5 @@
+// NeoForge implementation of IRegistrationBridge.
+
 package com.huziyang520.merlinlib.platform;
 
 import com.huziyang520.merlinlib.platform.services.IRegistrationBridge;
@@ -6,18 +8,13 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.RegisterEvent;
-
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 
-/**
- * NeoForge implementation of {@link IRegistrationBridge}.
- */
 public class NeoForgeRegistrationBridge implements IRegistrationBridge {
-
     private record Pending(Identifier id, Supplier<?> value) {
     }
 
@@ -42,7 +39,6 @@ public class NeoForgeRegistrationBridge implements IRegistrationBridge {
             return;
         }
         for (Pending entry : queued) {
-            // The registry key always matches the registry the value was queued for, so the raw cast is safe.
             event.register((ResourceKey) event.getRegistryKey(), entry.id(), entry.value());
         }
     }

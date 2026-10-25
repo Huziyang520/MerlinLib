@@ -1,3 +1,5 @@
+// NeoForge client only entrypoint, declared with dist = CLIENT so a dedicated server never even loads this class and the ...
+
 package com.huziyang520.merlinlib.client;
 
 import com.huziyang520.merlinlib.Constants;
@@ -28,30 +30,18 @@ import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
-/**
- * NeoForge client only entrypoint, declared with {@code dist = CLIENT} so a dedicated server never
- * even loads this class and the client types it uses cannot break server startup.
- */
 @Mod(value = Constants.MOD_ID, dist = Dist.CLIENT)
 public class MerlinLibNeoForgeClient {
-
-    /** The vanilla controls screen column dedicated to MerlinLib. */
     private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
             Identifier.fromNamespaceAndPath(Constants.MOD_ID, "main"));
 
-    /**
-     * One binding only, registered like any vanilla key binding, so it appears in the vanilla controls
-     * screen and can be rebound to anything by the player.
-     */
     private static final KeyMapping OPEN_EDITOR = new KeyMapping(
             "key.merlinlib.open_editor", MerlinUi.KEY_LEFT, CATEGORY);
 
-    /** Opens the macro screen. */
     private static final KeyMapping OPEN_MACROS = new KeyMapping(
             "key.merlinlib.macros", MerlinUi.KEY_RIGHT, CATEGORY);
 
     public MerlinLibNeoForgeClient(IEventBus modBus) {
-
         modBus.addListener(this::onRegisterKeyMappings);
         modBus.addListener(this::onRegisterGuiLayers);
         modBus.addListener(this::onRegisterClientPayloads);
@@ -76,15 +66,6 @@ public class MerlinLibNeoForgeClient {
         }
     }
 
-    /**
-     * Adds the tool entries as client commands, so {@code /merlinlib editor}, {@code health}, {@code macro}
-     * and {@code config} open the screens without a key binding. The key bindings stay as they were.
-     *
-     * <p>Client side on purpose: these commands only ever open a screen on this computer, and a server side
-     * version would have to tell the client to do it, with a payload per screen.
-     *
-     * @param event the client command registration event
-     */
     private void onRegisterClientCommands(RegisterClientCommandsEvent event) {
         event.getDispatcher().register(Commands.literal(Constants.MOD_ID)
                 .then(Commands.literal("editor")
@@ -115,30 +96,17 @@ public class MerlinLibNeoForgeClient {
     }
 
     private void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
-
         event.register(OPEN_EDITOR);
         event.register(OPEN_MACROS);
     }
 
-    /**
-     * Registers the client side handler of the damage feedback payload.
-     *
-     * @param event the client payload registration event
-     */
     private void onRegisterClientPayloads(
             net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlersEvent event) {
-
         event.register(com.huziyang520.merlinlib.network.DamageFeedbackPayload.TYPE,
                 (payload, context) -> DamageFeedbackSink.handle(payload));
     }
 
-    /**
-     * Registers the combat overlay as the topmost GUI layer, so the numbers sit above the vanilla HUD.
-     *
-     * @param event the layer registration event
-     */
     private void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
-
         event.registerAboveAll(
                 Identifier.fromNamespaceAndPath(com.huziyang520.merlinlib.Constants.MOD_ID, "combat_overlay"),
                 CombatFeedback.instance()::render);
@@ -146,7 +114,6 @@ public class MerlinLibNeoForgeClient {
     }
 
     private void onClientTick(ClientTickEvent.Post event) {
-
         while (OPEN_EDITOR.consumeClick()) {
             MerlinScreens.openItemEditorFromHotkey();
         }
@@ -161,15 +128,7 @@ public class MerlinLibNeoForgeClient {
         }
     }
 
-    /**
-     * Sneak using an entity opens the health editor for it.
-     *
-     * @param event the interaction event
-     */
     private void onUseEntity(PlayerInteractEvent.EntityInteract event) {
-
-        // openHealthEditor decides everything, including whether the health editor item has to be held: the
-        // check that used to sit here demanded the opposite of what that switch means.
         if (event.getLevel().isClientSide() && event.getEntity().isShiftKeyDown()
                 && event.getTarget() instanceof net.minecraft.world.entity.LivingEntity living) {
             MerlinScreens.openHealthEditor(null, living);

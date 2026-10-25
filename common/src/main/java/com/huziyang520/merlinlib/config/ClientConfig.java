@@ -1,22 +1,17 @@
+// Client only switches: display options and interaction tuning, read at the moment they are used so a change is visible ...
+
 package com.huziyang520.merlinlib.config;
 
 import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.content.ContentError;
 import com.huziyang520.merlinlib.util.MerlinColor;
-
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Client only switches: display options and interaction tuning, read at the moment they are used so a
- * change is visible immediately.
- */
 public final class ClientConfig {
-
-    /** Template written on first launch; also the documented reference for every option. */
     private static final String DEFAULTS = """
             # MerlinLib client configuration.
             # Everything here only affects this client and takes effect right after the game reads the file.
@@ -86,9 +81,7 @@ public final class ClientConfig {
             enabled = true
             """;
 
-    /** The file layout this build writes; see the migration in {@link #migrate(TomlFile)}. */
     private static final int CONFIG_VERSION = 3;
-
     private boolean crosshairDamage;
     private int crosshairDamageTicks = 20;
     private boolean hudCollapse = true;
@@ -109,23 +102,13 @@ public final class ClientConfig {
     private int particleLimit = 512;
     private List<ContentError> errors = List.of();
 
-    /**
-     * @return the client switches, read from whichever store is currently installed
-     */
     public static ClientConfig load() {
         return load(ConfigManager.clientView());
     }
 
-    /**
-     * Reads the switches from one store.
-     *
-     * @param file the store to read, normally {@link ConfigManager#clientView()}
-     * @return the switches
-     */
     static ClientConfig load(ConfigReader file) {
         ClientConfig config = new ClientConfig();
         if (file instanceof TomlFile toml && migrate(toml)) {
-            // A migration rewrote the file, so it has to be parsed again: the values below are read from it.
             file = TomlFile.read(path(), DEFAULTS);
         }
 
@@ -151,15 +134,6 @@ public final class ClientConfig {
         return config;
     }
 
-    /**
-     * Brings a file written by an older build up to the current layout, once.
-     *
-     * <p>The file is rebuilt from the template, which is what drops sections that no longer exist, while
-     * every value whose key still exists is carried over so no hand picked setting is lost.
-     *
-     * @param file the file the configuration was read from
-     * @return {@code true} when the file was rewritten and has to be read again
-     */
     private static boolean migrate(TomlFile file) {
         int version = file.getInt("general.config_version",
                 file.getInt("gui.config_version", 0, 0, Integer.MAX_VALUE), 0, Integer.MAX_VALUE);
@@ -178,113 +152,91 @@ public final class ClientConfig {
             carried.put("floating_text.enabled", "false");
         }
         carried.put("general.config_version", Integer.toString(CONFIG_VERSION));
-
         TomlFile.rebuild(path(), DEFAULTS, carried);
         Constants.LOG.info("[MerlinLib] client.toml migrated to layout {}", CONFIG_VERSION);
         return true;
     }
 
-    /** @return the file this configuration is read from and written to. */
     static Path path() {
         return Path.of("config", Constants.CONFIG_DIRECTORY, "client.toml");
     }
 
-    /** @return the commented template, which is also the documentation of the file. */
     static String defaults() {
         return DEFAULTS;
     }
 
-    /** @return whether the crosshair damage display is on. */
     public boolean crosshairDamage() {
         return this.crosshairDamage;
     }
 
-    /** @return how long the crosshair damage number stays visible, in ticks. */
     public int crosshairDamageTicks() {
         return this.crosshairDamageTicks;
     }
 
-    /** @return whether damage numbers fly off hit mobs. */
     public boolean floatingTextEnabled() {
         return this.floatingTextEnabled;
     }
 
-    /** @return how long a damage number stays visible, in ticks. */
     public int floatingTextDurationTicks() {
         return this.floatingTextDurationTicks;
     }
 
-    /** @return the base scale of a damage number. */
     public double floatingTextBaseScale() {
         return this.floatingTextBaseScale;
     }
 
-    /** @return the ARGB colour of a normal damage number. */
     public int floatingTextNormalColor() {
         return this.floatingTextNormalColor;
     }
 
-    /** @return the ARGB colour of a critical damage number. */
     public int floatingTextCriticalColor() {
         return this.floatingTextCriticalColor;
     }
 
-    /** @return the upper bound on simultaneous damage numbers. */
     public int floatingTextMaxConcurrent() {
         return this.floatingTextMaxConcurrent;
     }
 
-    /** @return whether the editor hotkey may open the item editor. */
     public boolean editorHotkeyEnabled() {
         return this.editorHotkeyEnabled;
     }
 
-    /** @return the value change of a shift click on a - or + button. */
     public int editorShiftStep() {
         return this.editorShiftStep;
     }
 
-    /** @return the value change per wheel notch over a number field. */
     public int editorScrollStep() {
         return this.editorScrollStep;
     }
 
-    /** @return the value change per wheel notch while holding ctrl. */
     public int editorScrollStepFast() {
         return this.editorScrollStepFast;
     }
 
-    /** @return whether the macro toolkit is enabled. */
     public boolean macrosEnabled() {
         return this.macrosEnabled;
     }
 
-    /** @return whether the number of drawn particles is capped. */
     public boolean particleLimitEnabled() {
         return this.particleLimitEnabled;
     }
 
-    /** @return how many particles may be drawn per 1/20 second. */
     public int particleLimit() {
         return this.particleLimit;
     }
 
-    /** @return whether a very large health bar is drawn as one heart plus the numbers */
     public boolean hudCollapse() {
         return this.hudCollapse;
     }
 
-    /** @return the health above which the bar folds */
     public int hudCollapseThreshold() {
         return this.hudCollapseThreshold;
     }
 
-    /** @return whether the armour row moves up onto the folded health row */
     public boolean hudArmourDodge() {
         return this.hudArmourDodge;
     }
 
-    /** @return problems found while reading the file during the last reload. */
     public List<ContentError> errors() {
         return this.errors;
     }

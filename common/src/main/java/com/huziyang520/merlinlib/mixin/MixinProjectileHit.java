@@ -1,3 +1,5 @@
+// Fires BuiltInEvents#PROJECTILE_HIT when a projectile hits a living entity.
+
 package com.huziyang520.merlinlib.mixin;
 
 import com.huziyang520.merlinlib.event.BuiltInEvents;
@@ -14,18 +16,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Fires {@link BuiltInEvents#PROJECTILE_HIT} when a projectile hits a living entity.
- */
 @Mixin(Projectile.class)
 public class MixinProjectileHit {
-
-    /**
-     * Dispatches the event to the weapon's enchantments.
-     *
-     * @param result the hit result vanilla just processed
-     * @param info   the injection callback
-     */
     @Inject(method = "onHitEntity", at = @At("RETURN"))
     private void merlinlib$projectileHit(EntityHitResult result, CallbackInfo info) {
         if (!EnchantmentEventDispatcher.hasCallbacks(BuiltInEvents.PROJECTILE_HIT)) {
@@ -41,7 +33,7 @@ public class MixinProjectileHit {
         if (!(projectile.getOwner() instanceof LivingEntity attacker)) {
             return;
         }
-        // The weapon as it was fired: for a trident the thrown stack itself, for an arrow the bow that shot it.
+
         ItemStack weapon = projectile instanceof AbstractArrow arrow ? arrow.getWeaponItem() : ItemStack.EMPTY;
         EnchantmentEventDispatcher.dispatchStack(BuiltInEvents.PROJECTILE_HIT,
                 new BuiltInEvents.ProjectileHitEvent(level, attacker, target, weapon, false, 1.0F), weapon);

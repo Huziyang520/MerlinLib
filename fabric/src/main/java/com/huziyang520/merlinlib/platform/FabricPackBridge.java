@@ -1,3 +1,5 @@
+// Fabric implementation of IPackBridge.
+
 package com.huziyang520.merlinlib.platform;
 
 import com.huziyang520.merlinlib.platform.services.IPackBridge;
@@ -7,11 +9,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 
-/**
- * Fabric implementation of {@link IPackBridge}.
- */
 public class FabricPackBridge implements IPackBridge {
-
     @Override
     public void bootstrap(Object loaderContext) {
         registerServerReloadListener(ContentReloadListener.ID, ContentReloadListener.instance());

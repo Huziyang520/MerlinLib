@@ -1,30 +1,20 @@
+// A scroll region with the vanilla scrollbar, including dragging.
+
 package com.huziyang520.merlinlib.tools.ui.vanilla;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.MouseButtonEvent;
 
-/**
- * A scroll region with the vanilla scrollbar, including dragging.
- */
 public final class ScrollArea {
-
     private final int x;
     private final int y;
     private final int width;
     private final int height;
     private final int rowHeight;
-
     private int contentHeight;
     private int scroll;
     private int dragGrab = Integer.MIN_VALUE;
 
-    /**
-     * @param x         region left
-     * @param y         region top
-     * @param width     region width, the scrollbar is carved out of its right edge
-     * @param height    viewport height, normally a whole number of rows
-     * @param rowHeight height of one row, the scroll step
-     */
     public ScrollArea(int x, int y, int width, int height, int rowHeight) {
         this.x = x;
         this.y = y;
@@ -33,98 +23,65 @@ public final class ScrollArea {
         this.rowHeight = Math.max(1, rowHeight);
     }
 
-    /** @return the region's left edge */
     public int x() {
         return this.x;
     }
 
-    /** @return the region's top edge */
     public int y() {
         return this.y;
     }
 
-    /** @return the region width */
     public int width() {
         return this.width;
     }
 
-    /** @return the viewport height */
     public int height() {
         return this.height;
     }
 
-    /** @return the height of one row */
     public int rowHeight() {
         return this.rowHeight;
     }
 
-    /** @return the width a row may occupy, leaving the scrollbar clear */
     public int rowWidth() {
         return this.width - VanillaUi.SCROLLBAR_WIDTH - 2;
     }
 
-    /**
-     * Sets how tall the content is, which decides whether a scrollbar is needed.
-     *
-     * @param contentHeight the total height of all rows
-     */
     public void setContentHeight(int contentHeight) {
         this.contentHeight = contentHeight;
         this.scroll = snap(this.scroll);
     }
 
-    /** @return the current scroll offset in pixels, always a whole number of rows */
     public int scroll() {
         return this.scroll;
     }
 
-    /** @return the index of the first visible row */
     public int firstRow() {
         return this.scroll / this.rowHeight;
     }
 
-    /** @return the largest usable scroll offset */
     public int maxScroll() {
         return Math.max(0, snap(this.contentHeight - this.height));
     }
 
-    /** @return true when the content does not fit and a scrollbar is drawn */
     public boolean scrollable() {
         return maxScroll() > 0;
     }
 
-    /**
-     * The y a row starts at once the scroll offset is applied.
-     *
-     * @param index the row index
-     * @return the absolute y of the row
-     */
     public int rowTop(int index) {
         return this.y + index * this.rowHeight - this.scroll;
     }
 
-    /**
-     * Whether a row overlaps the visible region.
-     *
-     * @param index the row index
-     * @return true when at least part of the row is visible
-     */
     public boolean rowVisible(int index) {
         int top = index * this.rowHeight - this.scroll;
         return top + this.rowHeight > 0 && top < this.height;
     }
 
-    /** @return true when the given point is inside the viewport */
     public boolean contains(double mouseX, double mouseY) {
         return mouseX >= this.x && mouseX < this.x + this.width
                 && mouseY >= this.y && mouseY < this.y + this.height;
     }
 
-    /**
-     * Draws the scrollbar, if one is needed. Call after the rows so the bar sits on top.
-     *
-     * @param graphics the render state extractor
-     */
     public void render(GuiGraphicsExtractor graphics) {
         if (!scrollable()) {
             return;
@@ -133,12 +90,6 @@ public final class ScrollArea {
                 this.height, handleTop(), handleHeight());
     }
 
-    /**
-     * Handles a click on the track or the handle.
-     *
-     * @param event the mouse event
-     * @return true when the scrollbar consumed the click
-     */
     public boolean mouseClicked(MouseButtonEvent event) {
         if (!scrollable() || event.button() != 0) {
             return false;
@@ -159,12 +110,6 @@ public final class ScrollArea {
         return true;
     }
 
-    /**
-     * Continues a drag started by {@link #mouseClicked}.
-     *
-     * @param event the mouse event
-     * @return true when a drag is in progress
-     */
     public boolean mouseDragged(MouseButtonEvent event) {
         if (this.dragGrab == Integer.MIN_VALUE) {
             return false;
@@ -173,26 +118,12 @@ public final class ScrollArea {
         return true;
     }
 
-    /**
-     * Ends a drag.
-     *
-     * @param event the mouse event
-     * @return true when a drag was in progress
-     */
     public boolean mouseReleased(MouseButtonEvent event) {
         boolean dragging = this.dragGrab != Integer.MIN_VALUE;
         this.dragGrab = Integer.MIN_VALUE;
         return dragging;
     }
 
-    /**
-     * Scrolls with the wheel while the cursor is inside the region.
-     *
-     * @param mouseX the cursor x
-     * @param mouseY the cursor y
-     * @param amount the wheel delta, positive when scrolling up
-     * @return true when the region consumed the scroll
-     */
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
         if (!scrollable() || amount == 0.0D || !contains(mouseX, mouseY)) {
             return false;
@@ -202,11 +133,6 @@ public final class ScrollArea {
         return true;
     }
 
-    /**
-     * Scrolls a row into view, used when a row is focused by the keyboard.
-     *
-     * @param index the row index
-     */
     public void scrollToRow(int index) {
         int top = index * this.rowHeight;
         int bottom = top + this.rowHeight;

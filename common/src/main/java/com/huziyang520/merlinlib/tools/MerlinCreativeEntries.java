@@ -1,3 +1,5 @@
+// Supplies the creative inventory entries for MerlinLib content.
+
 package com.huziyang520.merlinlib.tools;
 
 import com.huziyang520.merlinlib.Constants;
@@ -14,41 +16,20 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Supplies the creative inventory entries for MerlinLib content.
- */
 public final class MerlinCreativeEntries {
-
-    /**
-     * The vanilla tab MerlinLib puts its enchanted books into.
-     *
-     * <p>Built by hand because 26.3 turned the tab key constants in {@code CreativeModeTabs} private;
-     * the id itself is still the vanilla one, {@code minecraft:ingredients}.
-     */
     public static final ResourceKey<CreativeModeTab> TAB =
             ResourceKey.create(Registries.CREATIVE_MODE_TAB, Identifier.withDefaultNamespace("ingredients"));
 
-    /** Tab the testing weapons and the health editor are added to. */
     public static final ResourceKey<CreativeModeTab> TOOLS_TAB =
             ResourceKey.create(Registries.CREATIVE_MODE_TAB, Identifier.withDefaultNamespace("tools_and_utilities"));
 
     private MerlinCreativeEntries() {
     }
 
-    /**
-     * The four testing weapons plus the health editor, as fresh stacks, in declaration order.
-     *
-     * <p>Every entry is checked before it is offered: an empty stack in a creative tab is invisible, and a
-     * warning in the log is the only way to tell "the item failed to register" apart from "the item is not
-     * where the player is looking".
-     *
-     * @return the stacks to add, empty when the toolkit is switched off
-     */
     public static List<ItemStack> testWeapons() {
         if (!ConfigManager.server().testingToolkitEnabled()) {
             return List.of();
@@ -69,12 +50,6 @@ public final class MerlinCreativeEntries {
         return stacks;
     }
 
-    /**
-     * Builds one enchanted book for every MerlinLib enchantment that is present in the given registry.
-     *
-     * @param holders registry access of the running game, may be {@code null} outside of a world
-     * @return the stacks to add, empty when the enchantment registry is not available yet
-     */
     public static List<ItemStack> enchantedBooks(HolderLookup.Provider holders) {
         if (holders == null) {
             return List.of();
@@ -84,7 +59,6 @@ public final class MerlinCreativeEntries {
             return List.of();
         }
         HolderLookup.RegistryLookup<Enchantment> registry = lookup.get();
-
         List<ItemStack> stacks = new ArrayList<>();
         ContentManager.current().enchantments().keySet().stream().sorted().forEach(id -> registry
                 .get(ResourceKey.create(Registries.ENCHANTMENT, id))
@@ -93,11 +67,6 @@ public final class MerlinCreativeEntries {
         return stacks;
     }
 
-    /**
-     * @param holder the enchantment
-     * @param level  level stored in the book
-     * @return an enchanted book carrying exactly that enchantment
-     */
     public static ItemStack book(Holder<Enchantment> holder, int level) {
         ItemStack stack = new ItemStack(Items.ENCHANTED_BOOK);
         ItemEnchantments.Mutable stored = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);

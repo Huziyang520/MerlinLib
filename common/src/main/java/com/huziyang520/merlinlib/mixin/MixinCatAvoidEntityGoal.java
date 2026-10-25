@@ -1,3 +1,5 @@
+// The same veto as MixinAvoidEntityGoal, for the cat's own avoid goal.
+
 package com.huziyang520.merlinlib.mixin;
 
 import com.huziyang520.merlinlib.ai.AiRouter;
@@ -8,27 +10,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * The same veto as {@link MixinAvoidEntityGoal}, for the cat's own avoid goal.
- */
 @Mixin(targets = "net.minecraft.world.entity.animal.feline.Cat$CatAvoidEntityGoal")
 public class MixinCatAvoidEntityGoal {
-
-    /**
-     * Refuses to start the cat's avoid goal when a hook says so.
-     *
-     * @param info the injection callback
-     */
     @Inject(method = "canUse", at = @At("HEAD"), cancellable = true)
     private void merlinlib$vetoCatAvoid(CallbackInfoReturnable<Boolean> info) {
         merlinlib$veto(info);
     }
 
-    /**
-     * Stops the cat's avoid goal when it is already running.
-     *
-     * @param info the injection callback
-     */
     @Inject(method = "canContinueToUse", at = @At("HEAD"), cancellable = true)
     private void merlinlib$vetoCatContinuedAvoid(CallbackInfoReturnable<Boolean> info) {
         merlinlib$veto(info);

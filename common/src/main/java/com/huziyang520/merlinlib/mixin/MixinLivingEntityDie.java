@@ -1,3 +1,5 @@
+// Fires BuiltInEvents#POST_KILL on the killer when a living entity dies.
+
 package com.huziyang520.merlinlib.mixin;
 
 import com.huziyang520.merlinlib.event.BuiltInEvents;
@@ -10,18 +12,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Fires {@link BuiltInEvents#POST_KILL} on the killer when a living entity dies.
- */
 @Mixin(LivingEntity.class)
 public class MixinLivingEntityDie {
-
-    /**
-     * Dispatches the event when a non player living entity dies.
-     *
-     * @param source the damage source that killed it
-     * @param info   the injection callback
-     */
     @Inject(method = "die", at = @At("HEAD"))
     private void merlinlib$postKill(DamageSource source, CallbackInfo info) {
         if (!EnchantmentEventDispatcher.hasCallbacks(BuiltInEvents.POST_KILL)) {

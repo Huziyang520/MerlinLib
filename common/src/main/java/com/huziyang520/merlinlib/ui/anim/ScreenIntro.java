@@ -1,20 +1,15 @@
+// The opening animation of a screen: where it is, how big it is and how visible it is, over a short moment.
+
 package com.huziyang520.merlinlib.ui.anim;
 
-/**
- * The opening animation of a screen: where it is, how big it is and how visible it is, over a short
- * moment.
- */
 public final class ScreenIntro {
-
-    /** How a screen arrives. */
     public enum Transition {
-        /** Grows from 92% with a slight bounce. */
         SCALE_POP,
-        /** Slides in from the bottom while fading in. */
+
         SLIDE_UP,
-        /** Slides in from the side it was opened from. */
+
         SLIDE_SIDE,
-        /** Only fades in. */
+
         FADE
     }
 
@@ -23,13 +18,6 @@ public final class ScreenIntro {
     private final long durationMillis;
     private final long startedAt;
 
-    /**
-     * Starts an animation now.
-     *
-     * @param transition     how the screen arrives
-     * @param easing         the curve to use
-     * @param durationMillis how long it lasts
-     */
     public ScreenIntro(Transition transition, Easing easing, long durationMillis) {
         this.transition = transition;
         this.easing = easing;
@@ -37,19 +25,10 @@ public final class ScreenIntro {
         this.startedAt = System.currentTimeMillis();
     }
 
-    /**
-     * @return an animation that is already over, for a caller that has the feature switched off
-     */
     public static ScreenIntro finished() {
-        // A one millisecond animation started now: by the time anything asks, progress is already 1, so the
-        // caller draws the screen at its final size and position without a branch of its own.
         return new ScreenIntro(Transition.FADE, Easing.LINEAR, 0L);
     }
 
-    /**
-     * @param kind the configured choice; any number outside the known ones falls back to the first
-     * @return the animation for that choice
-     */
     public static ScreenIntro of(int kind) {
         return switch (kind) {
             case 1 -> new ScreenIntro(Transition.SLIDE_UP, Easing.EASE_OUT_CUBIC, 220L);
@@ -59,62 +38,35 @@ public final class ScreenIntro {
         };
     }
 
-    /**
-     * A sideways slide, always, whatever the configured kind is.
-     *
-     * <p>This is what a tab switch uses. The kind setting is the open and close animation and only that: it was
-     * a real bug that it also drove the tab switch, because then choosing "slide from the side" for opening a
-     * screen silently changed what a tab switch looked like, and the two settings read as one.
-     *
-     * @return a sideways slide
-     */
     public static ScreenIntro sideSlide() {
         return new ScreenIntro(Transition.SLIDE_SIDE, Easing.EASE_OUT_CUBIC, 180L);
     }
 
-    /** @return whether the animation still has frames to play */
     public boolean running() {
         return this.progress() < 1.0D;
     }
 
-    /** @return the eased progress of the animation, between 0 and 1 (the "pop" curve may exceed 1) */
     public double progress() {
         long elapsed = System.currentTimeMillis() - this.startedAt;
         return this.easing.applyClamped((double) elapsed / (double) this.durationMillis);
     }
 
-    /** @return whether this transition fades the screen rather than moving it */
     public boolean fades() {
         return this.transition == Transition.FADE;
     }
 
-    /**
-     * How opaque the veil drawn over the screen should be, 1 hiding it completely. A veil rather than an
-     * alpha, because the interface is drawn through a render state extractor that has no colour multiplier.
-     *
-     * @return the veil opacity, 0 for a transition that does not fade
-     */
     public double veil() {
         return this.veil(this.progress());
     }
 
-    /**
-     * @param progress how far the animation has run, 0 to 1
-     * @return the veil opacity at that moment
-     */
     public double veil(double progress) {
         return this.fades() ? 1.0D - progress : 0.0D;
     }
 
-    /** @return the scale the screen should be drawn at, 1 meaning its final size */
     public double scale() {
         return this.scale(this.progress());
     }
 
-    /**
-     * @param progress how far the animation has run, 0 to 1
-     * @return the scale for that moment
-     */
     public double scale(double progress) {
         if (this.transition != Transition.SCALE_POP) {
             return 1.0D;
@@ -122,19 +74,10 @@ public final class ScreenIntro {
         return 0.92D + 0.08D * progress;
     }
 
-    /**
-     * @param width the screen width, for transitions that move the whole screen
-     * @return how far the screen is pushed to the right
-     */
     public int offsetX(int width) {
         return this.offsetX(width, this.progress());
     }
 
-    /**
-     * @param width    the screen width, for transitions that move the whole screen
-     * @param progress how far the animation has run, 0 to 1
-     * @return how far the screen is pushed to the right at that moment
-     */
     public int offsetX(int width, double progress) {
         if (this.transition != Transition.SLIDE_SIDE) {
             return 0;
@@ -142,19 +85,10 @@ public final class ScreenIntro {
         return (int) Math.round((1.0D - progress) * width * 0.12D);
     }
 
-    /**
-     * @param height the screen height, for transitions that move the whole screen
-     * @return how far the screen is pushed down
-     */
     public int offsetY(int height) {
         return this.offsetY(height, this.progress());
     }
 
-    /**
-     * @param height   the screen height, for transitions that move the whole screen
-     * @param progress how far the animation has run, 0 to 1
-     * @return how far the screen is pushed down at that moment
-     */
     public int offsetY(int height, double progress) {
         if (this.transition != Transition.SLIDE_UP) {
             return 0;

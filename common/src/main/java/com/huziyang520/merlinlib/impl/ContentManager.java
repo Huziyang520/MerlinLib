@@ -1,3 +1,5 @@
+// Single source of truth for "what content exists right now".
+
 package com.huziyang520.merlinlib.impl;
 
 import com.huziyang520.merlinlib.Constants;
@@ -11,7 +13,6 @@ import com.huziyang520.merlinlib.content.ContentSource;
 import com.huziyang520.merlinlib.content.EnchantmentDraft;
 import com.huziyang520.merlinlib.effect.EffectOverrides;
 import net.minecraft.resources.Identifier;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -20,11 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * Single source of truth for "what content exists right now".
- */
 public final class ContentManager {
-
     private static volatile ContentSnapshot cached;
     private static volatile String cachedFingerprint = "";
     private static volatile ContentSnapshot reported;
@@ -33,9 +30,6 @@ public final class ContentManager {
     private ContentManager() {
     }
 
-    /**
-     * @return the current snapshot, rebuilding it when the config files or the api changed.
-     */
     public static ContentSnapshot current() {
         String fingerprint = ConfigDirectory.fingerprint() + "|api=" + EnchantmentRegistry.INSTANCE.revision();
         ContentSnapshot local = cached;
@@ -53,12 +47,6 @@ public final class ContentManager {
         }
     }
 
-    /**
-     * Forces a rebuild and returns what changed since the last time this method ran. Called after
-     * startup and after every {@code /reload}.
-     *
-     * @return the change report, already logged
-     */
     public static ContentReport refresh() {
         ContentSnapshot previous;
         ContentSnapshot next;
@@ -76,9 +64,6 @@ public final class ContentManager {
         return report;
     }
 
-    /**
-     * @return the report produced by the most recent {@link #refresh()}, empty before the first one.
-     */
     public static Optional<ContentReport> lastReport() {
         return Optional.of(lastReport);
     }
@@ -89,7 +74,6 @@ public final class ContentManager {
                 EnchantmentRegistry.INSTANCE.disabledIds()
         );
 
-        // The generated content can be switched off entirely; code api registrations stay unaffected.
         if (ConfigManager.server().disableGeneratedEnchantments()
                 && snapshot.enchantments().values().stream().anyMatch(draft -> draft.source() == ContentSource.CONFIG)) {
             Map<Identifier, EnchantmentDraft> kept = new LinkedHashMap<>();
@@ -133,7 +117,6 @@ public final class ContentManager {
             }
         }
         failed.addAll(broken);
-
         return new ContentReport(List.copyOf(added), List.copyOf(updated), List.copyOf(removed), List.copyOf(failed), next.errors());
     }
 

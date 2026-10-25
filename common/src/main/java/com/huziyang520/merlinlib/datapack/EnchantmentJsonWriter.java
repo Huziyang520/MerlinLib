@@ -1,3 +1,5 @@
+// Turns EnchantmentDraft drafts into the files of the generated datapack.
+
 package com.huziyang520.merlinlib.datapack;
 
 import com.google.gson.Gson;
@@ -8,7 +10,6 @@ import com.huziyang520.merlinlib.content.Acquisition;
 import com.huziyang520.merlinlib.content.EnchantmentDraft;
 import com.huziyang520.merlinlib.content.EnchantmentJson;
 import net.minecraft.resources.Identifier;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -16,35 +17,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-/**
- * Turns {@link EnchantmentDraft drafts} into the files of the generated datapack.
- */
 public final class EnchantmentJsonWriter {
-
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-
-    /** Vanilla tag that makes an enchantment appear in the enchanting table. */
     public static final Identifier TAG_IN_ENCHANTING_TABLE = Identifier.withDefaultNamespace("in_enchanting_table");
-    /** Vanilla tag for enchantments that are not treasure. */
     public static final Identifier TAG_NON_TREASURE = Identifier.withDefaultNamespace("non_treasure");
-    /** Vanilla tag for treasure enchantments. */
     public static final Identifier TAG_TREASURE = Identifier.withDefaultNamespace("treasure");
-    /** Vanilla tag for librarian trades. */
     public static final Identifier TAG_TRADEABLE = Identifier.withDefaultNamespace("tradeable");
-    /** Vanilla tag for equipment sold by villagers. */
     public static final Identifier TAG_ON_TRADED_EQUIPMENT = Identifier.withDefaultNamespace("on_traded_equipment");
-    /** Vanilla tag for randomly enchanted loot, used by fishing and loot chests. */
     public static final Identifier TAG_ON_RANDOM_LOOT = Identifier.withDefaultNamespace("on_random_loot");
-    /** Vanilla tag marking a curse. */
     public static final Identifier TAG_CURSE = Identifier.withDefaultNamespace("curse");
 
     private EnchantmentJsonWriter() {
     }
 
-    /**
-     * @param draft the enchantment to serialize
-     * @return the vanilla shaped json object
-     */
     public static JsonObject toJson(EnchantmentDraft draft) {
         JsonObject json = new JsonObject();
         json.add("description", draft.description());
@@ -67,22 +52,10 @@ public final class EnchantmentJsonWriter {
         return json;
     }
 
-    /**
-     * @param draft the enchantment to serialize
-     * @return the exact bytes written into {@code data/<namespace>/enchantment/<path>.json}
-     */
     public static byte[] toBytes(EnchantmentDraft draft) {
         return GSON.toJson(toJson(draft)).getBytes(StandardCharsets.UTF_8);
     }
 
-    /**
-     * Builds one tag file per vanilla acquisition tag, listing the MerlinLib enchantments that asked
-     * for it. Tag files never use {@code replace: true}, so they extend the vanilla tags instead of
-     * replacing them.
-     *
-     * @param drafts all effective enchantments
-     * @return tag id to file content, keyed by {@code <namespace>/<path>} under {@code tags/enchantment}
-     */
     public static Map<Identifier, JsonObject> acquisitionTags(Collection<EnchantmentDraft> drafts) {
         Map<Identifier, List<Identifier>> perTag = new TreeMap<>(java.util.Comparator.comparing(Identifier::toString));
         for (EnchantmentDraft draft : drafts) {

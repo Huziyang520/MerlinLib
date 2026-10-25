@@ -1,3 +1,5 @@
+// The concrete effect type every MerlinLib registered effect uses.
+
 package com.huziyang520.merlinlib.effect;
 
 import net.minecraft.resources.Identifier;
@@ -6,20 +8,9 @@ import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.LivingEntity;
 
-/**
- * The concrete effect type every MerlinLib registered effect uses.
- */
 public class MerlinMobEffect extends MobEffect {
-
-    /** Behaviour hook, called on every tick the effect is active. */
     @FunctionalInterface
     public interface TickBehaviour {
-        /**
-         * @param level     the server level
-         * @param entity    the affected entity
-         * @param amplifier effect amplifier, 0 for level I
-         * @return {@code true} when the effect did something, matching vanilla semantics
-         */
         boolean tick(ServerLevel level, LivingEntity entity, int amplifier);
     }
 
@@ -36,10 +27,6 @@ public class MerlinMobEffect extends MobEffect {
         this.behaviour = behaviour;
     }
 
-    /**
-     * Marks the effect as instantaneous. Set through the builder before registration; the value is
-     * read by the game whenever the effect is applied.
-     */
     public void setInstant(boolean instant) {
         this.instant = instant;
     }
@@ -49,9 +36,6 @@ public class MerlinMobEffect extends MobEffect {
         return this.instant;
     }
 
-    /**
-     * @return the colour in use, which is the declared colour unless a config file overrode it.
-     */
     @Override
     public int getColor() {
         return EffectOverrides.colorOf(this.id, this.declaredColor);
@@ -65,12 +49,6 @@ public class MerlinMobEffect extends MobEffect {
         return this.behaviour.tick(level, entity, amplifier);
     }
 
-    /**
-     * Marks this effect as disabled at runtime. The registry entry itself cannot be removed, so the
-     * effect is turned into a no-op and its potions are not generated.
-     *
-     * @param disabled whether the effect should stop doing anything
-     */
     public void setDisabled(boolean disabled) {
         this.disabled = disabled;
     }
@@ -79,7 +57,6 @@ public class MerlinMobEffect extends MobEffect {
         return this.disabled;
     }
 
-    /** @return the colour as declared at registration time, ignoring overrides. */
     public int declaredColor() {
         return this.declaredColor;
     }

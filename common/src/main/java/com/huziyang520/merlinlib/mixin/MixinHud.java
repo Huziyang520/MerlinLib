@@ -1,3 +1,5 @@
+// Draws very large health as one vanilla heart plus the numbers, instead of one heart per two points.
+
 package com.huziyang520.merlinlib.mixin;
 
 import com.huziyang520.merlinlib.config.ClientConfig;
@@ -17,39 +19,14 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
-/**
- * Draws very large health as one vanilla heart plus the numbers, instead of one heart per two points.
- */
 @Mixin(Hud.class)
 public class MixinHud {
-
-    /** Used when the configuration cannot be read yet, so the row behaves as it always did. */
     private static final float DEFAULT_THRESHOLD = 99.0F;
-
-    /** The value that makes the vanilla loop draw a single heart. */
     private static final float ONE_HEART = 2.0F;
-
-    /** The same, as one row's worth of health, for the layout calculation. */
     private static final double ONE_ROW_OF_HEALTH = 20.0D;
-
-    /** Gap between the heart and the numbers, and the text's vertical nudge. */
     private static final int TEXT_OFFSET_X = 12;
     private static final int TEXT_OFFSET_Y = 1;
 
-    /**
-     * Keeps the heart row to a single row of space, but only once the health is really large.
-     *
-     * <p>This is the layout copy of the maximum: it decides how much room the row takes, how many hearts the
-     * loop draws and where the armour, food and air rows sit. It is therefore the value the threshold has to be
-     * applied to - a first version of this class clamped it to one row <em>unconditionally</em>, which left
-     * every player between twenty-one and a hundred health with a single row of hearts, where vanilla would
-     * have drawn two to five. Up to the threshold the real value is passed through untouched, so that range is
-     * plain vanilla; above it the row is one heart and the numbers carry the truth.
-     *
-     * @param player    the player the row belongs to
-     * @param attribute the attribute being read, always the maximum health
-     * @return the real value, brought down to one vanilla row only when it is large
-     */
     @Redirect(method = {"extractPlayerHealth", "extractHealthLevel"}, require = 1, at = @At(value = "INVOKE",
             target = "Lnet/minecraft/world/entity/player/Player;getAttributeValue(Lnet/minecraft/core/Holder;)D"))
     private double merlinlib$layoutOneRow(Player player, Holder<Attribute> attribute) {
@@ -59,23 +36,11 @@ public class MixinHud {
             return real;
         }
         if (!config.hudArmourDodge()) {
-            // The armour row sits below the health rows, so the only way to leave it where vanilla puts it for
-            // an unfolded bar is to leave the row height unfolded as well. The heart count is still folded by
-            // the second hook, so the player sees one heart in the first row and the armour row where it was -
-            // the same trade the 1.20.1 line makes with its row policy.
             return real;
         }
         return real > threshold(config) ? ONE_ROW_OF_HEALTH : real;
     }
 
-    /**
-     * Reduces the heart count to one once the health is large.
-     *
-     * <p>The player argument of the call is what tells us the real maximum: the value being passed has
-     * already been brought down for the layout, so it can never answer this question.
-     *
-     * @param args the arguments of the {@code extractHearts} call
-     */
     @ModifyArgs(method = {"extractPlayerHealth", "extractHealthLevel"}, require = 1, at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/Hud;extractHearts(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/world/entity/player/Player;IIIIFIIIZ)V"))
     private void merlinlib$oneHeartWhenHuge(Args args) {
@@ -88,22 +53,6 @@ public class MixinHud {
         }
     }
 
-    /**
-     * Writes the exact numbers next to the single heart.
-     *
-     * @param graphics        the render state extractor
-     * @param player          the player the row belongs to
-     * @param xLeft           the left edge of the heart row
-     * @param yLineBase       the baseline of the heart row
-     * @param healthRowHeight the vanilla row spacing, unused here
-     * @param heartOffsetIndex the vanilla regeneration heartbeat offset, unused here
-     * @param maxHealth       the value the loop used, already reduced when the health is large
-     * @param currentHealth   the health as a whole number
-     * @param oldHealth       the previously displayed health
-     * @param absorption      the absorption amount
-     * @param blink           whether the row is blinking after a change
-     * @param info            the injection callback
-     */
     @Inject(method = "extractHearts", at = @At("TAIL"))
     private void merlinlib$healthNumbers(GuiGraphicsExtractor graphics, Player player, int xLeft, int yLineBase,
                                          int healthRowHeight, int heartOffsetIndex, float maxHealth,
@@ -120,29 +69,11 @@ public class MixinHud {
                 color, true);
     }
 
-    /**
-     * The configured fold threshold, as a float for the comparisons above.
-     *
-     * @param config the client configuration
-     * @return the health above which the row folds
-     */
     private static float threshold(ClientConfig config) {
         int configured = config.hudCollapseThreshold();
         return configured > 0 ? (float) configured : DEFAULT_THRESHOLD;
     }
 
-    /**
-     * The health the readout should show.
-     *
-     * <p>The player's own maximum wins over what the row was built from, and the displayed health is taken
-     * into account as well: vanilla does the same, so that a heart row never shows less than the number next
-     * to it while a health change is still animating.
-     *
-     * @param player        the player
-     * @param currentHealth the health as a whole number
-     * @param oldHealth     the previously displayed health
-     * @return the largest of the three, as a float
-     */
     private static float realHealth(Player player, int currentHealth, int oldHealth) {
         return Math.max(player.getMaxHealth(), Math.max(currentHealth, oldHealth));
     }

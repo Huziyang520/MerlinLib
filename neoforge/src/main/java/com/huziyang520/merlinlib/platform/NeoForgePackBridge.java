@@ -1,3 +1,5 @@
+// NeoForge implementation of IPackBridge.
+
 package com.huziyang520.merlinlib.platform;
 
 import com.huziyang520.merlinlib.datapack.GeneratedPackSource;
@@ -11,11 +13,7 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddPackFindersEvent;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 
-/**
- * NeoForge implementation of {@link IPackBridge}.
- */
 public class NeoForgePackBridge implements IPackBridge {
-
     @Override
     public void bootstrap(Object loaderContext) {
         if (loaderContext instanceof IEventBus modBus) {
@@ -36,6 +34,5 @@ public class NeoForgePackBridge implements IPackBridge {
 
     @Override
     public void registerServerReloadListener(Identifier id, PreparableReloadListener listener) {
-        // Handled by the bootstrap listener above; the event is the only supported registration point.
     }
 }

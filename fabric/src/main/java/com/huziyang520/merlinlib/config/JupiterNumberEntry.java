@@ -1,3 +1,5 @@
+// A Jupiter row for a whole number: a field with a - and a + beside it, so a range that reaches the integer limit can ...
+
 package com.huziyang520.merlinlib.config;
 
 import com.iafenvoy.jupiter.config.entry.IntegerEntry;
@@ -10,39 +12,16 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
-
 import java.util.function.Consumer;
 
-/**
- * A Jupiter row for a whole number: a field with a - and a + beside it, so a range that reaches the
- * integer limit can still be stepped.
- */
 final class JupiterNumberEntry {
-
-    /** The type every instance of this row shares; also the registry key of its widget builder. */
     private static final ConfigType<Integer> TYPE = new ConfigType<>(ConfigType.Type.SINGLE);
-
-    /** Width of one step button. */
     private static final int STEP = 16;
-
-    /** Registration must happen once; Jupiter keeps the builder in a static map. */
     private static boolean registered;
 
     private JupiterNumberEntry() {
     }
 
-    /**
-     * Builds the row and, on the first call, teaches Jupiter how to draw it.
-     *
-     * @param label   the translation of the option name
-     * @param tooltip the translation of its description
-     * @param key     the key the mirror file stores, spelled {@code section.option}
-     * @param value   the current value
-     * @param min     the lowest accepted value
-     * @param max     the highest accepted value
-     * @param sink    receives every value the player picks
-     * @return the entry to add to a tab
-     */
     static IntegerEntry create(Component label, Component tooltip, String key, int value, int min, int max,
                                Consumer<Integer> sink) {
         if (!registered) {
@@ -58,9 +37,7 @@ final class JupiterNumberEntry {
         return new Entry(builder);
     }
 
-    /** The row itself: a bounded integer, with our own type so our own widget is picked. */
     private static final class Entry extends IntegerEntry {
-
         Entry(IntegerEntry.Builder builder) {
             super(builder);
         }
@@ -76,9 +53,7 @@ final class JupiterNumberEntry {
         }
     }
 
-    /** Draws the field and the two step buttons, and keeps them on the row Jupiter moves them to. */
     private static final class StepBuilder extends WidgetBuilder<Integer> {
-
         private EditBox field;
         private Button minus;
         private Button plus;
@@ -96,31 +71,16 @@ final class JupiterNumberEntry {
             this.field.setValue(String.valueOf(this.config.getValue()));
             this.field.setResponder(this::onTyped);
             context.addWidget(this.field);
-
             this.minus = button(context, Component.literal("-"), x + fieldWidth + 2, y, height, -1);
             this.plus = button(context, Component.literal("+"), x + fieldWidth + 2 + STEP + 2, y, height, 1);
         }
 
-        /**
-         * @param text      the label of the button
-         * @param x         its left edge
-         * @param y         its top edge
-         * @param height    its height, the same as the field
-         * @param direction -1 to step down, 1 to step up
-         * @return the button, already added to the row
-         */
         private Button button(Context context, Component text, int x, int y, int height, int direction) {
             Button widget = Button.builder(text, pressed -> this.step(direction)).bounds(x, y, STEP, height).build();
             context.addWidget(widget);
             return widget;
         }
 
-        /**
-         * Moves the value by one step, or by ten while shift is held - the same step the item editor uses, so
-         * a large range is reachable without dragging the slider of a text field.
-         *
-         * @param direction -1 to step down, 1 to step up
-         */
         private void step(int direction) {
             int current = this.config.getValue() == null ? 0 : this.config.getValue();
             int step = Minecraft.getInstance().hasShiftDown() ? 10 : 1;
@@ -128,12 +88,6 @@ final class JupiterNumberEntry {
             this.refresh();
         }
 
-        /**
-         * Takes the value the player typed, and marks the row as unsaveable while it is not a number in
-         * range, so a half typed number cannot be written to the file.
-         *
-         * @param text the text in the field
-         */
         private void onTyped(String text) {
             try {
                 int typed = Integer.parseInt(text.trim());
@@ -143,7 +97,6 @@ final class JupiterNumberEntry {
                     this.config.setValue(typed);
                 }
             } catch (NumberFormatException notANumber) {
-                // An empty or partial field is not an error yet: the player is still typing.
                 this.canSave = text.isBlank();
                 this.field.setTextColor(0xFFFF5555);
             }
@@ -173,14 +126,12 @@ final class JupiterNumberEntry {
             }
         }
 
-        /** @return the lowest accepted value, from the entry itself */
         private int low() {
             return this.config instanceof IntegerEntry entry && entry.getMinValue() != null
                     ? entry.getMinValue()
                     : Integer.MIN_VALUE;
         }
 
-        /** @return the highest accepted value, from the entry itself */
         private int high() {
             return this.config instanceof IntegerEntry entry && entry.getMaxValue() != null
                     ? entry.getMaxValue()

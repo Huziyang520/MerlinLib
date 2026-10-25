@@ -1,3 +1,5 @@
+// Holds every enchantment declared through the java api and the ids that are disabled.
+
 package com.huziyang520.merlinlib.impl;
 
 import com.huziyang520.merlinlib.Constants;
@@ -7,7 +9,6 @@ import com.huziyang520.merlinlib.api.EnchantmentInfo;
 import com.huziyang520.merlinlib.content.ContentSource;
 import com.huziyang520.merlinlib.content.EnchantmentDraft;
 import net.minecraft.resources.Identifier;
-
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -16,14 +17,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Holds every enchantment declared through the java api and the ids that are disabled.
- */
 public final class EnchantmentRegistry implements EnchantmentApi {
-
-    /** Shared instance used by {@code MerlinApi}. */
     public static final EnchantmentRegistry INSTANCE = new EnchantmentRegistry();
-
     private final Map<Identifier, EnchantmentDraft> apiEntries = new LinkedHashMap<>();
     private final Set<Identifier> disabled = new LinkedHashSet<>();
     private final AtomicLong revision = new AtomicLong();
@@ -92,13 +87,6 @@ public final class EnchantmentRegistry implements EnchantmentApi {
         return Optional.empty();
     }
 
-    /**
-     * Stores a draft built by {@link EnchantmentBuilder#submit()}.
-     *
-     * @param draft the validated draft
-     * @return the stored draft
-     * @throws IllegalArgumentException when a field is out of the range the vanilla codec accepts
-     */
     public EnchantmentDraft submit(EnchantmentDraft draft) {
         Objects.requireNonNull(draft, "draft");
         validate(draft);
@@ -116,10 +104,6 @@ public final class EnchantmentRegistry implements EnchantmentApi {
         return draft;
     }
 
-    /**
-     * Rejects values the vanilla codec would refuse at load time, so the error surfaces where the
-     * mistake was made instead of during datapack loading.
-     */
     public static void validate(EnchantmentDraft draft) {
         if (draft.weight() < 1 || draft.weight() > 1024) {
             throw new IllegalArgumentException(draft.id() + ": weight must be in [1, 1024] but was " + draft.weight());

@@ -1,17 +1,14 @@
+// Fabric implementation of ILootBridge, on top of LootTableEvents.MODIFY.
+
 package com.huziyang520.merlinlib.platform;
 
 import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.platform.services.ILootBridge;
 import net.fabricmc.fabric.api.loot.v3.LootTableEvents;
-
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/**
- * Fabric implementation of {@link ILootBridge}, on top of {@code LootTableEvents.MODIFY}.
- */
 public class FabricLootBridge implements ILootBridge {
-
     private final List<TableListener> listeners = new CopyOnWriteArrayList<>();
 
     @Override
@@ -19,10 +16,8 @@ public class FabricLootBridge implements ILootBridge {
         LootTableEvents.MODIFY.register((key, builder, source, registries) -> {
             for (TableListener listener : this.listeners) {
                 try {
-                    // The event's builder takes a pool builder directly, so the sink is the same shape here.
                     listener.onTable(key.identifier(), builder::withPool, registries);
                 } catch (RuntimeException | LinkageError error) {
-                    // One broken rule must not stop the table from loading, nor the other rules from running.
                     Constants.LOG.error("[MerlinLib] a loot table listener failed for {}", key.identifier(), error);
                 }
             }

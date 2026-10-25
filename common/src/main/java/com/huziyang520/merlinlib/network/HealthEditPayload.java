@@ -1,3 +1,5 @@
+// Client to server health edit request from the health editor screen.
+
 package com.huziyang520.merlinlib.network;
 
 import com.huziyang520.merlinlib.Constants;
@@ -6,11 +8,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 
-/**
- * Client to server health edit request from the health editor screen.
- */
 public record HealthEditPayload(int targetId, int current, int max) implements CustomPacketPayload {
-
     public static final Type<HealthEditPayload> TYPE =
             new Type<>(Identifier.fromNamespaceAndPath(Constants.MOD_ID, "health_edit"));
 

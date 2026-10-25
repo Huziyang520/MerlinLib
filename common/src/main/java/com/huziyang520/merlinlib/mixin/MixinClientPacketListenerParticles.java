@@ -1,3 +1,5 @@
+// Drops an oversized particle packet before the client walks it.
+
 package com.huziyang520.merlinlib.mixin;
 
 import com.huziyang520.merlinlib.config.ClientConfig;
@@ -13,18 +15,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Drops an oversized particle packet before the client walks it.
- */
 @Mixin(ClientPacketListener.class)
 public class MixinClientPacketListenerParticles {
-
-    /**
-     * Consumes a particle packet whose count is above the limit.
-     *
-     * @param packet the packet being handled
-     * @param info   the injection callback, cancelled to skip vanilla's loop
-     */
     @Inject(method = "handleParticleEvent", at = @At("HEAD"), cancellable = true)
     private void merlinlib$capPacketCount(ClientboundLevelParticlesPacket packet, CallbackInfo info) {
         ClientConfig config = ConfigManager.client();
@@ -38,8 +30,6 @@ public class MixinClientPacketListenerParticles {
         }
         ClientLevel level = Minecraft.getInstance().level;
         if (level != null) {
-            // Spawn the limited number with the packet's own spread and speed, so a big hit still looks like a
-            // big hit - it simply stops at the number of particles this client agreed to draw.
             RandomSource random = level.getRandom();
             for (int index = 0; index < limit; index++) {
                 level.addParticle(packet.particle(), packet.overrideLimiter(), packet.alwaysShow(),

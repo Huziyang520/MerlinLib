@@ -1,16 +1,13 @@
+// Loader independent description of one enchantment, regardless of whether it was written in java or in a config file.
+
 package com.huziyang520.merlinlib.content;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.resources.Identifier;
-
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Loader independent description of one enchantment, regardless of whether it was written in java or
- * in a config file.
- */
 public record EnchantmentDraft(
         Identifier id,
         ContentSource source,
@@ -30,7 +27,6 @@ public record EnchantmentDraft(
         JsonObject effects,
         Acquisition acquisition
 ) {
-
     public EnchantmentDraft {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(source, "source");
@@ -39,7 +35,6 @@ public record EnchantmentDraft(
         acquisition = acquisition == null ? Acquisition.DEFAULT : acquisition;
     }
 
-    /** Sensible defaults matching a plain level 1..3 weapon enchantment. */
     public static EnchantmentDraft defaults(Identifier id, ContentSource source) {
         return new EnchantmentDraft(
                 id,
@@ -74,9 +69,6 @@ public record EnchantmentDraft(
                 this.slots, this.supportedItems, this.primaryItems, this.exclusiveSet, this.effects, newAcquisition);
     }
 
-    /**
-     * @return the translation key used by the generated {@code description} component.
-     */
     public String translationKey() {
         if (this.description != null && this.description.isJsonObject()) {
             JsonElement key = this.description.getAsJsonObject().get("translate");

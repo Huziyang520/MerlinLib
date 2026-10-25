@@ -1,3 +1,5 @@
+// The health editor item: sneak and use it on a living entity to open the health editor for it.
+
 package com.huziyang520.merlinlib.tools;
 
 import com.huziyang520.merlinlib.Constants;
@@ -12,39 +14,25 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-
 import java.util.function.Consumer;
 
-/**
- * The health editor item: sneak and use it on a living entity to open the health editor for it.
- */
 public final class HealthEditorItem extends Item {
-
     private static final Identifier ID = Identifier.fromNamespaceAndPath(Constants.MOD_ID, "health_editor");
-
-    /** Client side opener; {@code null} on a dedicated server. */
     private static volatile Consumer<LivingEntity> opener;
 
     private HealthEditorItem(Properties properties) {
         super(properties);
     }
 
-    /** Registers the item; the instance is built inside the registration callback (see TestWeapons). */
     public static void register() {
         Services.REGISTRATIONS.register(BuiltInRegistries.ITEM, ID, () -> new HealthEditorItem(
                 new Item.Properties().setId(ResourceKey.create(Registries.ITEM, ID)).stacksTo(1)));
     }
 
-    /**
-     * Installs the client side opener.
-     *
-     * @param consumer opens the health editor screen for the given entity
-     */
     public static void setOpener(Consumer<LivingEntity> consumer) {
         opener = consumer;
     }
 
-    /** @return the stack of the health editor item, empty before registration. */
     public static ItemStack stack() {
         Item item = BuiltInRegistries.ITEM.getValue(ID);
         return item == null ? ItemStack.EMPTY : new ItemStack(item);

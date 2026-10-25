@@ -1,3 +1,5 @@
+// /merlinlib diagnostics and helpers.
+
 package com.huziyang520.merlinlib.command;
 
 import com.huziyang520.merlinlib.Constants;
@@ -31,28 +33,15 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-/**
- * {@code /merlinlib} diagnostics and helpers.
- */
 public final class MerlinCommand {
-
     private MerlinCommand() {
     }
 
-    /**
-     * Registers the command tree. Called from both loaders with the same three arguments, because
-     * NeoForge's event and Fabric's callback expose the identical parameter set.
-     *
-     * @param dispatcher   the server command dispatcher
-     * @param buildContext registry access of the running server
-     * @param selection    which command set is being built, unused
-     */
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext buildContext,
                                 Commands.CommandSelection selection) {
         dispatcher.register(Commands.literal("merlinlib")
@@ -77,20 +66,6 @@ public final class MerlinCommand {
                                 .executes(context -> setEditorHotkey(context, false)))));
     }
 
-    /**
-     * Switches the item editor hotkey on or off.
-     *
-     * <p>The binding itself always exists, so this only decides whether pressing it opens the editor. It
-     * writes {@code editor.hotkey_enabled} into {@code client.toml} and reloads, which is why the switch
-     * takes effect immediately: the client reads that value when the key is pressed, not at startup.
-     *
-     * <p>On a dedicated server the file that is written is the one next to the server, which belongs to
-     * the machine running the command; a player's own hotkey is their own file on their own computer.
-     *
-     * @param context the command context
-     * @param enabled the value to write
-     * @return 1, the standard success code
-     */
     private static int setEditorHotkey(CommandContext<CommandSourceStack> context, boolean enabled) {
         ConfigManager.saveClient(java.util.Map.of("editor.hotkey_enabled", Boolean.toString(enabled)));
         context.getSource().sendSuccess(() -> Component.translatable(enabled
@@ -101,7 +76,6 @@ public final class MerlinCommand {
 
     private static boolean mayManage(CommandSourceStack source) {
         ServerPlayer player = source.getPlayer();
-        // The console is always allowed; players need operator rights when the server asks for them.
         return player == null || PermissionGate.isOperator(player);
     }
 
@@ -115,10 +89,6 @@ public final class MerlinCommand {
                 .filter(registry::containsKey)
                 .toList();
 
-        // Everything else in the registry that is not vanilla's, and that MerlinLib does not manage itself.
-        // Another mod's enchantments live in that mod's own data pack, so they never appear in MerlinLib's
-        // snapshot - which made this list read as if MerlinLib were the only mod with any. They are listed by
-        // registry id, so a mod that failed to load is just as obvious as one that did.
         List<Identifier> others = registry.keySet().stream()
                 .filter(id -> !id.getNamespace().equals("minecraft"))
                 .filter(id -> !present.contains(id))
@@ -152,14 +122,12 @@ public final class MerlinCommand {
     private static int info(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
         String raw = StringArgumentType.getString(context, "id");
-
         Optional<Identifier> parsed = IdValidator.parse(raw);
         if (parsed.isEmpty()) {
             source.sendFailure(Component.translatable("command.merlinlib.invalid_id", raw));
             return 0;
         }
         Identifier id = parsed.get();
-
         Optional<EnchantmentInfo> info = MerlinApi.enchantments().describe(id);
         if (info.isEmpty()) {
             source.sendFailure(Component.translatable("command.merlinlib.unknown", id.toString()));
@@ -191,7 +159,6 @@ public final class MerlinCommand {
             return 0;
         }
         Identifier id = parsed.get();
-
         Registry<Enchantment> registry = enchantmentRegistry(source);
         var holder = registry.get(id).orElse(null);
         if (holder == null) {
@@ -203,32 +170,19 @@ public final class MerlinCommand {
         ItemEnchantments.Mutable stored = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
         stored.set(holder, level);
         book.set(DataComponents.STORED_ENCHANTMENTS, stored.toImmutable());
-
         player.addItem(book);
         source.sendSuccess(() -> Component.translatable("command.merlinlib.book.given", id.toString(), level), false);
         return 1;
     }
 
-    /**
-     * Walks the whole delivery chain of the generated datapack and reports every link, so a failure can
-     * be pinned down without reading the log:
-     * <ol>
-     *     <li>is the pack known to the pack repository (the injection hook ran)</li>
-     *     <li>is the pack selected (it is declared required, so it must be)</li>
-     *     <li>does the server resource manager actually see our resources (the listing is correct)</li>
-     *     <li>did the enchantment end up in the registry (the json was accepted)</li>
-     * </ol>
-     */
     private static int packStatus(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
         MinecraftServer server = source.getServer();
         PackRepository repository = server.getPackRepository();
-
         boolean available = repository.isAvailable(Constants.GENERATED_PACK_ID);
         boolean selected = repository.getSelectedPacks().stream()
                 .anyMatch(pack -> Constants.GENERATED_PACK_ID.equals(pack.getId()));
         Map<String, byte[]> expected = GeneratedPack.previewFiles();
-
         ResourceManager resources = server.getResourceManager();
         Map<Identifier, List<Resource>> visible = resources.listResourceStacks("enchantment",
                 id -> id.getNamespace().equals(Constants.MOD_ID));

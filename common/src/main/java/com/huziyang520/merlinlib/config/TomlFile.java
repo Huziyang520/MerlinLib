@@ -1,8 +1,9 @@
+// Reader and writer of the small, commented TOML subset MerlinLib keeps its switches in: comments, blank lines, [section] ...
+
 package com.huziyang520.merlinlib.config;
 
 import com.huziyang520.merlinlib.content.ContentError;
 import com.huziyang520.merlinlib.util.MerlinColor;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -15,13 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * Reader and writer of the small, commented TOML subset MerlinLib keeps its switches in: comments,
- * blank lines, {@code [section]} headers and {@code key = value} pairs of booleans, integers, floats
- * and strings.
- */
 public final class TomlFile implements ConfigReader {
-
     private final Path path;
     private final Map<String, String> values = new LinkedHashMap<>();
     private final List<ContentError> errors = new ArrayList<>();
@@ -31,13 +26,6 @@ public final class TomlFile implements ConfigReader {
         this.path = path;
     }
 
-    /**
-     * Reads a file, creating it with {@code defaults} first when it does not exist yet.
-     *
-     * @param path     file to read
-     * @param defaults content written when the file is missing
-     * @return the parsed view, never {@code null} even when the file is unreadable
-     */
     public static TomlFile read(Path path, String defaults) {
         TomlFile file = new TomlFile(path);
         if (!Files.exists(path)) {
@@ -55,21 +43,6 @@ public final class TomlFile implements ConfigReader {
         return file;
     }
 
-    /**
-     * Writes selected values back into an existing file, in place.
-     *
-     * <p>Only the values named in {@code overrides} are touched: every comment, blank line and order is
-     * kept, so saving one switch never destroys the documentation the file
-     * exists to carry. A key that is not in the file yet is appended, under its section header, which is
-     * what makes a file written by an older version gain new options without being reset.
-     *
-     * <p>Keys are addressed the same way as when reading: {@code section.key}, or just {@code key} for a
-     * value before any section header.
-     *
-     * @param path      the file to update, created from {@code defaults} when missing
-     * @param defaults  the template written when the file does not exist yet
-     * @param overrides the values to replace, keyed by {@code section.key}
-     */
     public static void rewrite(Path path, String defaults, Map<String, String> overrides) {
         if (overrides.isEmpty()) {
             return;
@@ -118,22 +91,10 @@ public final class TomlFile implements ConfigReader {
         try {
             Files.write(path, lines, StandardCharsets.UTF_8);
         } catch (IOException exception) {
-            // A read only file must not break the screen: the values simply stay as they were on disk.
             return;
         }
     }
 
-    /**
-     * Inserts a line into the section it belongs to, creating the header only when it is missing.
-     *
-     * <p>Appending new keys at the end of the file instead would add a second header for a section that is
-     * already there. This reader copes with that, but a file holding two {@code [tools]} tables is rejected
-     * by strict TOML tools, and a configuration file that other programs refuse to open is a bug of ours.
-     *
-     * @param lines   the file's lines, modified in place
-     * @param section the section name, empty for a key before any header
-     * @param line    the complete {@code key = value} line to insert
-     */
     private static void insert(List<String> lines, String section, String line) {
         if (section.isEmpty()) {
             lines.add(0, line);
@@ -155,7 +116,7 @@ public final class TomlFile implements ConfigReader {
             lines.add(line);
             return;
         }
-        // Walk to the end of the section: past comments and blank lines, stopping at the next header.
+
         int insertAt = headerIndex + 1;
         for (int index = headerIndex + 1; index < lines.size(); index++) {
             String trimmed = lines.get(index).trim();
@@ -170,31 +131,11 @@ public final class TomlFile implements ConfigReader {
         lines.add(insertAt, line);
     }
 
-    /**
-     * Replaces a file with a fresh copy of a template, carrying the given values over.
-     *
-     * <p>Used by the layout migrations, which have to be able to drop a whole section: {@link #rewrite}
-     * only ever replaces or adds single keys and leaves everything else exactly as it was, which is right
-     * for a normal save but wrong when an option no longer exists.
-     *
-     * @param path     the file to replace, created when missing
-     * @param defaults the template to write
-     * @param values   the values to carry over, keyed by {@code section.key}; unknown keys are ignored
-     */
     public static void rebuild(Path path, String defaults, Map<String, String> values) {
         write(path, defaults);
         rewrite(path, defaults, values);
     }
 
-    /**
-     * Deletes keys from a file, together with the comment lines that introduce them.
-     *
-     * <p>Used for a value a build no longer has: {@link #rewrite} can only replace or add a line, so a key
-     * that must disappear would otherwise stay in the file for good. Everything else is left alone.
-     *
-     * @param path the file to edit, ignored when it is missing
-     * @param keys the keys to delete, as {@code section.key}
-     */
     public static void remove(Path path, Set<String> keys) {
         if (keys.isEmpty() || !Files.isRegularFile(path)) {
             return;
@@ -241,14 +182,9 @@ public final class TomlFile implements ConfigReader {
         try {
             Files.write(path, lines, StandardCharsets.UTF_8);
         } catch (IOException exception) {
-            // A read only file must not break startup; the stale line simply stays.
         }
     }
 
-    /**
-     * @param template the commented template of a configuration file
-     * @return every key the template declares, as {@code section.key}
-     */
     public static Set<String> keysOf(String template) {
         Set<String> keys = new java.util.LinkedHashSet<>();
         String section = "";
@@ -276,7 +212,6 @@ public final class TomlFile implements ConfigReader {
             Files.createDirectories(path.getParent());
             Files.writeString(path, content, StandardCharsets.UTF_8);
         } catch (IOException ignored) {
-            // Reported later as a missing file; nothing better can be done here.
         }
     }
 
@@ -381,9 +316,6 @@ public final class TomlFile implements ConfigReader {
         }
     }
 
-    /**
-     * Reads a colour written either as {@code 0xRRGGBB}, {@code #RRGGBB} or a palette name.
-     */
     public int getColor(String key, int fallback) {
         String value = this.values.get(key);
         if (value == null) {
@@ -399,9 +331,6 @@ public final class TomlFile implements ConfigReader {
         return this.values.getOrDefault(key, fallback);
     }
 
-    /**
-     * @return problems found while reading; the affected options fell back to their defaults.
-     */
     public List<ContentError> errors() {
         return List.copyOf(this.errors);
     }
@@ -410,9 +339,6 @@ public final class TomlFile implements ConfigReader {
         return this.path;
     }
 
-    /**
-     * @return every value the file holds, keyed by {@code section.key}, in file order
-     */
     public Map<String, String> values() {
         return java.util.Collections.unmodifiableMap(new LinkedHashMap<>(this.values));
     }

@@ -1,25 +1,16 @@
+// Wiring of the optional configuration screens on Fabric.
+
 package com.huziyang520.merlinlib.config;
 
 import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.tools.ui.ConfigScreens;
 
-/**
- * Wiring of the optional configuration screens on Fabric.
- */
 public final class FabricConfig {
-
-    /** The class that proves Cloth Config is installed, asked for by name so nothing is linked. */
     private static final String CLOTH_API = "me.shedaniel.clothconfig2.api.ConfigBuilder";
 
     private FabricConfig() {
     }
 
-    /**
-     * Installs the first available screen builder, and nothing when there is none.
-     *
-     * <p>Cloth Config and Jupiter both write through a {@link TomlBackend}, so the switches keep living in
-     * the one documented file no matter which screen is in use, and removing either mod loses nothing.
-     */
     public static void install() {
         if (clothPresent()) {
             ConfigManager.setBackend(new TomlBackend("cloth"));
@@ -35,7 +26,6 @@ public final class FabricConfig {
                 + "directly and /merlinlib config cannot open a screen");
     }
 
-    /** @return whether Cloth Config is on the classpath */
     private static boolean clothPresent() {
         try {
             Class.forName(CLOTH_API);

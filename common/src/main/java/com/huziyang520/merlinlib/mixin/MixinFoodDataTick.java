@@ -1,3 +1,5 @@
+// Fires GlobalEvents#FOOD_REGEN before a player heals from a full hunger bar.
+
 package com.huziyang520.merlinlib.mixin;
 
 import com.huziyang520.merlinlib.event.FoodRegenEvent;
@@ -8,18 +10,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-/**
- * Fires {@link GlobalEvents#FOOD_REGEN} before a player heals from a full hunger bar.
- */
 @Mixin(FoodData.class)
 public class MixinFoodDataTick {
-
-    /**
-     * Asks the listeners, then heals unless one of them cancelled.
-     *
-     * @param player the player about to heal
-     * @param amount the health that would be restored
-     */
     @Redirect(method = "tick", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/server/level/ServerPlayer;heal(F)V"))
     private void merlinlib$foodRegen(ServerPlayer player, float amount) {

@@ -1,3 +1,5 @@
+// Repository source that offers the generated datapack to the game.
+
 package com.huziyang520.merlinlib.datapack;
 
 import com.huziyang520.merlinlib.Constants;
@@ -12,25 +14,13 @@ import net.minecraft.server.packs.repository.PackCompatibility;
 import net.minecraft.server.packs.repository.PackSource;
 import net.minecraft.server.packs.repository.RepositorySource;
 import net.minecraft.world.flag.FeatureFlags;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-/**
- * Repository source that offers the generated datapack to the game.
- */
 public final class GeneratedPackSource implements RepositorySource {
-
     public static final GeneratedPackSource INSTANCE = new GeneratedPackSource();
-
-    /**
-     * The version this pack reports to the game alongside its id.
-     *
-     * <p>Deliberately a fixed string and not the mod's own version: the pair is an identity, and an identity that
-     * changes on every release would stop matching the packs older worlds recorded.
-     */
     private static final String KNOWN_PACK_VERSION = "1";
 
     private static final Pack.ResourcesSupplier SUPPLIER = new Pack.ResourcesSupplier() {
@@ -59,16 +49,11 @@ public final class GeneratedPackSource implements RepositorySource {
                 Constants.GENERATED_PACK_ID,
                 Component.translatable("pack." + Constants.MOD_ID + ".generated"),
                 PackSource.BUILT_IN,
-                // The pack has to name itself to the game, and this is not cosmetic: vanilla marks every registry entry
-                // with the lifecycle of the pack that provided it, and a pack it does not recognise counts as an
-                // experimental datapack. That single empty optional is what made every world using this library report
-                // "minecraft:enchantment(Experimental)" and ask for confirmation on every load. Declaring the id keeps
-                // this pack's enchantments stable like vanilla's own.
+
                 Optional.of(new net.minecraft.server.packs.repository.KnownPack(
                         Constants.MOD_ID, "generated", KNOWN_PACK_VERSION))
         );
-        // The 4 argument constructor is the one vanilla itself provides; the pack is kept out of the
-        // selection screens through PackSelectionConfig instead.
+
         Pack.Metadata metadata = new Pack.Metadata(
                 Component.translatable("pack." + Constants.MOD_ID + ".generated.description"),
                 PackCompatibility.COMPATIBLE,
@@ -79,9 +64,6 @@ public final class GeneratedPackSource implements RepositorySource {
         consumer.accept(new Pack(location, SUPPLIER, metadata, selection));
     }
 
-    /**
-     * @return the pack type the generated content belongs to.
-     */
     public static PackType packType() {
         return PackType.SERVER_DATA;
     }

@@ -1,3 +1,5 @@
+// Opens the health editor for the player themselves on a sneak right click into thin air.
+
 package com.huziyang520.merlinlib.mixin;
 
 import com.huziyang520.merlinlib.tools.HealthEditorItem;
@@ -12,17 +14,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Opens the health editor for the player themselves on a sneak right click into thin air.
- */
 @Mixin(Minecraft.class)
 public class MixinMinecraftUseItem {
-
-    /**
-     * Handles the sneak right click into thin air.
-     *
-     * @param info the injection callback, cancelled when the screen is opened
-     */
     @Inject(method = "startUseItem", at = @At("HEAD"), cancellable = true)
     private void merlinlib$healthEditorOnSneakUse(CallbackInfo info) {
         Minecraft minecraft = (Minecraft) (Object) this;
@@ -30,10 +23,8 @@ public class MixinMinecraftUseItem {
         if (player == null || !player.isShiftKeyDown()) {
             return;
         }
-        // 26.3 keeps the current screen on the Gui, not on Minecraft itself.
+
         if (minecraft.gui.screen() != null) {
-            // A screen is already up. Never stack another one on top: the use key is polled while it is held,
-            // so without this the editor reopened as soon as it was closed, which reads as flicker.
             return;
         }
         HitResult hit = minecraft.hitResult;

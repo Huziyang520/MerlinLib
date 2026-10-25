@@ -1,20 +1,15 @@
+// Server side switches.
+
 package com.huziyang520.merlinlib.config;
 
 import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.content.ContentError;
-
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Server side switches. The server decides, the client only displays what it allows, and every toolkit
- * action is validated against these values where it is applied.
- */
 public final class ServerConfig {
-
-    /** Template written on first launch; also the documented reference for every option. */
     private static final String DEFAULTS = """
             # MerlinLib server configuration.
             # This file is authoritative; the client only displays what the server allows.
@@ -81,19 +76,10 @@ public final class ServerConfig {
     private boolean noticesEnabled = true;
     private List<ContentError> errors = List.of();
 
-    /**
-     * @return the server switches, read from whichever store is currently installed
-     */
     public static ServerConfig load() {
         return load(ConfigManager.serverView());
     }
 
-    /**
-     * Reads the switches from one store.
-     *
-     * @param file the store to read, normally {@link ConfigManager#serverView()}
-     * @return the switches
-     */
     static ServerConfig load(ConfigReader file) {
         ServerConfig config = new ServerConfig();
         if (file instanceof TomlFile toml && migrate(toml)) {
@@ -118,26 +104,12 @@ public final class ServerConfig {
         return config;
     }
 
-    /** @return the file this configuration is read from and written to. */
     static Path path() {
         return Path.of("config", Constants.CONFIG_DIRECTORY, "server.toml");
     }
 
-    /** The layout marker older builds wrote into {@code server.toml}; read once, never written again. */
     private static final String LEGACY_VERSION_KEY = "tools.config_version";
 
-    /**
-     * Brings a file written by an older build up to the current defaults, once.
-     *
-     * <p>Triggered by the legacy layout marker rather than by a number the server half would have to keep
-     * writing: the marker is read from the old file, the values it gated are imported, and the marker is
-     * then deleted, because the layout of this file is no longer versioned on the server side.
-     *
-     * <p>A value is only touched while it still holds the old default, so a number chosen by hand stays.
-     *
-     * @param file the file the configuration was read from
-     * @return {@code true} when values were rewritten and the file has to be read again
-     */
     private static boolean migrate(TomlFile file) {
         if (!file.values().containsKey(LEGACY_VERSION_KEY)) {
             return false;
@@ -161,78 +133,62 @@ public final class ServerConfig {
         return !overrides.isEmpty();
     }
 
-    /** @return the commented template, which is also the documentation of the file. */
     static String defaults() {
         return DEFAULTS;
     }
 
-    /** @return whether the toolkit is limited to operators. */
     public boolean restrictToolsToOperators() {
         return this.restrictToolsToOperators;
     }
 
-    /** @return whether opening the item editor requires command permission. */
     public boolean editorRequiresPermission() {
         return this.editorRequiresPermission;
     }
 
-    /** @return whether opening the health editor requires command permission. */
     public boolean healthEditorRequiresPermission() {
         return this.healthEditorRequiresPermission;
     }
 
-    /** @return whether the testing toolkit is enabled at all. */
     public boolean testingToolkitEnabled() {
         return this.testingToolkitEnabled;
     }
 
-    /** @return the upper bound for test weapon damage. */
     public int maxTestWeaponDamage() {
         return this.maxTestWeaponDamage;
     }
 
-    /** @return the upper bound for enchantment levels set through the item editor. */
     public int maxEnchantmentLevel() {
         return this.maxEnchantmentLevel;
     }
 
-    /** @return whether levels may exceed the enchantment's own maximum. */
     public boolean allowLevelsAboveMax() {
         return this.allowLevelsAboveMax;
     }
 
-    /** @return whether enchantments may be added to items that cannot normally carry them. */
     public boolean allowMismatchedEnchantments() {
         return this.allowMismatchedEnchantments;
     }
 
-    /** @return whether the item editor opens for items that are not weapons, tools or equipment. */
     public boolean allowEditingAllItems() {
         return this.allowEditingAllItems;
     }
 
-    /** @return {@code true} when an ordinary weapon's base damage may be edited as well. */
     public boolean allowNonTestItemDamage() {
         return this.allowNonTestItemDamage;
     }
 
-    /** @return whether the health editor only opens while holding the health editor item. */
     public boolean healthEditorRequiresItem() {
         return this.healthEditorRequiresItem;
     }
 
-    /** @return whether the generated enchantment content is switched off. */
     public boolean disableGeneratedEnchantments() {
         return this.disableGeneratedEnchantments;
     }
 
-    /** @return whether join notices registered through the api are shown at all */
     public boolean noticesEnabled() {
         return this.noticesEnabled;
     }
 
-
-    /** @return problems found while reading the file during the last reload. */
     public List<ContentError> errors() {
         return this.errors;
     }

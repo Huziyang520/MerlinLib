@@ -1,3 +1,5 @@
+// Confirmation dialog for "remove every enchantment".
+
 package com.huziyang520.merlinlib.tools.ui;
 
 import com.huziyang520.merlinlib.tools.ui.vanilla.PanelLayout;
@@ -7,23 +9,13 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-
 import java.util.List;
 
-/**
- * Confirmation dialog for "remove every enchantment".
- */
 public class DeleteEnchantsConfirmScreen extends VanillaScreen {
-
     private static final int MIN_CONTENT_WIDTH = 200;
-
     private final Screen parent;
     private final Runnable onConfirm;
 
-    /**
-     * @param parent    the screen to return to, both after confirming and after cancelling
-     * @param onConfirm run when the player confirms; the screen closes itself afterwards
-     */
     public DeleteEnchantsConfirmScreen(Screen parent, Runnable onConfirm) {
         super(Component.translatable("gui.merlinlib.confirm.title"));
         this.parent = parent;
@@ -50,7 +42,6 @@ public class DeleteEnchantsConfirmScreen extends VanillaScreen {
     protected void build(PanelLayout layout) {
         layout.gap(12 + 4 + 12 + 10);
         int y = layout.row(VanillaUi.WIDGET_HEIGHT);
-        // Full width pair, the same split every other toolkit screen uses.
         int half = layout.sliceWidth(2);
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.confirm.delete"),
                 button -> {
@@ -62,25 +53,11 @@ public class DeleteEnchantsConfirmScreen extends VanillaScreen {
         this.setInitialFocus(cancel);
     }
 
-    /**
-     * Draws the labels, rows and overlays this screen adds on top of its widgets.
-     *
-     * <p>Called by {@link VanillaScreen#extractRenderState} inside the opening or closing transform, after the
-     * widgets: the base class owns the order of the passes, so this screen never draws the dimming or the panel
-     * itself, and it must not call {@code super.extractRenderState} to get its labels drawn.
-     *
-     * @param graphics    the render state extractor
-     * @param mouseX      the cursor x
-     * @param mouseY      the cursor y
-     * @param partialTick the partial tick
-     */
     @Override
     protected void renderContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-
         PanelLayout layout = layout();
         int left = layout.left();
         int content = layout.contentWidth();
-
         VanillaUi.text(graphics, this.font, this.title, left, layout.top(), VanillaUi.TEXT_ERROR, content);
         VanillaUi.text(graphics, this.font, Component.translatable("gui.merlinlib.confirm.warning"),
                 left, layout.top() + 16, VanillaUi.TEXT, content);

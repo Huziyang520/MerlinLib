@@ -1,21 +1,14 @@
+// Validates identifiers early so a broken id fails with a readable message instead of an obscure registry error later on.
+
 package com.huziyang520.merlinlib.impl;
 
 import com.huziyang520.merlinlib.Constants;
 import net.minecraft.resources.Identifier;
-
 import java.util.Optional;
 import java.util.regex.Pattern;
 
-/**
- * Validates identifiers early so a broken id fails with a readable message instead of an obscure
- * registry error later on.
- */
 public final class IdValidator {
-
-    /** Same rule the game applies to mod ids: 2..64 chars, lower snake case, optional dot segments. */
     private static final Pattern MOD_ID = Pattern.compile("^(?=.{2,64}$)[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$");
-
-    /** Vanilla path rule: lower case, digits, {@code _ - . /}. */
     private static final Pattern PATH = Pattern.compile("^[a-z0-9_.\\-/]+$");
 
     private IdValidator() {
@@ -33,12 +26,6 @@ public final class IdValidator {
         return id != null && isValidNamespace(id.getNamespace()) && isValidPath(id.getPath());
     }
 
-    /**
-     * Parses an id, adding the MerlinLib namespace when the value has none.
-     *
-     * @param raw value as written by the user, e.g. {@code unbreakable} or {@code othermod:thing}
-     * @return the parsed id, or empty when the value is not a legal identifier
-     */
     public static Optional<Identifier> parse(String raw) {
         if (raw == null || raw.isBlank()) {
             return Optional.empty();
@@ -53,9 +40,6 @@ public final class IdValidator {
         return Optional.of(id);
     }
 
-    /**
-     * @return a readable reason why {@code raw} is not a legal id, or empty when it is legal.
-     */
     public static Optional<String> describeProblem(String raw) {
         if (raw == null || raw.isBlank()) {
             return Optional.of("id must not be empty");

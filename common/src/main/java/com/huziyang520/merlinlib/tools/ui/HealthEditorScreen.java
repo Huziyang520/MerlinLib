@@ -1,3 +1,5 @@
+// The health editor: edits the current and maximum health of one living entity.
+
 package com.huziyang520.merlinlib.tools.ui;
 
 import com.huziyang520.merlinlib.network.HealthEditPayload;
@@ -15,38 +17,22 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
-/**
- * The health editor: edits the current and maximum health of one living entity.
- */
 public class HealthEditorScreen extends VanillaScreen {
-
-    /** Narrowest content that still lays out sensibly. */
     private static final int MIN_CONTENT_WIDTH = 208;
-    /** Width of a value field. */
     private static final int FIELD_WIDTH = 100;
-    /** Height of the title, the target line and the separator under them. */
     private static final int HEADER_HEIGHT = 28;
-    /** Height of one label-plus-field row. */
     private static final int FIELD_ROW = VanillaUi.WIDGET_HEIGHT + 8;
-
     private final Screen parent;
     private final LivingEntity target;
-
     private EditBox currentBox;
     private EditBox maxBox;
     private Button confirm;
-
     private int currentLabelY;
     private int maxLabelY;
     private int hintY;
     private int errorY;
-
     private boolean valid = true;
 
-    /**
-     * @param parent the screen to return to
-     * @param target the entity to edit; only this entity is touched
-     */
     public HealthEditorScreen(Screen parent, LivingEntity target) {
         super(Component.translatable("gui.merlinlib.health.title"));
         this.parent = parent;
@@ -70,9 +56,9 @@ public class HealthEditorScreen extends VanillaScreen {
 
     @Override
     protected int contentHeight() {
-        return HEADER_HEIGHT             // title, target and the separator under them
-                + FIELD_ROW * 2          // current and maximum
-                + 10 + 10 + 10           // limit, hint and error lines
+        return HEADER_HEIGHT
+                + FIELD_ROW * 2
+                + 10 + 10 + 10
                 + 6 + VanillaUi.WIDGET_HEIGHT;
     }
 
@@ -81,11 +67,7 @@ public class HealthEditorScreen extends VanillaScreen {
         int left = layout.left();
         int content = layout.contentWidth();
         int fieldX = layout.right() - FIELD_WIDTH;
-
         layout.gap(HEADER_HEIGHT);
-
-        // The label sits next to its field, not on top of it: both used to be placed at the cursor before it
-        // was advanced, which put the label, the separator and the field on the same line.
         this.currentLabelY = layout.cursor() + 6;
         int currentY = layout.row(VanillaUi.WIDGET_HEIGHT);
         this.currentBox = VanillaUi.field(this.font, fieldX, currentY, FIELD_WIDTH,
@@ -94,7 +76,6 @@ public class HealthEditorScreen extends VanillaScreen {
         this.currentBox.setResponder(text -> validate());
         this.addRenderableWidget(this.currentBox);
         layout.gap(6);
-
         this.maxLabelY = layout.cursor() + 6;
         int maxY = layout.row(VanillaUi.WIDGET_HEIGHT);
         this.maxBox = VanillaUi.field(this.font, fieldX, maxY, FIELD_WIDTH,
@@ -103,13 +84,10 @@ public class HealthEditorScreen extends VanillaScreen {
         this.maxBox.setResponder(text -> validate());
         this.addRenderableWidget(this.maxBox);
         layout.gap(6);
-
         this.hintY = layout.cursor();
         this.errorY = this.hintY + 10;
         layout.gap(10 + 10 + 10);
-
         int bottom = layout.row(VanillaUi.WIDGET_HEIGHT);
-        // Two full width buttons, the same split the item editor uses.
         int half = layout.sliceWidth(2);
         this.confirm = this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.health.confirm"),
                 button -> this.send(), left, bottom, half));
@@ -119,7 +97,6 @@ public class HealthEditorScreen extends VanillaScreen {
         validate();
     }
 
-    /** Re-reads both fields and switches the confirm button on only when both hold a valid value. */
     private void validate() {
         boolean currentOk = parseHealth(this.currentBox == null ? null : this.currentBox.getValue()) != null;
         boolean maxOk = parseHealth(this.maxBox == null ? null : this.maxBox.getValue()) != null;
@@ -129,12 +106,6 @@ public class HealthEditorScreen extends VanillaScreen {
         }
     }
 
-    /**
-     * Parses a health value: whole numbers only, from 0 to the integer limit.
-     *
-     * @param text the field text, possibly {@code null} while the screen is being built
-     * @return the value, or {@code null} when the text is not acceptable
-     */
     private static Integer parseHealth(String text) {
         if (text == null) {
             return null;
@@ -158,7 +129,6 @@ public class HealthEditorScreen extends VanillaScreen {
             return;
         }
         if (!MerlinScreens.mayUseToolsLocally(player)) {
-            // Refused silently: the reason is already in the log, and a chat message on every attempt is noise.
             this.onClose();
             return;
         }
@@ -180,25 +150,11 @@ public class HealthEditorScreen extends VanillaScreen {
         return super.keyPressed(event);
     }
 
-    /**
-     * Draws the labels, rows and overlays this screen adds on top of its widgets.
-     *
-     * <p>Called by {@link VanillaScreen#extractRenderState} inside the opening or closing transform, after the
-     * widgets: the base class owns the order of the passes, so this screen never draws the dimming or the panel
-     * itself, and it must not call {@code super.extractRenderState} to get its labels drawn.
-     *
-     * @param graphics    the render state extractor
-     * @param mouseX      the cursor x
-     * @param mouseY      the cursor y
-     * @param partialTick the partial tick
-     */
     @Override
     protected void renderContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-
         PanelLayout layout = layout();
         int left = layout.left();
         int content = layout.contentWidth();
-
         VanillaUi.text(graphics, this.font, this.title, left, layout.top(), VanillaUi.TEXT, content);
         VanillaUi.text(graphics, this.font,
                 Component.translatable("gui.merlinlib.health.target", this.target.getName().getString()),
@@ -220,20 +176,11 @@ public class HealthEditorScreen extends VanillaScreen {
             VanillaUi.text(graphics, this.font, Component.translatable("gui.merlinlib.health.invalid"),
                     left, this.errorY + 10, VanillaUi.TEXT_ERROR, content);
         }
-        // A field with a bad value says so with red text. The first version painted the field's whole rectangle
-        // red instead, which hid the very value the player was trying to correct and looked like the box had
-        // been selected rather than rejected; both fields are tinted every frame, so a corrected value goes
-        // back to the normal colour as soon as it is typed.
+
         tint(this.currentBox, parseHealth(this.currentBox.getValue()) != null);
         tint(this.maxBox, parseHealth(this.maxBox.getValue()) != null);
     }
 
-    /**
-     * Colours a field's text to show whether its value is acceptable.
-     *
-     * @param box the field
-     * @param ok  whether the field holds a value that can be sent
-     */
     private static void tint(EditBox box, boolean ok) {
         if (box != null) {
             box.setTextColor(ok ? EditBox.DEFAULT_TEXT_COLOR : VanillaUi.TEXT_ERROR);

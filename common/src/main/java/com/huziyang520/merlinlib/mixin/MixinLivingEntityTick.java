@@ -1,3 +1,5 @@
+// Fires BuiltInEvents#ENTITY_TICK and GlobalEvents#LIVING_ENTITY_TICK.
+
 package com.huziyang520.merlinlib.mixin;
 
 import com.huziyang520.merlinlib.event.BuiltInEvents;
@@ -11,17 +13,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Fires {@link BuiltInEvents#ENTITY_TICK} and {@link GlobalEvents#LIVING_ENTITY_TICK}.
- */
 @Mixin(LivingEntity.class)
 public class MixinLivingEntityTick {
-
-    /**
-     * Dispatches the tick events.
-     *
-     * @param info the injection callback
-     */
     @Inject(method = "tick", at = @At("HEAD"))
     private void merlinlib$tick(CallbackInfo info) {
         boolean perEnchantment = EnchantmentEventDispatcher.hasCallbacks(BuiltInEvents.ENTITY_TICK);

@@ -1,3 +1,5 @@
+// Fabric client entrypoint: the single key binding and the editor opening.
+
 package com.huziyang520.merlinlib.client;
 
 import com.huziyang520.merlinlib.network.DamageFeedbackPayload;
@@ -27,30 +29,18 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 
-/**
- * Fabric client entrypoint: the single key binding and the editor opening.
- */
 public class MerlinLibFabricClient implements ClientModInitializer {
-
-    /** The vanilla controls screen column dedicated to MerlinLib. */
     private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
             Identifier.fromNamespaceAndPath(Constants.MOD_ID, "main"));
 
-    /**
-     * One binding only. 26.3 renamed the registration api ({@code fabric-key-mapping-api-v1}), but the
-     * binding itself is an ordinary vanilla {@link KeyMapping}, so it shows up in the vanilla controls
-     * screen and can be rebound to anything, including a {@code Ctrl} combination, by the player.
-     */
     private static final KeyMapping OPEN_EDITOR = new KeyMapping(
             "key.merlinlib.open_editor", MerlinUi.KEY_LEFT, CATEGORY);
 
-    /** Opens the macro screen. */
     private static final KeyMapping OPEN_MACROS = new KeyMapping(
             "key.merlinlib.macros", MerlinUi.KEY_RIGHT, CATEGORY);
 
     @Override
     public void onInitializeClient() {
-
         KeyMappingHelper.registerKeyMapping(OPEN_EDITOR);
         KeyMappingHelper.registerKeyMapping(OPEN_MACROS);
 
@@ -65,13 +55,11 @@ public class MerlinLibFabricClient implements ClientModInitializer {
             MacroStorage.tick(client);
         });
 
-        // Drawn last so the numbers sit above the vanilla HUD, right next to the crosshair.
         HudElementRegistry.addLast(
                 Identifier.fromNamespaceAndPath(com.huziyang520.merlinlib.Constants.MOD_ID, "combat_overlay"),
                 CombatFeedback.instance()::render);
         CombatFeedback.announce();
 
-        // The crosshair number comes from the server; the local swing only colours the popup.
         DamageFeedbackSink.setClientSink(payload ->
                 CombatFeedback.instance().onServerDamage(payload.damage(), payload.critical(), payload.targetId()));
         ClientPlayNetworking.registerGlobalReceiver(DamageFeedbackPayload.TYPE, (payload, context) ->
@@ -81,12 +69,8 @@ public class MerlinLibFabricClient implements ClientModInitializer {
         com.huziyang520.merlinlib.tools.HealthEditorItem.setOpener(target ->
                 MerlinScreens.openHealthEditor(null, target));
         MacroStorage.load();
-
-        // Cloth Config, when it is installed: the client switches get a screen and the file stays the store.
         FabricConfig.install();
 
-        // /merlinlib editor | health | macro | config. Client side on purpose: these only ever open a screen
-        // on this computer, and a server side version would need one payload per screen to say so.
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, buildContext) -> dispatcher.register(
                 ClientCommands.literal(Constants.MOD_ID)
                         .then(ClientCommands.literal("editor")
@@ -119,11 +103,7 @@ public class MerlinLibFabricClient implements ClientModInitializer {
                                     return 1;
                                 }))));
 
-        // Sneak using an entity opens the health editor for it.
         UseEntityCallback.EVENT.register((player, level, hand, entity, hitResult) -> {
-            // No switch is consulted here: openHealthEditor answers "may this open, and is the item held"
-            // itself. Checking healthEditorRequiresItem here as well made the sneak click work only while
-            // the server did NOT require the item, which is the opposite of what the switch means.
             if (level.isClientSide() && player.isShiftKeyDown()
                     && entity instanceof net.minecraft.world.entity.LivingEntity living
                     && MerlinScreens.openHealthEditor(null, living)) {

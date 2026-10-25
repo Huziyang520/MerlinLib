@@ -1,14 +1,11 @@
+// Outcome of one content reload.
+
 package com.huziyang520.merlinlib.content;
 
 import net.minecraft.resources.Identifier;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Outcome of one content reload. Printed in full after every startup and every {@code /reload} so that
- * authors can see exactly what changed instead of guessing.
- */
 public record ContentReport(
         List<Identifier> added,
         List<Identifier> updated,
@@ -16,7 +13,6 @@ public record ContentReport(
         List<Identifier> failed,
         List<ContentError> errors
 ) {
-
     public static final ContentReport EMPTY = new ContentReport(List.of(), List.of(), List.of(), List.of(), List.of());
 
     public boolean hasChanges() {
@@ -27,9 +23,6 @@ public record ContentReport(
         return !this.failed.isEmpty() || !this.errors.isEmpty();
     }
 
-    /**
-     * @return a multi-line, human readable summary. Never empty, so callers can always log it.
-     */
     public String describe() {
         StringBuilder builder = new StringBuilder();
         builder.append("added=").append(this.added.size())

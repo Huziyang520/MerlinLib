@@ -1,3 +1,5 @@
+// NeoForge entrypoint.
+
 package com.huziyang520.merlinlib;
 
 import com.huziyang520.merlinlib.command.MerlinCommand;
@@ -31,58 +33,28 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 
-/**
- * NeoForge entrypoint. Hands the mod event bus to the shared bootstrap, registers the diagnostic
- * command on the game bus and adds the creative inventory entries.
- */
 @Mod(Constants.MOD_ID)
 public class MerlinLibNeoForge {
-
     public MerlinLibNeoForge(IEventBus eventBus, ModContainer modContainer) {
-
         eventBus.addListener(this::onBuildCreativeTab);
         eventBus.addListener(this::onRegisterPayloads);
         NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(this::onIncomingDamage);
-        // A death respawn rebuilds the player and copies attribute base values only (restoreFrom calls
-        // assignPermanentModifiers solely when restoreAll is true), so the ceiling is carried over here.
         NeoForge.EVENT_BUS.addListener(this::onPlayerClone);
-        // The configuration screen itself is registered by the client entrypoint, with the section page that
-        // knows about the join notice. Registering a second, plainer factory here as well would fight over
-        // which one the mods list opens, and the one that lost would take the notice row with it.
         NeoConfigs.register(modContainer);
         eventBus.addListener(this::onConfigLoading);
         eventBus.addListener(this::onConfigReloading);
         MerlinLib.init(eventBus);
     }
 
-    /**
-     * Hands the client switches to the configuration that has just been loaded.
-     *
-     * <p>Said explicitly because the two halves are not interchangeable: the client switches come from the
-     * {@code CLIENT} configuration, the authoritative ones from {@code COMMON}, and a backend installed for
-     * the wrong half would silently answer every question with a default.
-     *
-     * @param event the load event
-     */
     private void onConfigLoading(ModConfigEvent.Loading event) {
         adopt(event.getConfig());
     }
 
-    /**
-     * Re-reads after {@code /reload} reloaded the configuration on disk.
-     *
-     * @param event the reload event
-     */
     private void onConfigReloading(ModConfigEvent.Reloading event) {
         adopt(event.getConfig());
     }
 
-    /**
-     * Installs the backend of the half that has just become readable.
-     *
-     * @param config the configuration that was loaded
-     */
     private static void adopt(ModConfig config) {
         if (config.getType() == ModConfig.Type.CLIENT) {
             ConfigManager.setBackend(NeoConfigs.clientBackend());
@@ -91,20 +63,9 @@ public class MerlinLibNeoForge {
         }
     }
 
-    /**
-     * Registers the damage feedback payload. The handler delegates to the common sink, which is a
-     * no-op on a dedicated server, so this class stays free of client references.
-     *
-     * @param event the payload registration event
-     */
     private void onRegisterPayloads(RegisterPayloadHandlersEvent event) {
-
-        // Codec only: the clientbound handler is registered on the client via
-        // RegisterClientPayloadHandlersEvent — registering it here too throws
-        // "Duplicate clientbound handler registration" on 26.3.
         event.registrar("1").playToClient(DamageFeedbackPayload.TYPE, DamageFeedbackPayload.STREAM_CODEC);
-        // Item edit: client -> server, applied to the main hand of the requesting player. The server is the
-        // only side that can persist it and the only side that can check permission.
+
         event.registrar("1").playToServer(ItemEditPayload.TYPE, ItemEditPayload.STREAM_CODEC,
                 (payload, context) -> {
                     if (!(context.player() instanceof ServerPlayer serverPlayer)) {
@@ -128,14 +89,7 @@ public class MerlinLibNeoForge {
                 });
     }
 
-    /**
-     * Applies a validated health edit on the server: the screen is only a remote control.
-     *
-     * @param player  the requesting player
-     * @param payload the requested edit
-     */
     private static void applyHealthEdit(ServerPlayer player, HealthEditPayload payload) {
-
         if (!PermissionGate.canOpenHealthEditor(player)) {
             player.sendSystemMessage(net.minecraft.network.chat.Component
                     .translatable("message.merlinlib.no_permission"));
@@ -149,25 +103,11 @@ public class MerlinLibNeoForge {
         }
     }
 
-    /**
-     * Carries the health ceiling over to the player that replaces the old one on respawn.
-     *
-     * @param event the clone event, fired on respawn and on a dimension change
-     */
     private void onPlayerClone(net.neoforged.neoforge.event.entity.player.PlayerEvent.Clone event) {
         HealthCeiling.copyTo(event.getOriginal(), event.getEntity());
     }
 
-    /**
-     * Publishes the resolved damage of every player dealt hit to the attacking client.
-     *
-     * <p>The event amount is the damage before the target's remaining health caps it, which is exactly
-     * the "theoretical damage of this swing" the overlay shows.
-     *
-     * @param event the incoming damage event
-     */
     private void onIncomingDamage(LivingIncomingDamageEvent event) {
-
         if (event.getSource().getEntity() instanceof ServerPlayer attacker) {
             attacker.connection.send(new DamageFeedbackPayload(
                     event.getAmount(), false, event.getEntity().getId()));
@@ -175,23 +115,12 @@ public class MerlinLibNeoForge {
     }
 
     private void onRegisterCommands(RegisterCommandsEvent event) {
-
         MerlinCommand.register(event.getDispatcher(), event.getBuildContext(), event.getCommandSelection());
     }
 
-    /**
-     * Adds one enchanted book per MerlinLib enchantment to the vanilla ingredients tab.
-     *
-     * <p>The stacks are built from the parameters' registry access, which is only populated once the
-     * data driven enchantment registry has been loaded; outside of that window the list is simply empty.
-     */
     private void onBuildCreativeTab(BuildCreativeModeTabContentsEvent event) {
-
         if (MerlinCreativeEntries.TAB.equals(event.getTabKey())) {
             for (ItemStack stack : MerlinCreativeEntries.enchantedBooks(event.getParameters().holders())) {
-                // NeoForge rejects a stack that the tab already holds with
-                // "Itemstack ... already exists in the tab's list", and a tab is rebuilt whenever the
-                // creative screen is opened, so the same book arrives more than once per session.
                 if (event.getParentEntries().contains(stack) || event.getSearchEntries().contains(stack)) {
                     continue;
                 }

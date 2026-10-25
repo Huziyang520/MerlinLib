@@ -1,3 +1,5 @@
+// Loader independent bootstrap of MerlinLib.
+
 package com.huziyang520.merlinlib;
 
 import com.huziyang520.merlinlib.config.ConfigManager;
@@ -22,23 +24,12 @@ import net.minecraft.core.Holder;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
-/**
- * Loader independent bootstrap of MerlinLib.
- */
 public class MerlinLib {
-
     private static boolean initialized;
 
     private MerlinLib() {
     }
 
-    /**
-     * Boots the shared part of the mod. Safe to call more than once; only the first call has any
-     * effect.
-     *
-     * @param loaderContext loader specific handle, currently the NeoForge mod event bus; pass
-     *                      {@code null} on loaders without one
-     */
     public static void init(Object loaderContext) {
         if (initialized) {
             return;
@@ -50,34 +41,18 @@ public class MerlinLib {
                 Services.PLATFORM.getPlatformName(),
                 Services.PLATFORM.getEnvironmentName()
         );
-
         Services.PACK.bootstrap(loaderContext);
         Services.REGISTRATIONS.bootstrap(loaderContext);
         Services.LIFECYCLE.bootstrap(loaderContext);
         Services.LOOT.bootstrap(loaderContext);
         LootInjector.install();
-        // Join notices: registered from here, so a business mod may have registered its own before or after.
         NoticeManager.install();
-        // Reads the per mod notice switches, and imports the old notices.per_mod string the first time it
-        // runs. This happens while the mod is still being constructed on purpose: NeoForge rewrites
-        // server.toml from its own spec right after the construction phase, and the old key is no longer
-        // declared there, so a read that waited until after the load would find nothing to import.
         NoticeSettings.init();
-        // Says which feature flags put a world in the "experimental settings" category. The generated datapack
-        // declares none, so when this line appears the flag came from a data pack the world has selected - and
-        // the log names it, instead of leaving it to be guessed.
+
         Services.LIFECYCLE.onServerStarted(server -> {
-            // The screen the player sees ("this world uses experimental settings") is driven by the world's
-            // generation lifecycle, not by the feature flags: WorldOpenFlows.confirmWorldCreation compares the
-            // lifecycle, and that value is built from the registered dimensions and registries of the selected
-            // packs (WorldDimensions.checkStability). Both are reported here, because the two have different
-            // fixes and guessing between them costs a round trip each time.
             Lifecycle lifecycle = server.getWorldData().worldGenSettingsLifecycle();
             FeatureFlagSet flags = server.getWorldData().enabledFeatures();
             if (lifecycle != Lifecycle.stable()) {
-                // Name the registries that are not stable: the lifecycle is the maximum over the dimensions and
-                // over every registry the selected packs provide, and knowing which one is unstable is the whole
-                // difference between fixing this and guessing at it again.
                 StringBuilder unstable = new StringBuilder();
                 server.registryAccess().registries().forEach(entry -> {
                     Lifecycle registryLifecycle = entry.value().registryLifecycle();
@@ -107,17 +82,6 @@ public class MerlinLib {
         ContentManager.refresh();
     }
 
-    /**
-     * Registers MerlinLib's own join notice about the rebuilt configuration screen.
-     *
-     * <p>Sent on every entry into a save, like a plain join message: it explains where the configuration
-     * screen went, which a player looks for more than once.
-     *
-     * <p>Registered as a notice rather than as a plain chat message, so the server's switches - the global
-     * one in {@code server.toml} and MerlinLib's own row in {@code notices.toml}, which the join notice
-     * page edits - apply to it exactly like they apply to a business mod's notice. Nothing is checked here:
-     * the switches are read when the notice would be sent, so a change takes effect on the next join.
-     */
     private static void registerOwnNotices() {
         MerlinApi.notices().register(
                 Identifier.fromNamespaceAndPath(Constants.MOD_ID, "config_ui"),
@@ -125,26 +89,11 @@ public class MerlinLib {
                 Component.translatable("merlinlib.notice.config_ui"));
     }
 
-    /**
-     * Raises the upper bound of the attributes the editors can reach, to the integer limit.
-     *
-     * <p>Vanilla declares these as ranged attributes with a ceiling of their own - 1024 for
-     * {@code max_health} and 2048 for {@code attack_damage} - and every value a holder computes is clamped
-     * to that ceiling, so an editor that lets the player type one million would silently end up at the
-     * ceiling instead. The ceiling is a private final field with no setter, which is what the accessor
-     * mixin is for; widening them once here is what makes the advertised range real.
-     */
     private static void widenAttributeCeilings() {
         raiseCeiling(Attributes.MAX_HEALTH, "max_health");
         raiseCeiling(Attributes.ATTACK_DAMAGE, "attack_damage");
     }
 
-    /**
-     * Raises one attribute's ceiling.
-     *
-     * @param attribute the attribute holder
-     * @param name      its name, for the log line that proves the widening happened
-     */
     private static void raiseCeiling(Holder<Attribute> attribute, String name) {
         if (attribute.value() instanceof RangedAttributeAccessor accessor) {
             accessor.merlinlib$setMaxValue(Integer.MAX_VALUE);
@@ -152,9 +101,6 @@ public class MerlinLib {
         }
     }
 
-    /**
-     * @return {@code true} once {@link #init(Object)} has completed.
-     */
     public static boolean isInitialized() {
         return initialized;
     }

@@ -1,3 +1,5 @@
+// Adds the MerlinLib generated pack to every pack repository.
+
 package com.huziyang520.merlinlib.mixin;
 
 import com.huziyang520.merlinlib.datapack.GeneratedPackSource;
@@ -10,16 +12,11 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-/**
- * Adds the MerlinLib generated pack to every pack repository.
- */
 @Mixin(PackRepository.class)
 public class PackRepositoryMixin {
-
     @Mutable
     @Shadow
     @Final
