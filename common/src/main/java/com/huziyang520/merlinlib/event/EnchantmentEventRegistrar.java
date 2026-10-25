@@ -18,6 +18,14 @@ public final class EnchantmentEventRegistrar {
         return this;
     }
 
+    public <E extends EnchantmentEvent> EnchantmentEventRegistrar register(Holder<Enchantment> enchantment,
+                                                                          EnchantmentEventType<E> type,
+                                                                          EnchantmentEventCallback<E> callback,
+                                                                          int priority) {
+        EnchantmentEventDispatcher.register(enchantment, type, callback, priority);
+        return this;
+    }
+
     public int registeredCount() {
         return EnchantmentEventDispatcher.registeredEnchantments();
     }

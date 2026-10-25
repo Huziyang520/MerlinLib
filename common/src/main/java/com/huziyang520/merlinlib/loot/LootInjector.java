@@ -1,4 +1,4 @@
-// Turns the registered LootInjection rules into loot pools.
+// Turns the registered LootInjection rules into one loot pool per table and enchantment set.
 
 package com.huziyang520.merlinlib.loot;
 
@@ -19,7 +19,11 @@ import net.minecraft.world.level.storage.loot.entries.LootItem;
 import net.minecraft.world.level.storage.loot.entries.UniformContainerBase;
 import net.minecraft.world.level.storage.loot.functions.EnchantRandomlyFunction;
 import net.minecraft.world.level.storage.loot.predicates.LootItemRandomChanceCondition;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class LootInjector {
@@ -49,6 +53,7 @@ public final class LootInjector {
 
     private static void inject(Identifier tableId, ILootBridge.PoolSink sink, HolderGetter.Provider registries) {
         boolean isServerTable = tableId.getNamespace().equals(Identifier.DEFAULT_NAMESPACE);
+        Map<String, List<LootInjection>> grouped = new LinkedHashMap<>();
         for (int index = 0; index < INJECTIONS.size(); index++) {
             LootInjection injection = INJECTIONS.get(index);
             if (!isServerTable && !injection.allowsModdedTables()) {
@@ -57,26 +62,35 @@ public final class LootInjector {
             if (!injection.getTargetTables().contains(tableId.toString())) {
                 continue;
             }
-            LootPool.Builder pool = buildPool(injection, registries);
+            grouped.computeIfAbsent(poolKey(injection), key -> new ArrayList<>()).add(injection);
+        }
+        for (List<LootInjection> rules : grouped.values()) {
+            LootPool.Builder pool = buildPool(rules, registries);
             if (pool != null) {
                 sink.add(pool);
             }
         }
     }
 
-    private static LootPool.Builder buildPool(LootInjection injection, HolderGetter.Provider registries) {
+    private static String poolKey(LootInjection injection) {
+        return new TreeSet<>(injection.getEnchantments()).toString();
+    }
+
+    private static LootPool.Builder buildPool(List<LootInjection> rules, HolderGetter.Provider registries) {
         LootPool.Builder pool = LootPool.lootPool();
         boolean anyEntry = false;
-        for (String enchantmentId : injection.getEnchantments()) {
-            Holder<Enchantment> enchantment = resolve(registries, enchantmentId);
-            if (enchantment == null) {
-                Constants.LOG.warn("[MerlinLib] the loot injection for {} names {} into {}, which does not "
-                        + "exist; the enchantment was skipped", enchantmentId, injection.getForm(),
-                        injection.getTargetTables());
-                continue;
+        for (LootInjection rule : rules) {
+            for (String enchantmentId : rule.getEnchantments()) {
+                Holder<Enchantment> enchantment = resolve(registries, enchantmentId);
+                if (enchantment == null) {
+                    Constants.LOG.warn("[MerlinLib] the loot injection for {} names {} into {}, which does not "
+                            + "exist; the enchantment was skipped", enchantmentId, rule.getForm(),
+                            rule.getTargetTables());
+                    continue;
+                }
+                pool.add(buildEntry(rule, enchantment));
+                anyEntry = true;
             }
-            pool.add(buildEntry(injection, enchantment));
-            anyEntry = true;
         }
         return anyEntry ? pool : null;
     }

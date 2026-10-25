@@ -6,10 +6,10 @@ import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.api.EnchantmentInfo;
 import com.huziyang520.merlinlib.api.MerlinApi;
 import com.huziyang520.merlinlib.config.ConfigManager;
-import com.huziyang520.merlinlib.config.ContentSnapshot;
 import com.huziyang520.merlinlib.content.EnchantmentDraft;
 import com.huziyang520.merlinlib.datapack.GeneratedPack;
 import com.huziyang520.merlinlib.impl.ContentManager;
+import com.huziyang520.merlinlib.impl.ContentValidator;
 import com.huziyang520.merlinlib.impl.IdValidator;
 import com.huziyang520.merlinlib.impl.PermissionGate;
 import com.mojang.brigadier.CommandDispatcher;
@@ -49,6 +49,8 @@ public final class MerlinCommand {
                         .executes(MerlinCommand::list))
                 .then(Commands.literal("pack")
                         .executes(MerlinCommand::packStatus))
+                .then(Commands.literal("validate")
+                        .executes(MerlinCommand::validate))
                 .then(Commands.literal("info")
                         .then(Commands.argument("id", StringArgumentType.string())
                                 .executes(MerlinCommand::info)))
@@ -82,9 +84,9 @@ public final class MerlinCommand {
     private static int list(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
         Registry<Enchantment> registry = enchantmentRegistry(source);
-        ContentSnapshot snapshot = ContentManager.current();
+        Map<Identifier, EnchantmentDraft> served = ContentManager.current();
 
-        List<Identifier> present = snapshot.enchantments().keySet().stream()
+        List<Identifier> present = served.keySet().stream()
                 .sorted()
                 .filter(registry::containsKey)
                 .toList();
@@ -96,7 +98,7 @@ public final class MerlinCommand {
                 .toList();
 
         if (present.isEmpty() && others.isEmpty()) {
-            source.sendSuccess(() -> Component.translatable("command.merlinlib.list.empty", snapshot.enchantments().size()), false);
+            source.sendSuccess(() -> Component.translatable("command.merlinlib.list.empty", served.size()), false);
             return 0;
         }
 
@@ -105,7 +107,7 @@ public final class MerlinCommand {
         } else {
             source.sendSuccess(() -> Component.translatable("command.merlinlib.list.header", present.size()), false);
             for (Identifier id : present) {
-                EnchantmentDraft draft = snapshot.enchantments().get(id);
+                EnchantmentDraft draft = served.get(id);
                 source.sendSuccess(() -> Component.literal(" - " + id + " (" + draft.source().displayName() + ")"), false);
             }
         }
@@ -117,6 +119,17 @@ public final class MerlinCommand {
             }
         }
         return present.size() + others.size();
+    }
+
+    private static int validate(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        List<String> problems = ContentValidator.validate(source.getServer());
+        int served = ContentManager.current().size();
+        source.sendSuccess(() -> Component.literal("validated " + served + " enchantment(s), problems=" + problems.size()), false);
+        for (String problem : problems) {
+            source.sendSuccess(() -> Component.literal("  ! " + problem), false);
+        }
+        return problems.isEmpty() ? 1 : 0;
     }
 
     private static int info(CommandContext<CommandSourceStack> context) {
@@ -187,7 +200,7 @@ public final class MerlinCommand {
         Map<Identifier, List<Resource>> visible = resources.listResourceStacks("enchantment",
                 id -> id.getNamespace().equals(Constants.MOD_ID));
         Registry<Enchantment> registry = enchantmentRegistry(source);
-        long inRegistry = ContentManager.current().enchantments().keySet().stream().filter(registry::containsKey).count();
+        long inRegistry = ContentManager.current().keySet().stream().filter(registry::containsKey).count();
 
         source.sendSuccess(() -> Component.literal(
                 "pack available=" + available

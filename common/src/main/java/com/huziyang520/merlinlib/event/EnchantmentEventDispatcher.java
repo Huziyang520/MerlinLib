@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class EnchantmentEventDispatcher {
-    private static final Map<Identifier, Map<EnchantmentEventType<?>, List<EnchantmentEventCallback<?>>>> CALLBACKS
+    private static final Map<Identifier, Map<EnchantmentEventType<?>, List<Entry>>> CALLBACKS
             = new ConcurrentHashMap<>();
 
     private static volatile long activeTypes;
@@ -24,19 +24,39 @@ public final class EnchantmentEventDispatcher {
     private EnchantmentEventDispatcher() {
     }
 
+    private record Entry(int priority, EnchantmentEventCallback<?> callback) {
+    }
+
     public static <E extends EnchantmentEvent> void register(Holder<Enchantment> enchantment,
                                                              EnchantmentEventType<E> type,
                                                              EnchantmentEventCallback<E> callback) {
+        register(enchantment, type, callback, 0);
+    }
+
+    public static <E extends EnchantmentEvent> void register(Holder<Enchantment> enchantment,
+                                                             EnchantmentEventType<E> type,
+                                                             EnchantmentEventCallback<E> callback,
+                                                             int priority) {
         Identifier id = idOf(enchantment);
         if (id == null) {
             Constants.LOG.warn("[MerlinLib] a callback for {} was ignored: the enchantment has no registry id, "
                     + "so it cannot be matched by id after a datapack reload", type.id());
             return;
         }
-        CALLBACKS.computeIfAbsent(id, key -> new ConcurrentHashMap<>())
-                .computeIfAbsent(type, key -> new CopyOnWriteArrayList<>())
-                .add(callback);
+        List<Entry> entries = CALLBACKS.computeIfAbsent(id, key -> new ConcurrentHashMap<>())
+                .computeIfAbsent(type, key -> new CopyOnWriteArrayList<>());
+        insert(entries, new Entry(priority, callback));
         activeTypes |= type.mask();
+    }
+
+    private static void insert(List<Entry> entries, Entry entry) {
+        synchronized (entries) {
+            int index = 0;
+            while (index < entries.size() && entries.get(index).priority() <= entry.priority()) {
+                index++;
+            }
+            entries.add(index, entry);
+        }
     }
 
     public static boolean hasCallbacks(EnchantmentEventType<?> type) {
@@ -45,7 +65,7 @@ public final class EnchantmentEventDispatcher {
 
     public static boolean hasEnchantmentCallbacks(Holder<Enchantment> enchantment) {
         Identifier id = idOf(enchantment);
-        Map<EnchantmentEventType<?>, List<EnchantmentEventCallback<?>>> byType = id == null ? null : CALLBACKS.get(id);
+        Map<EnchantmentEventType<?>, List<Entry>> byType = id == null ? null : CALLBACKS.get(id);
         return byType != null && !byType.isEmpty();
     }
 
@@ -72,22 +92,25 @@ public final class EnchantmentEventDispatcher {
             if (id == null) {
                 continue;
             }
-            Map<EnchantmentEventType<?>, List<EnchantmentEventCallback<?>>> byType = CALLBACKS.get(id);
+            Map<EnchantmentEventType<?>, List<Entry>> byType = CALLBACKS.get(id);
             if (byType == null) {
                 continue;
             }
-            List<EnchantmentEventCallback<?>> callbacks = byType.get(type);
-            if (callbacks == null) {
+            List<Entry> entries = byType.get(type);
+            if (entries == null) {
                 continue;
             }
-            for (EnchantmentEventCallback<?> raw : callbacks) {
+            for (Entry entry : entries) {
                 try {
                     @SuppressWarnings("unchecked")
-                    EnchantmentEventCallback<E> callback = (EnchantmentEventCallback<E>) raw;
+                    EnchantmentEventCallback<E> callback = (EnchantmentEventCallback<E>) entry.callback();
                     callback.onEvent(event, context);
                 } catch (RuntimeException | LinkageError error) {
                     Constants.LOG.error("[MerlinLib] the {} callback of {} failed; the event continues",
                             type.id(), id, error);
+                }
+                if (event.isCanceled()) {
+                    return;
                 }
             }
         }
@@ -95,22 +118,22 @@ public final class EnchantmentEventDispatcher {
 
     public static int callbackCount(Holder<Enchantment> enchantment) {
         Identifier id = idOf(enchantment);
-        Map<EnchantmentEventType<?>, List<EnchantmentEventCallback<?>>> byType = id == null ? null : CALLBACKS.get(id);
+        Map<EnchantmentEventType<?>, List<Entry>> byType = id == null ? null : CALLBACKS.get(id);
         if (byType == null) {
             return 0;
         }
         int count = 0;
-        for (List<EnchantmentEventCallback<?>> callbacks : byType.values()) {
-            count += callbacks.size();
+        for (List<Entry> entries : byType.values()) {
+            count += entries.size();
         }
         return count;
     }
 
     public static int callbackCount(EnchantmentEventType<?> type) {
         int count = 0;
-        for (Map<EnchantmentEventType<?>, List<EnchantmentEventCallback<?>>> byType : CALLBACKS.values()) {
-            List<EnchantmentEventCallback<?>> callbacks = byType.get(type);
-            count += callbacks == null ? 0 : callbacks.size();
+        for (Map<EnchantmentEventType<?>, List<Entry>> byType : CALLBACKS.values()) {
+            List<Entry> entries = byType.get(type);
+            count += entries == null ? 0 : entries.size();
         }
         return count;
     }
@@ -127,7 +150,7 @@ public final class EnchantmentEventDispatcher {
 
     public static List<EnchantmentEventType<?>> activeTypes() {
         List<EnchantmentEventType<?>> types = new ArrayList<>();
-        for (Map<EnchantmentEventType<?>, List<EnchantmentEventCallback<?>>> byType : CALLBACKS.values()) {
+        for (Map<EnchantmentEventType<?>, List<Entry>> byType : CALLBACKS.values()) {
             for (EnchantmentEventType<?> type : byType.keySet()) {
                 if (!types.contains(type)) {
                     types.add(type);

@@ -1,4 +1,4 @@
-// Owns the two switch stores: both are read on startup and re-read on every content reload.
+// Owns the two switch stores and the coefficient table: all of them are read on startup and re-read on every content reload.
 
 package com.huziyang520.merlinlib.config;
 
@@ -18,6 +18,7 @@ public final class ConfigManager {
     private static volatile ConfigBackend serverBackend;
     private static volatile ClientConfig client;
     private static volatile ServerConfig server;
+    private static volatile Coefficients coefficients = Coefficients.empty();
     private static volatile List<ContentError> errors = List.of();
 
     static {
@@ -63,8 +64,10 @@ public final class ConfigManager {
     public static synchronized void reload() {
         client = ClientConfig.load(clientView());
         server = ServerConfig.load(serverView());
+        coefficients = Coefficients.load();
         List<ContentError> collected = new ArrayList<>(client.errors());
         collected.addAll(server.errors());
+        collected.addAll(coefficients.errors());
         errors = List.copyOf(collected);
 
         for (ContentError error : collected) {
@@ -131,6 +134,10 @@ public final class ConfigManager {
 
     public static ServerConfig server() {
         return server;
+    }
+
+    public static Coefficients coefficients() {
+        return coefficients;
     }
 
     public static List<ContentError> errors() {

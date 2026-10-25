@@ -8,4 +8,11 @@ import net.minecraft.world.entity.LivingEntity;
 public interface EnchantmentEvent {
     LivingEntity getEntity();
     ServerLevel getLevel();
+
+    default boolean isCanceled() {
+        return false;
+    }
+
+    default void cancel() {
+    }
 }

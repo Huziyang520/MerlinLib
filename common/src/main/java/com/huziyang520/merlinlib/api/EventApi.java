@@ -21,6 +21,13 @@ public final class EventApi {
         EnchantmentEventDispatcher.register(enchantment, type, callback);
     }
 
+    public <E extends EnchantmentEvent> void register(Holder<Enchantment> enchantment,
+                                                      EnchantmentEventType<E> type,
+                                                      int priority,
+                                                      EnchantmentEventCallback<E> callback) {
+        EnchantmentEventDispatcher.register(enchantment, type, priority, callback);
+    }
+
     public boolean hasCallbacks(EnchantmentEventType<?> type) {
         return EnchantmentEventDispatcher.hasCallbacks(type);
     }

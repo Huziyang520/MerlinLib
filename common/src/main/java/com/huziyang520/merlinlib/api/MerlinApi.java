@@ -15,6 +15,26 @@ public final class MerlinApi {
     private MerlinApi() {
     }
 
+    public static CooldownApi cooldowns() {
+        return CooldownApi.INSTANCE;
+    }
+
+    public static DropApi drops() {
+        return DropApi.INSTANCE;
+    }
+
+    public static EffectLedger ledger() {
+        return EffectLedger.INSTANCE;
+    }
+
+    public static CombatApi combat() {
+        return CombatApi.INSTANCE;
+    }
+
+    public static TradeApi trades() {
+        return TradeApi.INSTANCE;
+    }
+
     public static EnchantmentApi enchantments() {
         return ENCHANTMENTS;
     }

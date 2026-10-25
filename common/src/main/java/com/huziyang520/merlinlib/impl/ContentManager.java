@@ -1,62 +1,54 @@
-// Single source of truth for "what content exists right now".
+// Resolves which enchantments MerlinLib serves right now: exactly the ones registered through the code API.
 
 package com.huziyang520.merlinlib.impl;
 
 import com.huziyang520.merlinlib.Constants;
-import com.huziyang520.merlinlib.config.ConfigDirectory;
 import com.huziyang520.merlinlib.config.ConfigManager;
-import com.huziyang520.merlinlib.config.ContentConfigLoader;
-import com.huziyang520.merlinlib.config.ContentSnapshot;
-import com.huziyang520.merlinlib.content.ContentError;
 import com.huziyang520.merlinlib.content.ContentReport;
-import com.huziyang520.merlinlib.content.ContentSource;
 import com.huziyang520.merlinlib.content.EnchantmentDraft;
-import com.huziyang520.merlinlib.effect.EffectOverrides;
 import net.minecraft.resources.Identifier;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
+import java.util.TreeMap;
 
 public final class ContentManager {
-    private static volatile ContentSnapshot cached;
-    private static volatile String cachedFingerprint = "";
-    private static volatile ContentSnapshot reported;
+    private static volatile Map<Identifier, EnchantmentDraft> cached;
+    private static volatile long cachedRevision = Long.MIN_VALUE;
+    private static volatile Map<Identifier, EnchantmentDraft> reported;
     private static volatile ContentReport lastReport = ContentReport.EMPTY;
 
     private ContentManager() {
     }
 
-    public static ContentSnapshot current() {
-        String fingerprint = ConfigDirectory.fingerprint() + "|api=" + EnchantmentRegistry.INSTANCE.revision();
-        ContentSnapshot local = cached;
-        if (local != null && fingerprint.equals(cachedFingerprint)) {
+    public static Map<Identifier, EnchantmentDraft> current() {
+        long revision = EnchantmentRegistry.INSTANCE.revision();
+        Map<Identifier, EnchantmentDraft> local = cached;
+        if (local != null && revision == cachedRevision) {
             return local;
         }
         synchronized (ContentManager.class) {
-            if (cached != null && fingerprint.equals(cachedFingerprint)) {
-                return cached;
+            if (cached == null || revision != cachedRevision) {
+                cached = build();
+                cachedRevision = revision;
             }
-            ContentSnapshot built = build();
-            cached = built;
-            cachedFingerprint = fingerprint;
-            return built;
+            return cached;
         }
     }
 
     public static ContentReport refresh() {
-        ContentSnapshot previous;
-        ContentSnapshot next;
+        ContentValidator.install();
+        Map<Identifier, EnchantmentDraft> previous;
+        Map<Identifier, EnchantmentDraft> next;
         synchronized (ContentManager.class) {
-            previous = reported == null ? ContentSnapshot.EMPTY : reported;
-            ContentSnapshot built = build();
-            cached = built;
-            cachedFingerprint = ConfigDirectory.fingerprint() + "|api=" + EnchantmentRegistry.INSTANCE.revision();
-            reported = built;
-            next = built;
+            previous = reported == null ? Map.of() : reported;
+            next = build();
+            cached = next;
+            cachedRevision = EnchantmentRegistry.INSTANCE.revision();
+            reported = next;
         }
         ContentReport report = diff(previous, next);
         lastReport = report;
@@ -68,68 +60,43 @@ public final class ContentManager {
         return Optional.of(lastReport);
     }
 
-    private static ContentSnapshot build() {
-        ContentSnapshot snapshot = ContentConfigLoader.load(
-                EnchantmentRegistry.INSTANCE.apiEntries().values(),
-                EnchantmentRegistry.INSTANCE.disabledIds()
-        );
-
-        if (ConfigManager.server().disableGeneratedEnchantments()
-                && snapshot.enchantments().values().stream().anyMatch(draft -> draft.source() == ContentSource.CONFIG)) {
-            Map<Identifier, EnchantmentDraft> kept = new LinkedHashMap<>();
-            for (Map.Entry<Identifier, EnchantmentDraft> entry : snapshot.enchantments().entrySet()) {
-                if (entry.getValue().source() != ContentSource.CONFIG) {
-                    kept.put(entry.getKey(), entry.getValue());
-                }
-            }
-            Constants.LOG.info("[MerlinLib] generated enchantments are disabled by the server configuration, {} code registered one(s) kept", kept.size());
-            snapshot = new ContentSnapshot(kept, snapshot.disabled(), snapshot.effectOverrides(), snapshot.errors());
+    private static Map<Identifier, EnchantmentDraft> build() {
+        if (ConfigManager.server().disableGeneratedEnchantments()) {
+            Constants.LOG.info("[MerlinLib] the generated datapack is switched off in server.toml, no enchantment is served");
+            return Map.of();
         }
-
-        EffectOverrides.setConfigLayer(snapshot.effectOverrides());
-        return snapshot;
+        Map<Identifier, EnchantmentDraft> active = new TreeMap<>(Comparator.comparing(Identifier::toString));
+        active.putAll(EnchantmentRegistry.INSTANCE.apiEntries());
+        active.keySet().removeAll(EnchantmentRegistry.INSTANCE.disabledIds());
+        return Collections.unmodifiableMap(active);
     }
 
-    private static ContentReport diff(ContentSnapshot previous, ContentSnapshot next) {
+    private static ContentReport diff(Map<Identifier, EnchantmentDraft> previous,
+                                      Map<Identifier, EnchantmentDraft> next) {
         List<Identifier> added = new ArrayList<>();
         List<Identifier> updated = new ArrayList<>();
         List<Identifier> removed = new ArrayList<>();
-        List<Identifier> failed = new ArrayList<>();
-
-        for (Map.Entry<Identifier, EnchantmentDraft> entry : next.enchantments().entrySet()) {
-            EnchantmentDraft before = previous.enchantments().get(entry.getKey());
+        for (Map.Entry<Identifier, EnchantmentDraft> entry : next.entrySet()) {
+            EnchantmentDraft before = previous.get(entry.getKey());
             if (before == null) {
                 added.add(entry.getKey());
-            } else if (!sameDefinition(before, entry.getValue())) {
+            } else if (!before.equals(entry.getValue())) {
                 updated.add(entry.getKey());
             }
         }
-        for (Identifier id : previous.enchantments().keySet()) {
-            if (!next.enchantments().containsKey(id)) {
+        for (Identifier id : previous.keySet()) {
+            if (!next.containsKey(id)) {
                 removed.add(id);
             }
         }
-
-        Set<Identifier> broken = new LinkedHashSet<>();
-        for (ContentError error : next.errors()) {
-            if (!"-".equals(error.entryId())) {
-                broken.add(Identifier.parse(error.entryId()));
-            }
-        }
-        failed.addAll(broken);
-        return new ContentReport(List.copyOf(added), List.copyOf(updated), List.copyOf(removed), List.copyOf(failed), next.errors());
+        return new ContentReport(List.copyOf(added), List.copyOf(updated), List.copyOf(removed), List.of(), List.of());
     }
 
-    private static boolean sameDefinition(EnchantmentDraft left, EnchantmentDraft right) {
-        return left.equals(right);
-    }
-
-    private static void logReport(ContentReport report, ContentSnapshot snapshot) {
-        int total = snapshot.enchantments().size();
-        if (!report.hasChanges() && !report.hasErrors()) {
-            Constants.LOG.info("[MerlinLib] content reloaded, {} enchantment(s) active, nothing changed", total);
+    private static void logReport(ContentReport report, Map<Identifier, EnchantmentDraft> active) {
+        if (!report.hasChanges()) {
+            Constants.LOG.info("[MerlinLib] content reloaded, {} enchantment(s) active, nothing changed", active.size());
             return;
         }
-        Constants.LOG.info("[MerlinLib] content reloaded, {} enchantment(s) active\n{}", total, report.describe());
+        Constants.LOG.info("[MerlinLib] content reloaded, {} enchantment(s) active\n{}", active.size(), report.describe());
     }
 }

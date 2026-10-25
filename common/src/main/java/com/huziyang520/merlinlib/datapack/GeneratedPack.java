@@ -1,4 +1,4 @@
-// In-memory datapack holding everything MerlinLib derives from the configuration files.
+// In-memory datapack holding the enchantments registered through the MerlinLib api plus the testing weapon tags.
 
 package com.huziyang520.merlinlib.datapack;
 
@@ -127,24 +127,24 @@ public final class GeneratedPack implements PackResources {
 
     private static Map<String, byte[]> build() {
         Map<String, byte[]> files = new LinkedHashMap<>();
-        var snapshot = ContentManager.current();
-        if (snapshot.enchantments().isEmpty()) {
+        Map<Identifier, EnchantmentDraft> served = ContentManager.current();
+        if (served.isEmpty()) {
             Constants.LOG.warn("[MerlinLib] the generated datapack was opened but contains no enchantment at all; "
-                    + "check config/MerlinLib/enchantments.json and the 'content reloaded' log line above");
+                    + "no enchantment is registered through the MerlinLib api, or server.toml switched the pack off");
         }
-        for (EnchantmentDraft draft : snapshot.enchantments().values()) {
+        for (EnchantmentDraft draft : served.values()) {
             files.put(
                     "data/" + draft.id().getNamespace() + "/enchantment/" + draft.id().getPath() + ".json",
                     EnchantmentJsonWriter.toBytes(draft)
             );
         }
-        EnchantmentJsonWriter.acquisitionTags(snapshot.enchantments().values()).forEach((tag, json) -> files.put(
+        EnchantmentJsonWriter.acquisitionTags(served.values()).forEach((tag, json) -> files.put(
                 "data/" + tag.getNamespace() + "/tags/enchantment/" + tag.getPath() + ".json",
                 EnchantmentJsonWriter.tagBytes(json)
         ));
         addWeaponTags(files);
         Constants.LOG.info("[MerlinLib] generated datapack opened with {} file(s) for {} enchantment(s): {}",
-                files.size(), snapshot.enchantments().size(), snapshot.enchantments().keySet());
+                files.size(), served.size(), served.keySet());
         return files;
     }
 

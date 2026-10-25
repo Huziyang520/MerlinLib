@@ -8,7 +8,11 @@ import com.huziyang520.merlinlib.api.EnchantmentBuilder;
 import com.huziyang520.merlinlib.api.EnchantmentInfo;
 import com.huziyang520.merlinlib.content.ContentSource;
 import com.huziyang520.merlinlib.content.EnchantmentDraft;
+import net.minecraft.core.Holder;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.Enchantment;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -77,7 +81,7 @@ public final class EnchantmentRegistry implements EnchantmentApi {
     @Override
     public Optional<EnchantmentInfo> describe(Identifier id) {
         Objects.requireNonNull(id, "id");
-        EnchantmentDraft draft = ContentManager.current().enchantments().get(id);
+        EnchantmentDraft draft = ContentManager.current().get(id);
         if (draft != null) {
             return Optional.of(new EnchantmentInfo(id, draft.source(), true, draft.maxLevel(), draft.weight()));
         }
@@ -85,6 +89,14 @@ public final class EnchantmentRegistry implements EnchantmentApi {
             return Optional.of(new EnchantmentInfo(id, ContentSource.API, false, 0, 0));
         }
         return Optional.empty();
+    }
+
+    public static boolean appliesTo(Holder<Enchantment> enchantment, ItemStack stack, EquipmentSlot slot) {
+        if (enchantment == null || stack == null || slot == null || stack.isEmpty()) {
+            return false;
+        }
+        Enchantment value = enchantment.value();
+        return value.canEnchant(stack) && value.matchingSlot(slot);
     }
 
     public EnchantmentDraft submit(EnchantmentDraft draft) {

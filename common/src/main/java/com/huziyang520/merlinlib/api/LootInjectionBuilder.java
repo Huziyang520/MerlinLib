@@ -1,4 +1,4 @@
-// Builds one LootInjection.
+// Builds one LootInjection; quality only scales the entry weight by luck, it never picks the level.
 
 package com.huziyang520.merlinlib.api;
 

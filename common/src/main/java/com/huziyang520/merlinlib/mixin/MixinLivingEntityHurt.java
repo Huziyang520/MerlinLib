@@ -2,11 +2,15 @@
 
 package com.huziyang520.merlinlib.mixin;
 
+import com.huziyang520.merlinlib.api.CombatApi;
+import com.huziyang520.merlinlib.api.DamageSnapshot;
 import com.huziyang520.merlinlib.event.BuiltInEvents;
 import com.huziyang520.merlinlib.event.EnchantmentEventDispatcher;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.item.ItemStack;
 import org.apache.commons.lang3.mutable.MutableFloat;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -30,19 +34,22 @@ public class MixinLivingEntityHurt {
             return;
         }
         MutableFloat changed = new MutableFloat(amount);
-        EnchantmentEventDispatcher.dispatch(BuiltInEvents.MODIFY_DAMAGE,
-                new BuiltInEvents.ModifyDamageEvent(level, attacker, (LivingEntity) (Object) this, source, amount,
-                        changed), attacker);
-        args.set(2, changed.floatValue());
+        BuiltInEvents.ModifyDamageEvent event = new BuiltInEvents.ModifyDamageEvent(level, attacker,
+                (LivingEntity) (Object) this, source, amount, changed);
+        EnchantmentEventDispatcher.dispatch(BuiltInEvents.MODIFY_DAMAGE, event, attacker);
+        args.set(2, event.isCanceled() ? 0.0F : changed.floatValue());
     }
 
     @Inject(method = "actuallyHurt", at = @At("RETURN"))
     private void merlinlib$postHurt(ServerLevel level, DamageSource source, float amount, CallbackInfo info) {
+        LivingEntity victim = (LivingEntity) (Object) this;
+        LivingEntity attacker = source.getEntity() instanceof LivingEntity living ? living : null;
+        CombatApi.INSTANCE.recordDamage(new DamageSnapshot(attacker, victim, source,
+                attacker == null ? ItemStack.EMPTY : attacker.getMainHandItem(),
+                amount, source.getDirectEntity() instanceof Projectile));
         if (!EnchantmentEventDispatcher.hasCallbacks(BuiltInEvents.POST_HURT)) {
             return;
         }
-        LivingEntity victim = (LivingEntity) (Object) this;
-        LivingEntity attacker = source.getEntity() instanceof LivingEntity living ? living : null;
         EnchantmentEventDispatcher.dispatch(BuiltInEvents.POST_HURT,
                 new BuiltInEvents.PostHurtEvent(level, victim, attacker, source, amount, 0.0F, false), victim);
     }

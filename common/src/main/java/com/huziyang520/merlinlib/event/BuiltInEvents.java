@@ -47,8 +47,49 @@ public final class BuiltInEvents {
         return Identifier.fromNamespaceAndPath("merlinlib", path);
     }
 
-    public record PostAttackEvent(ServerLevel level, LivingEntity attacker, LivingEntity target,
-                                  float charge, boolean critical, boolean sweep) implements EnchantmentEvent {
+    public static final class PostAttackEvent implements EnchantmentEvent {
+        private final ServerLevel level;
+        private final LivingEntity attacker;
+        private final LivingEntity target;
+        private final float charge;
+        private final boolean critical;
+        private final boolean sweep;
+        private boolean canceled;
+
+        public PostAttackEvent(ServerLevel level, LivingEntity attacker, LivingEntity target,
+                               float charge, boolean critical, boolean sweep) {
+            this.level = level;
+            this.attacker = attacker;
+            this.target = target;
+            this.charge = charge;
+            this.critical = critical;
+            this.sweep = sweep;
+        }
+
+        public ServerLevel level() {
+            return this.level;
+        }
+
+        public LivingEntity attacker() {
+            return this.attacker;
+        }
+
+        public LivingEntity target() {
+            return this.target;
+        }
+
+        public float charge() {
+            return this.charge;
+        }
+
+        public boolean critical() {
+            return this.critical;
+        }
+
+        public boolean sweep() {
+            return this.sweep;
+        }
+
         @Override
         public LivingEntity getEntity() {
             return this.attacker;
@@ -57,12 +98,62 @@ public final class BuiltInEvents {
         @Override
         public ServerLevel getLevel() {
             return this.level;
+        }
+
+        @Override
+        public boolean isCanceled() {
+            return this.canceled;
+        }
+
+        @Override
+        public void cancel() {
+            this.canceled = true;
         }
     }
 
-    public record ModifyDamageEvent(ServerLevel level, LivingEntity attacker, LivingEntity target,
-                                    DamageSource source, float originalDamage,
-                                    MutableFloat damage) implements EnchantmentEvent {
+    public static final class ModifyDamageEvent implements EnchantmentEvent {
+        private final ServerLevel level;
+        private final LivingEntity attacker;
+        private final LivingEntity target;
+        private final DamageSource source;
+        private final float originalDamage;
+        private final MutableFloat damage;
+        private boolean canceled;
+
+        public ModifyDamageEvent(ServerLevel level, LivingEntity attacker, LivingEntity target,
+                                 DamageSource source, float originalDamage, MutableFloat damage) {
+            this.level = level;
+            this.attacker = attacker;
+            this.target = target;
+            this.source = source;
+            this.originalDamage = originalDamage;
+            this.damage = damage;
+        }
+
+        public ServerLevel level() {
+            return this.level;
+        }
+
+        public LivingEntity attacker() {
+            return this.attacker;
+        }
+
+        public LivingEntity target() {
+            return this.target;
+        }
+
+        public DamageSource source() {
+            return this.source;
+        }
+
+        public float originalDamage() {
+            return this.originalDamage;
+        }
+
+        public MutableFloat damage() {
+            return this.damage;
+        }
+
         @Override
         public LivingEntity getEntity() {
             return this.attacker;
@@ -71,6 +162,16 @@ public final class BuiltInEvents {
         @Override
         public ServerLevel getLevel() {
             return this.level;
+        }
+
+        @Override
+        public boolean isCanceled() {
+            return this.canceled;
+        }
+
+        @Override
+        public void cancel() {
+            this.canceled = true;
         }
     }
 
@@ -128,9 +229,56 @@ public final class BuiltInEvents {
         }
     }
 
-    public record ModifyBlockDropsEvent(ServerLevel level, ServerPlayer player, BlockPos pos,
-                                        BlockState blockState, ItemStack tool, List<ItemStack> drops,
-                                        MutableInt bonusXp) implements EnchantmentEvent {
+    public static final class ModifyBlockDropsEvent implements EnchantmentEvent {
+        private final ServerLevel level;
+        private final ServerPlayer player;
+        private final BlockPos pos;
+        private final BlockState blockState;
+        private final ItemStack tool;
+        private final List<ItemStack> drops;
+        private final MutableInt bonusXp;
+        private boolean canceled;
+
+        public ModifyBlockDropsEvent(ServerLevel level, ServerPlayer player, BlockPos pos,
+                                     BlockState blockState, ItemStack tool, List<ItemStack> drops,
+                                     MutableInt bonusXp) {
+            this.level = level;
+            this.player = player;
+            this.pos = pos;
+            this.blockState = blockState;
+            this.tool = tool;
+            this.drops = drops;
+            this.bonusXp = bonusXp;
+        }
+
+        public ServerLevel level() {
+            return this.level;
+        }
+
+        public ServerPlayer player() {
+            return this.player;
+        }
+
+        public BlockPos pos() {
+            return this.pos;
+        }
+
+        public BlockState blockState() {
+            return this.blockState;
+        }
+
+        public ItemStack tool() {
+            return this.tool;
+        }
+
+        public List<ItemStack> drops() {
+            return this.drops;
+        }
+
+        public MutableInt bonusXp() {
+            return this.bonusXp;
+        }
+
         @Override
         public LivingEntity getEntity() {
             return this.player;
@@ -139,6 +287,16 @@ public final class BuiltInEvents {
         @Override
         public ServerLevel getLevel() {
             return this.level;
+        }
+
+        @Override
+        public boolean isCanceled() {
+            return this.canceled;
+        }
+
+        @Override
+        public void cancel() {
+            this.canceled = true;
         }
 
         public void addBonusXp(int amount) {

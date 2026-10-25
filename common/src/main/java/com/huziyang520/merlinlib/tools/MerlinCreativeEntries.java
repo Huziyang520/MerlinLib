@@ -60,7 +60,7 @@ public final class MerlinCreativeEntries {
         }
         HolderLookup.RegistryLookup<Enchantment> registry = lookup.get();
         List<ItemStack> stacks = new ArrayList<>();
-        ContentManager.current().enchantments().keySet().stream().sorted().forEach(id -> registry
+        ContentManager.current().keySet().stream().sorted().forEach(id -> registry
                 .get(ResourceKey.create(Registries.ENCHANTMENT, id))
                 .map(holder -> book(holder, holder.value().getMaxLevel()))
                 .ifPresent(stacks::add));
