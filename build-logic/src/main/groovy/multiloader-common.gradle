@@ -4,8 +4,9 @@ plugins {
 }
 
 base {
-    // Artifact naming rule: <mod_id>-<version>-<loader>-<minecraft_version>.jar (docs 01 section 1.5).
-    archivesName = "${mod_id}-${version}-${project.name}-${minecraft_version}"
+    // Artifact naming rule: <mod_id>-<version>-<loader>-<MC version or range>.jar (docs 01 section 1.5).
+    // This branch is the rolling 26.x line, so the slug is 26.X while the compile base stays 26.3.
+    archivesName = "${mod_id}-${version}-${project.name}-${minecraft_version_slug}"
 }
 
 // archivesName already carries the version, but Gradle appends -<version> again. Clearing it on Jar
@@ -69,6 +70,7 @@ processResources {
     var expandProps = [
             'version'                : version,
             'minecraft_version'      : minecraft_version,
+            'minecraft_version_slug' : minecraft_version_slug,
             'minecraft_version_range': minecraft_version_range,
             'fabric_version'         : fabric_version,
             'fabric_loader_version'  : fabric_loader_version,
