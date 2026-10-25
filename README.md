@@ -10,7 +10,7 @@ MerlinLib is a Minecraft **library mod**: it gives mod authors three registratio
 effects and potions** — and ships a ready-to-use testing toolkit on top of them.
 
 - Sides: **client and server** — it must be installed on both
-- Author: Huziyang520 · Licence: **MIT**
+- Author: Huziyang520 · Licence: **CC0 1.0**
 - Repository: <https://github.com/Huziyang520/MerlinLib> · Issues: <https://issue.mengcai.online/>
 
 ### Supported versions
@@ -19,8 +19,8 @@ effects and potions** — and ships a ready-to-use testing toolkit on top of the
 |---|---|---|
 | [`1.20.1`](https://github.com/Huziyang520/MerlinLib/tree/1.20.1) | 1.20.1 | Forge |
 | [`1.21.1`](https://github.com/Huziyang520/MerlinLib/tree/1.21.1) | 1.21.1 | NeoForge |
-| [`26.1-26.2`](https://github.com/Huziyang520/MerlinLib/tree/26.1-26.2) | 26.1 - 26.2 | NeoForge, Fabric |
-| [`26.3`](https://github.com/Huziyang520/MerlinLib/tree/26.3) | 26.3 | NeoForge, Fabric |
+| [`26.X`](https://github.com/Huziyang520/MerlinLib/tree/26.X) | 26.3 and later 26.x | NeoForge, Fabric |
+| ~~[`Deprecated-26.1-26.2`](https://github.com/Huziyang520/MerlinLib/tree/Deprecated-26.1-26.2)~~ | 26.1 - 26.2 | Deprecated, no longer maintained |
 
 A branch that covers a range of game versions ships one jar for the whole range.
 
@@ -66,7 +66,7 @@ the same jar, so a mod that only wants the registration API still installs one f
 
 ### Licence
 
-Released under the **MIT licence**, see [LICENSE](LICENSE).
+Released under **CC0 1.0**, see [LICENSE](LICENSE).
 
 ```
 Copyright (c) 2026 Huziyang520
@@ -80,7 +80,7 @@ MerlinLib 是一款 Minecraft **前置库模组**：为模组开发者提供**�
 并内置一套开箱即用的测试工具集。
 
 - 部署属性：**客户端 + 服务端模组**，两端都必须安装
-- 作者：Huziyang520 · 许可证：**MIT**
+- 作者：Huziyang520 · 许可证：**CC0 1.0**
 - 仓库：<https://github.com/Huziyang520/MerlinLib> · 问题反馈：<https://issue.mengcai.online/>
 
 ### 支持版本
@@ -89,8 +89,8 @@ MerlinLib 是一款 Minecraft **前置库模组**：为模组开发者提供**�
 |---|---|---|
 | [`1.20.1`](https://github.com/Huziyang520/MerlinLib/tree/1.20.1) | 1.20.1 | Forge |
 | [`1.21.1`](https://github.com/Huziyang520/MerlinLib/tree/1.21.1) | 1.21.1 | NeoForge |
-| [`26.1-26.2`](https://github.com/Huziyang520/MerlinLib/tree/26.1-26.2) | 26.1 - 26.2 | NeoForge, Fabric |
-| [`26.3`](https://github.com/Huziyang520/MerlinLib/tree/26.3) | 26.3 | NeoForge, Fabric |
+| [`26.X`](https://github.com/Huziyang520/MerlinLib/tree/26.X) | 26.3 及之后的 26.x | NeoForge, Fabric |
+| ~~[`Deprecated-26.1-26.2`](https://github.com/Huziyang520/MerlinLib/tree/Deprecated-26.1-26.2)~~ | 26.1 - 26.2 | 已弃用，不再维护 |
 
 覆盖一段游戏版本的分支，为整段版本提供同一个 jar。
 
@@ -134,7 +134,7 @@ MerlinLib 是一款 Minecraft **前置库模组**：为模组开发者提供**�
 
 ### 许可证
 
-本项目以 **MIT 许可证**开源，协议全文见 [LICENSE](LICENSE)。
+本项目以 **CC0 1.0** 协议开源，协议全文见 [LICENSE](LICENSE)。
 
 ```
 Copyright (c) 2026 Huziyang520
