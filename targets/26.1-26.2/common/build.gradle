@@ -1,0 +1,104 @@
+plugins {
+    id 'multiloader-common'
+    id 'net.neoforged.moddev'
+}
+
+neoForge {
+    neoFormVersion = neo_form_version
+    // Automatically enable AccessTransformers if the file exists
+    def at = file('src/main/resources/META-INF/accesstransformer.cfg')
+    if (at.exists()) {
+        accessTransformers.from(at.absolutePath)
+    }
+}
+
+dependencies {
+    // Fabric and NeoForge both bundle Fabric Mixin, so it is safe to use it in common
+    // If you need to update, check what version they are using to see what is compatible
+    // https://github.com/neoforged/NeoForge/blob/26.3.x/gradle.properties#L37
+    // https://github.com/FabricMC/fabric-loader/blob/master/gradle.properties#L12
+    compileOnly('net.fabricmc:sponge-mixin:0.17.3+mixin.0.8.7')
+    // Fabric and NeoForge both bundle MixinExtras, so it is safe to use it in common
+    compileOnly(annotationProcessor('io.github.llamalad7:mixinextras-common:0.5.3'))
+
+}
+
+configurations {
+    commonJava {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+    commonResources {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+}
+
+def overlaidJava = [
+        'com/huziyang520/merlinlib/loot/LootInjector.java',
+        'com/huziyang520/merlinlib/datapack/GeneratedPackSource.java',
+        'com/huziyang520/merlinlib/tools/TestWeapons.java',
+        'com/huziyang520/merlinlib/mixin/MixinHud.java',
+        'com/huziyang520/merlinlib/mixin/MixinHudModern.java',
+        'com/huziyang520/merlinlib/mixin/MerlinMixinPlugin.java',
+        'com/huziyang520/merlinlib/effect/MerlinMobEffect.java',
+        'com/huziyang520/merlinlib/mixin/MixinClientPacketListenerParticles.java',
+        'com/huziyang520/merlinlib/mixin/MixinMinecraftUseItem.java',
+        'com/huziyang520/merlinlib/tools/hud/CombatFeedback.java'
+]
+def sharedJava = layout.buildDirectory.dir('shared/java')
+def sharedResources = layout.buildDirectory.dir('shared/resources')
+
+tasks.register('sharedJava', Sync) {
+    from('../../../common/src/main/java') { overlaidJava.each { exclude it } }
+    into sharedJava
+}
+
+tasks.register('sharedResources', Sync) {
+    from('../../../common/src/main/resources') { exclude 'merlinlib.mixins.json' }
+    into sharedResources
+}
+
+tasks.named('compileJava') { dependsOn 'sharedJava' }
+tasks.named('processResources') { dependsOn 'sharedResources' }
+
+sourceSets {
+    main {
+        java {
+            setSrcDirs([])
+            srcDir sharedJava
+            srcDir '../overlay/java'
+        }
+        resources {
+            setSrcDirs([])
+            srcDir sharedResources
+            srcDir '../overlay/resources'
+        }
+    }
+}
+
+artifacts {
+    sourceSets.main.java.sourceDirectories.each { dir -> commonJava dir }
+    sourceSets.main.resources.sourceDirectories.each { dir -> commonResources dir }
+}
+
+// Implement mcgradleconventions loader attribute
+def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+// matching { } instead of named { }: withSourcesJar()/withJavadocJar() are gone, so
+// 'sourcesElements' / 'javadocElements' no longer exist and named { } would fail outright.
+['apiElements', 'runtimeElements', 'sourcesElements', 'javadocElements'].each { variant ->
+    configurations.matching { it.name == variant }.configureEach {
+        attributes {
+            attribute(loaderAttribute, 'common')
+        }
+    }
+}
+sourceSets.configureEach {
+    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName].each { variant->
+        configurations.named(variant) {
+            attributes {
+                attribute(loaderAttribute, 'common')
+            }
+        }
+    }
+}
