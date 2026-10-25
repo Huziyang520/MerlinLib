@@ -51,11 +51,13 @@ def sharedResources = layout.buildDirectory.dir('shared/resources')
 
 tasks.register('sharedJava', Sync) {
     from('../../../common/src/main/java') { overlaidJava.each { exclude it } }
+    from('../overlay/java')
     into sharedJava
 }
 
 tasks.register('sharedResources', Sync) {
     from('../../../common/src/main/resources') { exclude 'merlinlib.mixins.json' }
+    from('../overlay/resources')
     into sharedResources
 }
 
@@ -67,19 +69,17 @@ sourceSets {
         java {
             setSrcDirs([])
             srcDir sharedJava
-            srcDir '../overlay/java'
         }
         resources {
             setSrcDirs([])
             srcDir sharedResources
-            srcDir '../overlay/resources'
         }
     }
 }
 
 artifacts {
-    sourceSets.main.java.sourceDirectories.each { dir -> commonJava dir }
-    sourceSets.main.resources.sourceDirectories.each { dir -> commonResources dir }
+    commonJava tasks.named('sharedJava')
+    commonResources tasks.named('sharedResources')
 }
 
 // Implement mcgradleconventions loader attribute
