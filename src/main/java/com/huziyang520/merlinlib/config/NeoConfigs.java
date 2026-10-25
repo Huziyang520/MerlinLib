@@ -1,25 +1,15 @@
+// Declares MerlinLib's switches as two NeoForge configurations - the client half and the shared half - and hands them to ...
+
 package com.huziyang520.merlinlib.config;
 
 import com.huziyang520.merlinlib.Constants;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
 
-/**
- * Declares MerlinLib's switches as two NeoForge configurations - the client half and the shared half -
- * and hands them to the mod container, which writes the files and shows the editing screen.
- */
 public final class NeoConfigs {
-
-    /** The client file, below the game's {@code config} directory. */
     public static final String CLIENT_FILE = Constants.MOD_ID + "-client.toml";
-
-    /** The common file, below the game's {@code config} directory. */
     public static final String COMMON_FILE = Constants.MOD_ID + "-common.toml";
-
-    /** Name of the pre-specification client file inside {@link ConfigDirectory#root()}. */
     private static final String LEGACY_CLIENT_FILE = "client.toml";
-
-    /** Name of the pre-specification shared file inside {@link ConfigDirectory#root()}. */
     private static final String LEGACY_COMMON_FILE = "server.toml";
 
     private static final NeoSpecBackend CLIENT =
@@ -30,49 +20,31 @@ public final class NeoConfigs {
     private NeoConfigs() {
     }
 
-    /**
-     * The type the shared switches are registered under. 1.21.1 still declares {@code COMMON}, which is
-     * the unsynced half each side reads from its own file.
-     */
     public static ModConfig.Type sharedType() {
         return ModConfig.Type.COMMON;
     }
 
-    /**
-     * Binds both specs to the mod.
-     *
-     * @param container the mod container handed to the entrypoint
-     */
     public static void register(ModContainer container) {
         container.registerConfig(ModConfig.Type.CLIENT, CLIENT.spec(), CLIENT_FILE);
         container.registerConfig(sharedType(), COMMON.spec(), COMMON_FILE);
     }
 
-    /** @return the backend of the client half */
     public static ConfigBackend clientBackend() {
         return CLIENT;
     }
 
-    /** @return the backend of the shared half */
     public static ConfigBackend commonBackend() {
         return COMMON;
     }
 
-    /** @return the spec backend of the client half, for the one time legacy import */
     static NeoSpecBackend clientSpec() {
         return CLIENT;
     }
 
-    /** @return the spec backend of the shared half, for the one time legacy import */
     static NeoSpecBackend commonSpec() {
         return COMMON;
     }
 
-    /**
-     * Declares the client switches, in the order {@code client.toml} documents them. The file layout
-     * version is deliberately not here: it is written and read by the mod itself, and a key the screen
-     * shows but nothing can meaningfully change only invites edits.
-     */
     private static void client(NeoSpecBackend spec) {
         spec.push("hud")
                 .bool("crosshair_damage", false,
@@ -121,10 +93,6 @@ public final class NeoConfigs {
                 .pop();
     }
 
-    /**
-     * Declares the shared switches, in the order {@code server.toml} documents them. The layout version is
-     * not declared here: it is a client only marker.
-     */
     private static void common(NeoSpecBackend spec) {
         spec.push("security")
                 .bool("restrict_tools_to_operators", false,

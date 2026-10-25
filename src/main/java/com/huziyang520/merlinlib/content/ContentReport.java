@@ -1,7 +1,8 @@
+// Content report.
+
 package com.huziyang520.merlinlib.content;
 
 import net.minecraft.resources.ResourceLocation;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -12,7 +13,6 @@ public record ContentReport(
         List<ResourceLocation> failed,
         List<ContentError> errors
 ) {
-
     public static final ContentReport EMPTY = new ContentReport(List.of(), List.of(), List.of(), List.of(), List.of());
 
     public boolean hasChanges() {
@@ -23,9 +23,6 @@ public record ContentReport(
         return !this.failed.isEmpty() || !this.errors.isEmpty();
     }
 
-    /**
-     * @return a multi-line, human readable summary. Never empty, so callers can always log it.
-     */
     public String describe() {
         StringBuilder builder = new StringBuilder();
         builder.append("added=").append(this.added.size())

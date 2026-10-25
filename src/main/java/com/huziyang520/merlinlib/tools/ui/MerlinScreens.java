@@ -1,3 +1,5 @@
+// Client side entry points for the MerlinLib screens, and the one place that decides whether a screen may open on this ...
+
 package com.huziyang520.merlinlib.tools.ui;
 
 import com.huziyang520.merlinlib.Constants;
@@ -22,32 +24,10 @@ import net.minecraft.world.item.ShieldItem;
 import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.TridentItem;
 
-/**
- * Client side entry points for the MerlinLib screens, and the one place that decides whether a screen
- * may open on this side.
- */
 public final class MerlinScreens {
-
     private MerlinScreens() {
     }
 
-    /**
-     * Whether the permission switches let this player use an editor, as far as the client can tell.
-     *
-     * <p>In single player the integrated server is in this very process, so the question can be answered
-     * properly by asking it about its own player object. That is what makes the "requires command
-     * permission" switches visible the moment they are flipped, instead of the player opening an editor
-     * whose work is dropped when it is saved. On a dedicated server the client has no permission set to
-     * ask about, so the screen opens and the server keeps the last word.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> the refusal is sent with
-     * {@code displayClientMessage(message, true)}. The Boolean is "show it above the hotbar rather than in
-     * chat", which is the 1.20.1 spelling of the 26.3 {@code sendOverlayMessage}.
-     *
-     * @param player the local player
-     * @param health {@code true} for the health editor, {@code false} for the item editor
-     * @return {@code false} only when the switches deny it and the answer is known
-     */
     private static boolean mayOpenEditorLocally(Player player, boolean health) {
         MinecraftServer server = Minecraft.getInstance().getSingleplayerServer();
         if (server == null) {
@@ -69,15 +49,6 @@ public final class MerlinScreens {
         return allowed;
     }
 
-    /**
-     * Whether a toolkit screen may open on this side.
-     *
-     * <p>The only switch that is checked is the toolkit master switch, which is also what keeps the items
-     * out of the creative inventory. Permission is not checked here, for the reason in the class comment.
-     *
-     * @param player the local player, may be {@code null}
-     * @return {@code true} when a screen may open
-     */
     public static boolean mayUseToolsLocally(Player player) {
         if (player == null) {
             return false;
@@ -90,18 +61,6 @@ public final class MerlinScreens {
         return true;
     }
 
-    /**
-     * Whether the item editor may open for this item.
-     *
-     * <p>Any item may be renamed and given enchantments while the toolkit is on. The one question this
-     * answers is whether an item that is not a weapon, a tool or a piece of equipment may be opened too,
-     * because an enchantment on such an item has no effect in game: that is
-     * {@code tools.allow_editing_all_items}, off by default.
-     *
-     * @param player the local player
-     * @param stack  the item in hand
-     * @return {@code true} when the editor may open
-     */
     public static boolean mayEdit(Player player, ItemStack stack) {
         if (!mayUseToolsLocally(player)) {
             return false;
@@ -114,41 +73,6 @@ public final class MerlinScreens {
         return false;
     }
 
-    /**
-     * Whether an item is something the editor opens by default: a weapon, a tool or equipment.
-     *
-     * <p>The test is deliberately broader than a list of item ids, so modded weapons, tools and armour are
-     * covered too.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> 26.3 read the item's components, which is the cleanest possible
-     * test:
-     *
-     * <table border="1">
-     *   <caption>one 26.3 component test, replaced</caption>
-     *   <tr><th>26.3 test</th><th>1.20.1 replacement</th></tr>
-     *   <tr><td>{@code DataComponents.ATTRIBUTE_MODIFIERS}</td>
-     *       <td>{@code stack.getAttributeModifiers(EquipmentSlot.MAINHAND)} is non-empty - the same
-     *       question, asked of the live attribute map instead of a stored component. That map is built from
-     *       the item's own defaults, so a modded sword answers yes without being named here;</td></tr>
-     *   <tr><td>{@code DataComponents.TOOL}</td>
-     *       <td>{@link DiggerItem} - the class that carries a mining tier, speed and set of blocks;</td></tr>
-     *   <tr><td>{@code DataComponents.WEAPON}</td>
-     *       <td>{@link SwordItem} and {@link ProjectileWeaponItem} (which covers {@link BowItem} and
-     *       {@link CrossbowItem}); {@link TridentItem} and {@link ShieldItem} are added on their own, since
-     *       they are combat items that carry none of those supertypes;</td></tr>
-     *   <tr><td>{@code DataComponents.KINETIC_WEAPON} / {@code PIERCING_WEAPON}</td>
-     *       <td>nothing. Those two components are about the post-1.21 combat model - kinetic (mace style)
-     *       and piercing weapons - and this version has no item that would carry them, so there is nothing
-     *       to test. A modded trident-like weapon is still covered by {@link TridentItem} or by the
-     *       attribute test above;</td></tr>
-     *   <tr><td>bulk equipment</td>
-     *       <td>{@link ArmorItem} and {@code stack.isDamageableItem()}, the latter standing in for "this
-     *       item has durability", which is how the 26.3 code accepted any damageable item.</td></tr>
-     * </table>
-     *
-     * @param stack the item
-     * @return {@code true} when the item is normally editable
-     */
     private static boolean isEquippableToolOrWeapon(ItemStack stack) {
         return !stack.getAttributeModifiers().modifiers().isEmpty()
                 || stack.getItem() instanceof DiggerItem
@@ -160,9 +84,6 @@ public final class MerlinScreens {
                 || stack.isDamageableItem();
     }
 
-    /**
-     * Opens the item editor for the item in the main hand, when it is allowed.
-     */
     public static void openItemEditor() {
         Minecraft minecraft = Minecraft.getInstance();
         Player player = minecraft.player;
@@ -183,13 +104,6 @@ public final class MerlinScreens {
         minecraft.setScreen(new ItemEditorScreen(null, held));
     }
 
-    /**
-     * Opens the item editor from the key binding.
-     *
-     * <p>The binding ships switched off ({@code editor.hotkey_enabled}), so the library can be installed
-     * without claiming a key. It can be switched on in the configuration file or with
-     * {@code /merlinlib editorhotkey on}.
-     */
     public static void openItemEditorFromHotkey() {
         if (!ConfigManager.client().editorHotkeyEnabled()) {
             return;
@@ -197,26 +111,10 @@ public final class MerlinScreens {
         openItemEditor();
     }
 
-    /**
-     * Opens the item editor from the {@code /merlinlib editor} command.
-     *
-     * <p>Deliberately not routed through {@link #openItemEditorFromHotkey()}: that method exists so a library
-     * does not claim a key by itself, while a command is an explicit request by the player. Everything else -
-     * whether the toolkit is on, whether this item may be edited, whether this server wants command permission
-     * - is decided exactly as it is for the hotkey.
-     */
     public static void openItemEditorFromCommand() {
         openItemEditor();
     }
 
-    /**
-     * Opens the health editor from the {@code /merlinlib health} command.
-     *
-     * <p>The target is the entity in the crosshair, because that is the entity the player was pointing at
-     * before opening the chat; with nothing in the crosshair the player's own entity is used, which is the same
-     * thing a sneak right click does. The rules are not relaxed for the command: editing yourself still needs
-     * the health editor item, and the server still checks permission when the edit arrives.
-     */
     public static void openHealthEditorFromCommand() {
         Minecraft minecraft = Minecraft.getInstance();
         Player player = minecraft.player;
@@ -231,15 +129,6 @@ public final class MerlinScreens {
         openHealthEditor(null, target);
     }
 
-    /**
-     * Opens the macro screen.
-     *
-     * <p>Two switches are consulted: the toolkit master switch, which takes every MerlinLib screen out of
-     * reach at once, and the macro switch itself. Permissions are not consulted, for the reason in the
-     * class comment.
-     *
-     * @param parent the screen to return to, or {@code null} to resume the game
-     */
     public static void openMacroScreen(Screen parent) {
         Player player = Minecraft.getInstance().player;
         if (!mayUseToolsLocally(player)) {
@@ -253,49 +142,18 @@ public final class MerlinScreens {
         Minecraft.getInstance().setScreen(new MacroScreen(parent));
     }
 
-    /**
-     * Opens the platform configuration screen, if this platform has one.
-     *
-     * @param parent the screen to return to, or {@code null} to resume the game
-     * @return {@code true} when a screen was opened
-     */
     public static boolean openConfigScreen(Screen parent) {
         return ConfigScreens.open(parent);
     }
 
-    /** @return whether this platform can show a configuration screen at all */
     public static boolean hasConfigScreen() {
         return ConfigScreens.available();
     }
 
-    /**
-     * Opens the join notice page.
-     *
-     * <p>Not gated on the toolkit switches: this page configures what players are told when they join, which
-     * has nothing to do with the testing toolkit, and a server owner must be able to reach it with the
-     * toolkit switched off.
-     *
-     * @param parent the screen to return to, or {@code null} to resume the game
-     */
     public static void openNoticesScreen(Screen parent) {
         Minecraft.getInstance().setScreen(new NoticesScreen(parent));
     }
 
-    /**
-     * Opens the health editor for one entity, when it is allowed.
-     *
-     * <p>Whether the health editor item has to be held is answered here, from the main hand, rather than
-     * passed in by the caller. A caller-supplied flag was wrong for exactly one path - sneak using an entity
-     * passed "not holding the item" because the item was not *used* on it - so the switch refused the very
-     * interaction it was meant to allow.
-     *
-     * <p>The return value exists for the one caller that has to know: the sneak right click hook, which
-     * swallows the click only when a screen really opened.
-     *
-     * @param parent the screen to return to
-     * @param target the entity to edit
-     * @return {@code true} when the screen was opened
-     */
     public static boolean openHealthEditor(Screen parent, LivingEntity target) {
         Minecraft minecraft = Minecraft.getInstance();
         Player player = minecraft.player;
@@ -307,14 +165,6 @@ public final class MerlinScreens {
         }
         boolean holdingItem = player.getMainHandItem().getItem() instanceof HealthEditorItem;
         if (target == player && !holdingItem) {
-            // Editing yourself is a feature of the item and nothing else, so it needs the item whatever the
-            // "requires item" switch says. Without this the switch's off position turned a bare-handed sneak
-            // right click into a self edit, which also made the item look pointless.
-            //
-            // Both refusals are silent towards the player on purpose: the requirement is already stated in the
-            // item's own tooltip and on the configuration screen, and repeating it in the middle of the screen on
-            // every stray right click is noise. The log lines stay, because "why does nothing happen" is a
-            // question the log can answer and the screen cannot.
             Constants.LOG.info("[MerlinLib] a self edit was refused: the health editor item must be held to "
                     + "edit yourself");
             return false;
@@ -324,8 +174,7 @@ public final class MerlinScreens {
                     + "(merlinlib-common.toml: tools.health_editor_requires_item = true)");
             return false;
         }
-        // Permission is asked last on purpose: a bare-handed sneak right click is not a permission problem, and
-        // reporting it as one both misleads the player and breaks the "refuse silently" rule (spec §7).
+
         if (!mayOpenEditorLocally(player, true)) {
             return false;
         }

@@ -1,8 +1,9 @@
+// Reader and writer of the small, commented TOML subset MerlinLib keeps its switches in: comments, blank lines, [section] ...
+
 package com.huziyang520.merlinlib.config;
 
 import com.huziyang520.merlinlib.content.ContentError;
 import com.huziyang520.merlinlib.util.MerlinColor;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -14,14 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Reader and writer of the small, commented TOML subset MerlinLib keeps its switches in: comments,
- * blank lines, {@code [section]} headers and {@code key = value} pairs of booleans, integers, floats
- * and strings.
- */
 public final class TomlFile implements ConfigReader {
-
-
     private final Path path;
     private final Map<String, String> values = new LinkedHashMap<>();
     private final List<ContentError> errors = new ArrayList<>();
@@ -31,13 +25,6 @@ public final class TomlFile implements ConfigReader {
         this.path = path;
     }
 
-    /**
-     * Reads a file, creating it with {@code defaults} first when it does not exist yet.
-     *
-     * @param path     file to read
-     * @param defaults content written when the file is missing
-     * @return the parsed view, never {@code null} even when the file is unreadable
-     */
     public static TomlFile read(Path path, String defaults) {
         TomlFile file = new TomlFile(path);
         if (!Files.exists(path)) {
@@ -55,20 +42,6 @@ public final class TomlFile implements ConfigReader {
         return file;
     }
 
-    /**
-     * Writes selected values back into an existing file, in place.
-     *
-     * <p>Only the values named in {@code overrides} are touched: every comment, blank line and order is
-     * kept, so saving one switch never destroys the documentation the file exists to carry. A key that is
-     * not in the file yet is appended under its section header.
-     *
-     * <p>Keys are addressed the same way as when reading: {@code section.key}, or just {@code key} for a
-     * value before any section header.
-     *
-     * @param path      the file to update, created from {@code defaults} when missing
-     * @param defaults  the template written when the file does not exist yet
-     * @param overrides the values to replace, keyed by {@code section.key}
-     */
     public static void rewrite(Path path, String defaults, Map<String, String> overrides) {
         if (overrides.isEmpty()) {
             return;
@@ -117,17 +90,9 @@ public final class TomlFile implements ConfigReader {
         try {
             Files.write(path, lines, StandardCharsets.UTF_8);
         } catch (IOException exception) {
-            // A read only file must not break the screen: the values simply stay as they were on disk.
         }
     }
 
-    /**
-     * Inserts a line into the section it belongs to, creating the header only when it is missing.
-     *
-     * @param lines   the file's lines, modified in place
-     * @param section the section name, empty for a key before any header
-     * @param line    the complete {@code key = value} line to insert
-     */
     private static void insert(List<String> lines, String section, String line) {
         if (section.isEmpty()) {
             lines.add(0, line);
@@ -149,7 +114,7 @@ public final class TomlFile implements ConfigReader {
             lines.add(line);
             return;
         }
-        // Walk to the end of the section: past comments and blank lines, stopping at the next header.
+
         int insertAt = headerIndex + 1;
         for (int index = headerIndex + 1; index < lines.size(); index++) {
             String trimmed = lines.get(index).trim();
@@ -164,15 +129,6 @@ public final class TomlFile implements ConfigReader {
         lines.add(insertAt, line);
     }
 
-    /**
-     * Deletes keys from a file, together with the comment lines that introduce them.
-     *
-     * <p>Used for a value a build no longer has: {@link #rewrite} can only replace or add a line, so a key
-     * that must disappear would otherwise stay in the file for good. Everything else is left alone.
-     *
-     * @param path the file to edit, ignored when it is missing
-     * @param keys the keys to delete, as {@code section.key}
-     */
     public static void remove(Path path, Set<String> keys) {
         if (keys.isEmpty() || !Files.isRegularFile(path)) {
             return;
@@ -219,7 +175,6 @@ public final class TomlFile implements ConfigReader {
         try {
             Files.write(path, lines, StandardCharsets.UTF_8);
         } catch (IOException exception) {
-            // A read only file must not break startup; the stale line simply stays.
         }
     }
 
@@ -228,7 +183,6 @@ public final class TomlFile implements ConfigReader {
             Files.createDirectories(path.getParent());
             Files.writeString(path, content, StandardCharsets.UTF_8);
         } catch (IOException ignored) {
-            // Reported later as a missing file; nothing better can be done here.
         }
     }
 
@@ -329,9 +283,6 @@ public final class TomlFile implements ConfigReader {
         }
     }
 
-    /**
-     * Reads a colour written either as {@code 0xRRGGBB}, {@code #RRGGBB} or a palette name.
-     */
     public int getColor(String key, int fallback) {
         String value = this.values.get(key);
         if (value == null) {
@@ -347,22 +298,10 @@ public final class TomlFile implements ConfigReader {
         return this.values.getOrDefault(key, fallback);
     }
 
-    /**
-     * Every {@code section.key} the file held.
-     *
-     * <p>Needed where the keys are not known ahead of time: the per mod switches of the join notices are
-     * one line per mod, and the mods only exist at runtime. The map is a copy, so a caller enumerating it
-     * cannot change what this reader answers.
-     *
-     * @return the values, keyed by {@code section.key} (or the bare key at the top level), in file order
-     */
     public Map<String, String> entries() {
         return new LinkedHashMap<>(this.values);
     }
 
-    /**
-     * @return problems found while reading; the affected options fell back to their defaults.
-     */
     public List<ContentError> errors() {
         return List.copyOf(this.errors);
     }

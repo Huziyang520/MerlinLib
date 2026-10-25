@@ -1,15 +1,11 @@
+// Server side switches.
+
 package com.huziyang520.merlinlib.config;
 
 import com.huziyang520.merlinlib.content.ContentError;
-
 import java.util.List;
 
-/**
- * Server side switches. The server decides, the client only displays what it allows, and every toolkit
- * action is validated against these values where it is applied.
- */
 public final class ServerConfig {
-
     private boolean restrictToolsToOperators;
     private boolean editorRequiresPermission = true;
     private boolean healthEditorRequiresPermission = true;
@@ -25,17 +21,9 @@ public final class ServerConfig {
     private boolean noticesEnabled = true;
     private List<ContentError> errors = List.of();
 
-    /**
-     * Reads the current values.
-     *
-     * <p>Called on every reload, so an edited file or a changed switch is picked up without a restart.
-     *
-     * @return the values as they stand right now
-     */
     public static ServerConfig load() {
         ServerConfig config = new ServerConfig();
         ConfigReader file = ConfigManager.read(ConfigScope.SERVER);
-
         config.restrictToolsToOperators = file.getBoolean("security.restrict_tools_to_operators", false);
         config.editorRequiresPermission = file.getBoolean("security.editor_requires_permission", true);
         config.healthEditorRequiresPermission = file.getBoolean("security.health_editor_requires_permission", true);
@@ -55,72 +43,58 @@ public final class ServerConfig {
         return config;
     }
 
-    /** @return whether the toolkit is limited to operators. */
     public boolean restrictToolsToOperators() {
         return this.restrictToolsToOperators;
     }
 
-    /** @return whether opening the item editor requires command permission. */
     public boolean editorRequiresPermission() {
         return this.editorRequiresPermission;
     }
 
-    /** @return whether opening the health editor requires command permission. */
     public boolean healthEditorRequiresPermission() {
         return this.healthEditorRequiresPermission;
     }
 
-    /** @return whether the testing toolkit is enabled at all. */
     public boolean testingToolkitEnabled() {
         return this.testingToolkitEnabled;
     }
 
-    /** @return the upper bound for test weapon damage. */
     public int maxTestWeaponDamage() {
         return this.maxTestWeaponDamage;
     }
 
-    /** @return the upper bound for enchantment levels set through the item editor. */
     public int maxEnchantmentLevel() {
         return this.maxEnchantmentLevel;
     }
 
-    /** @return whether levels may exceed the enchantment's own maximum. */
     public boolean allowLevelsAboveMax() {
         return this.allowLevelsAboveMax;
     }
 
-    /** @return whether enchantments may be added to items that cannot normally carry them. */
     public boolean allowMismatchedEnchantments() {
         return this.allowMismatchedEnchantments;
     }
 
-    /** @return whether the item editor opens for items that are not weapons, tools or equipment. */
     public boolean allowEditingAllItems() {
         return this.allowEditingAllItems;
     }
 
-    /** @return {@code true} when an ordinary weapon's base damage may be edited as well. */
     public boolean allowNonTestItemDamage() {
         return this.allowNonTestItemDamage;
     }
 
-    /** @return whether the health editor only opens while holding the health editor item. */
     public boolean healthEditorRequiresItem() {
         return this.healthEditorRequiresItem;
     }
 
-    /** @return whether the generated enchantment content is switched off. */
     public boolean disableGeneratedEnchantments() {
         return this.disableGeneratedEnchantments;
     }
 
-    /** @return whether join notices registered through the api are shown at all */
     public boolean noticesEnabled() {
         return this.noticesEnabled;
     }
 
-    /** @return problems found while reading the file during the last reload. */
     public List<ContentError> errors() {
         return this.errors;
     }

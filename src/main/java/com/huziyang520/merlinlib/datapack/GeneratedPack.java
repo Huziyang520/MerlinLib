@@ -1,3 +1,5 @@
+// In-memory datapack holding everything MerlinLib derives from the configuration files.
+
 package com.huziyang520.merlinlib.datapack;
 
 import com.google.gson.JsonElement;
@@ -12,7 +14,6 @@ import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.metadata.MetadataSectionSerializer;
 import net.minecraft.server.packs.resources.IoSupplier;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,21 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * In-memory datapack holding everything MerlinLib derives from the configuration files.
- */
 public final class GeneratedPack implements PackResources {
-
-    /** Datapack format of the target version (1.21.1 = 48). */
     private static final int PACK_FORMAT = 48;
-
-    /**
-     * Resource format of the same version (1.21.1 = 34).
-     *
-     * <p>The same pack is asked for its metadata once per pack type, and a pack that answers with the data
-     * format only looks like a pack from the future on the resource side. Declaring the range covers both
-     * readings while the pack itself stays data only.
-     */
     private static final int RESOURCE_FORMAT = 34;
 
     private static final String PACK_META = "{\"pack\":{\"description\":\"MerlinLib generated content\","
@@ -59,10 +47,6 @@ public final class GeneratedPack implements PackResources {
 
     @Override
     public void listResources(PackType type, String namespace, String path, ResourceOutput output) {
-        // The ids handed to the output MUST be "<namespace>:<path from the pack root>" including the
-        // file extension, e.g. "merlinlib:enchantment/unbreakable.json". The registry loaders cut the
-        // requested directory and the ".json" suffix off that path to derive the element id; emitting a
-        // bare "merlinlib:unbreakable" makes every element invisible.
         String namespacePrefix = type.getDirectory() + "/" + namespace + "/";
         String requestedPrefix = path + "/";
         for (Map.Entry<String, byte[]> entry : this.files().entrySet()) {
@@ -79,10 +63,6 @@ public final class GeneratedPack implements PackResources {
         }
     }
 
-    /**
-     * @return the files this pack would currently contain, keyed by their position from the pack root.
-     *         Used by the diagnostics command to show what the pack is about to serve.
-     */
     public static Map<String, byte[]> previewFiles() {
         return build();
     }
@@ -90,8 +70,6 @@ public final class GeneratedPack implements PackResources {
     @Override
     public Set<String> getNamespaces(PackType type) {
         if (type != PackType.SERVER_DATA) {
-            // The generated content is data only; claiming client namespaces would make the pack show up
-            // as an empty resource pack.
             return Set.of();
         }
         Set<String> namespaces = new LinkedHashSet<>();
@@ -119,8 +97,6 @@ public final class GeneratedPack implements PackResources {
 
     @Override
     public <T> T getMetadataSection(MetadataSectionSerializer<T> serializer) throws IOException {
-        // 1.21.1 takes the serializer itself (a getMetadataSectionName()/fromJson pair) rather than the
-        // 26.x MetadataSectionType with its codec.
         JsonElement section = JsonParser.parseString(PACK_META).getAsJsonObject()
                 .get(serializer.getMetadataSectionName());
         if (section == null || !section.isJsonObject()) {
@@ -131,7 +107,6 @@ public final class GeneratedPack implements PackResources {
 
     @Override
     public void close() {
-        // Nothing to release: the pack is a plain in-memory byte map.
     }
 
     private static String key(PackType type, ResourceLocation id) {
@@ -174,16 +149,6 @@ public final class GeneratedPack implements PackResources {
         return files;
     }
 
-    /**
-     * Adds the item tag files that make the testing weapons real weapons.
-     *
-     * <p>Enchantability is granted through tags of tags, so without these entries the enchanting table
-     * and the anvil treat the weapons as unknown item categories and refuse every enchantment. The
-     * vanilla tags are extended, never replaced: the file is written with {@code "replace": false}, so
-     * vanilla's own values stay intact.
-     *
-     * @param files the file map being built, modified in place
-     */
     private static void addWeaponTags(Map<String, byte[]> files) {
         Map<ResourceLocation, List<String>> byTag = new LinkedHashMap<>();
         for (ResourceLocation weapon : TestWeapons.ids()) {

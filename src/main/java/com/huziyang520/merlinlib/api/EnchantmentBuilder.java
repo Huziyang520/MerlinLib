@@ -1,3 +1,5 @@
+// Fluent description of one enchantment.
+
 package com.huziyang520.merlinlib.api;
 
 import com.google.gson.JsonElement;
@@ -8,19 +10,13 @@ import com.huziyang520.merlinlib.content.EnchantmentDraft;
 import com.huziyang520.merlinlib.content.EnchantmentJson;
 import com.huziyang520.merlinlib.impl.EnchantmentRegistry;
 import net.minecraft.resources.ResourceLocation;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Fluent description of one enchantment.
- */
 public final class EnchantmentBuilder {
-
     private final EnchantmentRegistry owner;
     private final ResourceLocation id;
-
     private boolean enabled = true;
     private JsonElement description;
     private int weight = 10;
@@ -37,22 +33,16 @@ public final class EnchantmentBuilder {
     private JsonObject effects = new JsonObject();
     private Acquisition acquisition = Acquisition.DEFAULT;
 
-    /**
-     * Public only so the registry implementation in another package can construct it; use
-     * {@link EnchantmentApi#register(ResourceLocation)} instead of calling this directly.
-     */
     public EnchantmentBuilder(EnchantmentRegistry owner, ResourceLocation id) {
         this.owner = owner;
         this.id = id;
     }
 
-    /** Overrides the vanilla {@code description} component, e.g. {@code {"translate": "..."}}. */
     public EnchantmentBuilder description(JsonElement description) {
         this.description = description;
         return this;
     }
 
-    /** Uses {@link EnchantmentDraft#defaultTranslationKey(ResourceLocation)} as description. */
     public EnchantmentBuilder defaultDescription() {
         this.description = EnchantmentJson.defaultDescription(this.id);
         return this;
@@ -68,7 +58,6 @@ public final class EnchantmentBuilder {
         return this;
     }
 
-    /** Sets both cost ranges at once, mirroring the usual vanilla values. */
     public EnchantmentBuilder cost(int minBase, int minPerLevel, int maxBase, int maxPerLevel) {
         this.minCostBase = minBase;
         this.minCostPerLevel = minPerLevel;
@@ -82,14 +71,12 @@ public final class EnchantmentBuilder {
         return this;
     }
 
-    /** Replaces the slot list, e.g. {@code "mainhand"}, {@code "armor"}, {@code "any"}. */
     public EnchantmentBuilder slots(String... slots) {
         this.slots.clear();
         this.slots.addAll(Arrays.asList(slots));
         return this;
     }
 
-    /** Item id, {@code #tag} reference or a raw json array. */
     public EnchantmentBuilder supportedItems(String items) {
         this.supportedItems = EnchantmentJson.tag(items);
         return this;
@@ -105,13 +92,11 @@ public final class EnchantmentBuilder {
         return this;
     }
 
-    /** Tag reference, single id or raw json array, matches vanilla {@code exclusive_set}. */
     public EnchantmentBuilder exclusiveSet(JsonElement exclusiveSet) {
         this.exclusiveSet = exclusiveSet;
         return this;
     }
 
-    /** Raw vanilla {@code effects} object, passed through to the generated datapack. */
     public EnchantmentBuilder effects(JsonObject effects) {
         this.effects = effects;
         return this;
@@ -127,9 +112,6 @@ public final class EnchantmentBuilder {
         return this;
     }
 
-    /**
-     * @return the immutable draft, without registering it.
-     */
     public EnchantmentDraft build() {
         return new EnchantmentDraft(
                 this.id,
@@ -152,12 +134,6 @@ public final class EnchantmentBuilder {
         );
     }
 
-    /**
-     * Validates and registers the enchantment.
-     *
-     * @return the registered draft
-     * @throws IllegalArgumentException when a field is out of range; the message names the field
-     */
     public EnchantmentDraft submit() {
         return this.owner.submit(this.build());
     }

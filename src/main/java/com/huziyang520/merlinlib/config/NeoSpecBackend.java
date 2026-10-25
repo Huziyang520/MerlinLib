@@ -1,10 +1,11 @@
+// The NeoForge store for MerlinLib's switches: one spec per half, answered through ConfigReader.
+
 package com.huziyang520.merlinlib.config;
 
 import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.content.ContentError;
 import com.huziyang520.merlinlib.util.MerlinColor;
 import net.neoforged.neoforge.common.ModConfigSpec;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,14 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-/**
- * The NeoForge store for MerlinLib's switches: one spec per half, answered through {@link ConfigReader}.
- */
 final class NeoSpecBackend implements ConfigBackend {
-
-    /** Prefix of every translation key this backend sets, shared by both halves. */
     private static final String KEY_PREFIX = Constants.MOD_ID + ".configuration.";
-
     private final String name;
     private final String fileName;
     private final String legacyFileName;
@@ -28,7 +23,6 @@ final class NeoSpecBackend implements ConfigBackend {
     private final java.util.Deque<String> path = new java.util.ArrayDeque<>();
     private final Map<String, ModConfigSpec.ConfigValue<?>> values = new LinkedHashMap<>();
     private ModConfigSpec spec;
-    /** Whether the one time import of the pre-specification file has already been attempted. */
     private boolean importAttempted;
 
     private NeoSpecBackend(String name, String fileName, String legacyFileName) {
@@ -37,15 +31,6 @@ final class NeoSpecBackend implements ConfigBackend {
         this.legacyFileName = legacyFileName;
     }
 
-    /**
-     * Declares one half of the configuration.
-     *
-     * @param name           the name used in the log
-     * @param fileName       the file the loader writes for this half
-     * @param legacyFileName the pre-specification file of the same half
-     * @param definitions    receives this backend, and declares the keys on it
-     * @return the finished backend
-     */
     static NeoSpecBackend declare(String name, String fileName, String legacyFileName,
                                   Consumer<NeoSpecBackend> definitions) {
         NeoSpecBackend backend = new NeoSpecBackend(name, fileName, legacyFileName);
@@ -54,12 +39,10 @@ final class NeoSpecBackend implements ConfigBackend {
         return backend;
     }
 
-    /** @return the spec to register with the mod container */
     ModConfigSpec spec() {
         return this.spec;
     }
 
-    /** @return the file this half is written to */
     String fileName() {
         return this.fileName;
     }
@@ -76,10 +59,6 @@ final class NeoSpecBackend implements ConfigBackend {
         return this;
     }
 
-    /**
-     * The translation key of one option, as {@code merlinlib.configuration.<section>.<option>}, plus
-     * {@code .tooltip} for its tooltip.
-     */
     private String label(String option) {
         return KEY_PREFIX + full(option);
     }
@@ -112,7 +91,6 @@ final class NeoSpecBackend implements ConfigBackend {
         return this;
     }
 
-    /** @return {@code section.key} of an option declared in the open section */
     private String full(String option) {
         return this.path.isEmpty() ? option : String.join(".", this.path) + "." + option;
     }
@@ -150,9 +128,6 @@ final class NeoSpecBackend implements ConfigBackend {
         return this.name;
     }
 
-    /**
-     * Copies the values of the pre-specification file into this spec, once, and deletes the old file.
-     */
     synchronized void importLegacy() {
         if (this.importAttempted || !this.spec.isLoaded()) {
             return;
@@ -183,20 +158,11 @@ final class NeoSpecBackend implements ConfigBackend {
         }
     }
 
-    /**
-     * Applies the one-off layout changes a key by key copy cannot express.
-     *
-     * <p>Only a value that still holds the old default is moved, because any other value was chosen by hand.
-     *
-     * @param old the file that was just read
-     */
     private void applyLegacyLayout(TomlFile old) {
         if (this.fileName.equals(NeoConfigs.CLIENT_FILE)) {
             int version = old.getInt("general.config_version", 0, 0, Integer.MAX_VALUE);
             int guiVersion = old.getInt("gui.config_version", 0, 0, Integer.MAX_VALUE);
             if (Math.max(version, guiVersion) < 1 && old.getBoolean("floating_text.enabled", true)) {
-                // Damage numbers used to be on by default; a file from before that change keeps showing them
-                // otherwise, because a file always wins over the defaults.
                 write("floating_text.enabled", "false");
             }
             return;
@@ -220,7 +186,6 @@ final class NeoSpecBackend implements ConfigBackend {
         }
     }
 
-    /** Converts the text of a file line into the type the key was declared with. */
     private Object convert(ModConfigSpec.ConfigValue<?> value, String raw) {
         Object fallback = value.getDefault();
         try {
@@ -251,7 +216,6 @@ final class NeoSpecBackend implements ConfigBackend {
         return null;
     }
 
-    /** Clamps a number to the range the key was declared with. */
     @SuppressWarnings("unchecked")
     private static <T extends Comparable<? super T>> T clamp(ModConfigSpec.ConfigValue<?> value, T number) {
         ModConfigSpec.ValueSpec spec = value.getSpec();
@@ -274,9 +238,7 @@ final class NeoSpecBackend implements ConfigBackend {
         ((ModConfigSpec.ConfigValue<Object>) value).set(newOne);
     }
 
-    /** Reads one value at a time, so a reload of the configuration is visible immediately. */
     private record View(NeoSpecBackend backend) implements ConfigReader {
-
         @Override
         public boolean getBoolean(String key, boolean fallback) {
             ModConfigSpec.ConfigValue<?> value = this.backend.values.get(key);

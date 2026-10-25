@@ -1,3 +1,5 @@
+// Repository source that offers the generated datapack to the game.
+
 package com.huziyang520.merlinlib.datapack;
 
 import com.huziyang520.merlinlib.Constants;
@@ -11,35 +13,12 @@ import net.minecraft.server.packs.repository.PackCompatibility;
 import net.minecraft.server.packs.repository.PackSource;
 import net.minecraft.server.packs.repository.RepositorySource;
 import net.minecraft.world.flag.FeatureFlags;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-/**
- * Repository source that offers the generated datapack to the game.
- *
- * <p>The pack is declared as required and hidden: it is always active (so {@code /reload} keeps it),
- * and it never shows up in the datapack or resource pack selection screens.
- *
- * <h2>1.21.1 shapes</h2>
- *
- * <p>{@code Pack.ResourcesSupplier} on this line is a two method interface -
- * {@code openPrimary(PackLocationInfo)} and {@code openFull(PackLocationInfo, Pack.Metadata)} - rather
- * than the single {@code openMetadata}/{@code openResources} pair the 26.x line uses, and there is no
- * {@code PackMetadataResources} class at all. Both methods simply hand back a new
- * {@link GeneratedPack}, which builds its content lazily on first read.
- */
 public final class GeneratedPackSource implements RepositorySource {
-
     public static final GeneratedPackSource INSTANCE = new GeneratedPackSource();
-
-    /**
-     * The version this pack reports to the game alongside its id.
-     *
-     * <p>Deliberately a fixed string and not the mod's own version: the pair is an identity, and an identity
-     * that changes on every release would stop matching the packs older worlds recorded.
-     */
     private static final String KNOWN_PACK_VERSION = "1";
 
     private static final Pack.ResourcesSupplier SUPPLIER = new Pack.ResourcesSupplier() {
@@ -68,9 +47,7 @@ public final class GeneratedPackSource implements RepositorySource {
                 Constants.GENERATED_PACK_ID,
                 Component.translatable("pack." + Constants.MOD_ID + ".generated"),
                 PackSource.BUILT_IN,
-                // The pack has to name itself to the game, and this is not cosmetic: vanilla marks every registry
-                // entry with the lifecycle of the pack that provided it, and a pack it does not recognise counts as
-                // an experimental datapack. Declaring the id keeps this pack's enchantments stable like vanilla's.
+
                 Optional.of(new net.minecraft.server.packs.repository.KnownPack(
                         Constants.MOD_ID, "generated", KNOWN_PACK_VERSION))
         );
@@ -79,16 +56,13 @@ public final class GeneratedPackSource implements RepositorySource {
                 PackCompatibility.COMPATIBLE,
                 FeatureFlags.VANILLA_SET,
                 List.<String>of(),
-                // Hidden: the pack is infrastructure, not something a player should be able to switch off.
+
                 true
         );
         PackSelectionConfig selection = new PackSelectionConfig(true, Pack.Position.TOP, true);
         consumer.accept(new Pack(location, SUPPLIER, metadata, selection));
     }
 
-    /**
-     * @return the pack type the generated content belongs to.
-     */
     public static PackType packType() {
         return PackType.SERVER_DATA;
     }

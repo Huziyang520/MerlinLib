@@ -1,3 +1,5 @@
+// Client local command macros: named command lists bound to a combination of keys, stored next to the other MerlinLib ...
+
 package com.huziyang520.merlinlib.tools.macro;
 
 import com.google.gson.Gson;
@@ -7,7 +9,6 @@ import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.tools.hotkey.HotkeyRegistry;
 import com.huziyang520.merlinlib.tools.hotkey.KeyCombo;
 import net.minecraft.client.Minecraft;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -18,25 +19,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * Client local command macros: named command lists bound to a combination of keys, stored next to the
- * other MerlinLib files so they follow this computer rather than the server.
- */
 public final class MacroStorage {
-
     public record Macro(String name, List<Integer> keys, List<String> commands) {
-
-        /**
-         * @return the combination these keys form, empty when the macro is not bound
-         */
         public KeyCombo combo() {
             return KeyCombo.of(keys).orElseGet(KeyCombo::of);
         }
 
-        /**
-         * @param newKeys the new key codes
-         * @return a copy of this macro bound to those keys
-         */
         public Macro withKeys(List<Integer> newKeys) {
             return new Macro(this.name, List.copyOf(newKeys), this.commands);
         }
@@ -49,35 +37,21 @@ public final class MacroStorage {
     private MacroStorage() {
     }
 
-    /** @return the live list of macros, in the order the screen shows them. */
     public static List<Macro> macros() {
         return List.copyOf(MACROS);
     }
 
-    /**
-     * Replaces every macro and re-registers the bindings.
-     *
-     * @param macros the new macros
-     */
     public static void replaceAll(List<Macro> macros) {
         MACROS.clear();
         MACROS.addAll(macros);
         rebind();
     }
 
-    /**
-     * Appends one unbound, empty macro, which is what the "new macro" button does.
-     */
     public static void add() {
         MACROS.add(new Macro("Macro " + (MACROS.size() + 1), List.of(), List.of()));
         rebind();
     }
 
-    /**
-     * Removes one macro.
-     *
-     * @param index the index to remove, ignored when out of range
-     */
     public static void remove(int index) {
         if (index >= 0 && index < MACROS.size()) {
             MACROS.remove(index);
@@ -85,12 +59,6 @@ public final class MacroStorage {
         }
     }
 
-    /**
-     * Writes the macros to disk.
-     *
-     * <p>Failures are logged rather than thrown: a read only file must not take the game down, and the
-     * macros keep working for this session.
-     */
     public static void save() {
         List<StoredMacro> stored = new ArrayList<>(MACROS.size());
         for (Macro macro : MACROS) {
@@ -108,7 +76,6 @@ public final class MacroStorage {
         }
     }
 
-    /** Reads the macros from disk and registers their bindings. */
     public static void load() {
         MACROS.clear();
         if (Files.isRegularFile(FILE)) {
@@ -127,14 +94,6 @@ public final class MacroStorage {
         rebind();
     }
 
-    /**
-     * The key codes that two or more macros share.
-     *
-     * <p>Used by the macro screen to mark the affected rows in red: overlapping combinations cannot both
-     * be completed unambiguously, and the player should see that before wondering why a key does not work.
-     *
-     * @return every key code involved in a clash
-     */
     public static Set<Integer> conflictingKeys() {
         Set<Integer> clashing = new HashSet<>();
         for (int first = 0; first < MACROS.size(); first++) {
@@ -153,21 +112,10 @@ public final class MacroStorage {
         return clashing;
     }
 
-    /**
-     * The name of a key code, as vanilla labels it.
-     *
-     * @param keyCode the GLFW key code, negative for unbound
-     * @return the display name
-     */
     public static String keyDisplayName(int keyCode) {
         return HotkeyRegistry.keyName(keyCode);
     }
 
-    /**
-     * Advances the hotkey layer by one client tick.
-     *
-     * @param minecraft the client
-     */
     public static void tick(Minecraft minecraft) {
         if (minecraft.player == null) {
             return;
@@ -175,16 +123,10 @@ public final class MacroStorage {
         HotkeyRegistry.tick();
     }
 
-    /**
-     * @param combo     the combination
-     * @param commands  the commands
-     * @return the commands joined for display, one per line
-     */
     public static String describe(List<String> commands) {
         return commands.stream().filter(command -> !command.isBlank()).collect(Collectors.joining(" / "));
     }
 
-    /** Re-registers every binding from the current macro list. */
     private static void rebind() {
         HotkeyRegistry.clear();
         for (Macro macro : MACROS) {
@@ -196,11 +138,6 @@ public final class MacroStorage {
         }
     }
 
-    /**
-     * Runs one macro as the player.
-     *
-     * @param macro the macro to run
-     */
     private static void run(Macro macro) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null) {
@@ -214,12 +151,6 @@ public final class MacroStorage {
         }
     }
 
-    /**
-     * The on disk shape of one macro.
-     *
-     * <p>{@code key} is the field earlier versions wrote; it is still read so upgrading does not lose a
-     * binding, and it is never written back.
-     */
     private static final class StoredMacro {
         private String name;
         private List<Integer> keys;

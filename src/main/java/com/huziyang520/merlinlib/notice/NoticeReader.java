@@ -1,3 +1,5 @@
+// Reads notices out of data packs.
+
 package com.huziyang520.merlinlib.notice;
 
 import com.google.gson.JsonElement;
@@ -13,30 +15,18 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
-
 import java.io.BufferedReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * Reads notices out of data packs.
- */
 final class NoticeReader {
-
-    /** Where a pack puts its notices. */
     private static final String DIRECTORY = "merlinlib/notices";
 
     private NoticeReader() {
     }
 
-    /**
-     * Reads every notice the loaded packs provide.
-     *
-     * @param server the running server, for its resource manager
-     * @return the notices, in a stable order
-     */
     static List<NoticeEntry> read(MinecraftServer server) {
         ResourceManager resources = server.getResourceManager();
         Map<ResourceLocation, Resource> found = resources.listResources(DIRECTORY,
@@ -61,12 +51,6 @@ final class NoticeReader {
         return entries;
     }
 
-    /**
-     * Turns {@code namespace:merlinlib/notices/name.json} into {@code namespace:name}.
-     *
-     * @param file the resource id of the file
-     * @return the notice id, or {@code null} when the file is nested deeper than one folder
-     */
     private static ResourceLocation toNoticeId(ResourceLocation file) {
         String path = file.getPath();
         String name = path.substring(DIRECTORY.length() + 1, path.length() - ".json".length());
@@ -76,13 +60,6 @@ final class NoticeReader {
         return ResourceLocation.fromNamespaceAndPath(file.getNamespace(), name);
     }
 
-    /**
-     * Parses one notice file.
-     *
-     * @param id   the notice id the file belongs to
-     * @param json the file's contents
-     * @return the notice, or {@code null} when it has no lines
-     */
     private static NoticeEntry parse(ResourceLocation id, JsonElement json) {
         if (!json.isJsonObject()) {
             Constants.LOG.warn("[MerlinLib] the join notice {} is not a JSON object and was skipped", id);
@@ -107,12 +84,6 @@ final class NoticeReader {
         return new NoticeEntry(id, mode, lines, enabledByDefault);
     }
 
-    /**
-     * Parses one line, which may be a plain string or a list of coloured segments.
-     *
-     * @param line the JSON of the line
-     * @return the line, or {@code null} when it is neither form
-     */
     private static Component parseLine(JsonElement line) {
         if (line.isJsonPrimitive()) {
             return Component.literal(line.getAsString());
@@ -152,12 +123,6 @@ final class NoticeReader {
         return result;
     }
 
-    /**
-     * The sixteen colour names a pack is likely to write, with the same numbers vanilla uses.
-     *
-     * <p>Spelled out here rather than looked up through the formatting enum: the lookup helpers have moved
-     * around between versions while the colours themselves have not changed since they were invented.
-     */
     private static final Map<String, Integer> NAMED_COLORS = Map.ofEntries(
             Map.entry("black", 0x000000), Map.entry("dark_blue", 0x0000AA),
             Map.entry("dark_green", 0x00AA00), Map.entry("dark_aqua", 0x00AAAA),
@@ -168,12 +133,6 @@ final class NoticeReader {
             Map.entry("red", 0xFF5555), Map.entry("light_purple", 0xFF55FF),
             Map.entry("yellow", 0xFFFF55), Map.entry("white", 0xFFFFFF));
 
-    /**
-     * Parses a colour, accepting {@code #RRGGBB}, {@code 0xRRGGBB}, a decimal number or a colour name.
-     *
-     * @param text the colour as written in the file
-     * @return the colour, or {@code null} when it is not recognised
-     */
     private static TextColor parseColor(String text) {
         String value = text.trim();
         if (value.isEmpty()) {
@@ -196,13 +155,6 @@ final class NoticeReader {
         }
     }
 
-    /**
-     * Parses the mode name.
-     *
-     * @param id    the notice id, for the warning
-     * @param value the mode as written in the file
-     * @return the mode, falling back to every join
-     */
     private static NoticeMode parseMode(ResourceLocation id, String value) {
         return switch (value.toLowerCase(Locale.ROOT)) {
             case "once", "once_per_save" -> NoticeMode.ONCE_PER_SAVE;

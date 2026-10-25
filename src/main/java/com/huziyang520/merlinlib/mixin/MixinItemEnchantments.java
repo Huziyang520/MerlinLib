@@ -1,3 +1,5 @@
+// Raises the upper bound of an enchantment level from 255 to the integer limit.
+
 package com.huziyang520.merlinlib.mixin;
 
 import com.huziyang520.merlinlib.Constants;
@@ -9,33 +11,10 @@ import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
-/**
- * Raises the upper bound of an enchantment level from 255 to the integer limit.
- *
- * <h2>Why 255 is a wall that has to be moved this early</h2>
- *
- * <p>Vanilla builds the level codec as {@code Codec.intRange(1, 255)} and then captures it into
- * {@code ItemEnchantments.CODEC}, which in turn is captured by the item component that stores
- * enchantments. Anything above 255 therefore survives in memory and on the network (that path uses
- * {@code VAR_INT}, so it has no bound) but fails when the world is written: the codec refuses the value
- * and the enchantment is lost on the next load. That is the "vanilla cannot save it" wall.
- *
- * <p>Because both codecs are built in the static initialiser, replacing a field afterwards is too late -
- * the wider range has to be in place while the initialiser runs. That is exactly what this injection does:
- * it rewrites the upper bound of the {@code intRange} call inside {@code <clinit>}, so every codec built
- * from it - and every component that captured it - is widened by construction.
- */
 @Mixin(ItemEnchantments.class)
 public class MixinItemEnchantments {
-
-    /** Set once so the log does not repeat for every class load attempt. */
     private static boolean merlinlib$logged;
 
-    /**
-     * Widens the level range to the integer limit.
-     *
-     * @param args the arguments of {@code Codec.intRange(min, max)}; index 1 is the upper bound
-     */
     @ModifyArgs(method = "<clinit>", at = @At(value = "INVOKE",
             target = "Lcom/mojang/serialization/Codec;intRange(II)Lcom/mojang/serialization/Codec;"))
     private static void merlinlib$widenLevelRange(Args args) {
@@ -46,16 +25,6 @@ public class MixinItemEnchantments {
         }
     }
 
-    /**
-     * Lifts the same bound in the constructor's validation.
-     *
-     * <p>The setters clamp on their own class (see {@link MixinItemEnchantmentsMutable}); this one is the
-     * constructor's check, which throws for any entry above its bound and would otherwise undo a widened
-     * level as soon as the map is turned back into an immutable component.
-     *
-     * @param bound the {@code 255} literal in the constructor
-     * @return the integer limit
-     */
     @ModifyConstant(method = "<init>", constant = @Constant(intValue = 255))
     private int merlinlib$liftValidationBound(int bound) {
         return Integer.MAX_VALUE;

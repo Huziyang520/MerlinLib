@@ -1,3 +1,5 @@
+// Mixin mob ai.
+
 package com.huziyang520.merlinlib.mixin;
 
 import com.huziyang520.merlinlib.ai.AiRouter;
@@ -11,20 +13,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Mob.class)
 public class MixinMobAi {
-
-    /** Ticks between two steering attempts for one mob. */
     private static final int STEER_INTERVAL = 20;
 
-    /** Counts down to the next steering attempt for this mob. */
     @Unique
     private int merlinlib$steerCooldown;
 
-    /**
-     * Refuses a target some hook does not want this mob to take.
-     *
-     * @param target the entity the mob is about to target
-     * @param info   the injection callback, cancelled to refuse
-     */
     @Inject(method = "setTarget", at = @At("HEAD"), cancellable = true)
     private void merlinlib$vetoTarget(LivingEntity target, CallbackInfo info) {
         if (target == null || !AiRouter.hasHooks()) {
@@ -35,11 +28,6 @@ public class MixinMobAi {
         }
     }
 
-    /**
-     * Keeps a forbidden target from standing, and steers the mob away where a hook asks for it.
-     *
-     * @param info the injection callback
-     */
     @Inject(method = "tick", at = @At("HEAD"))
     private void merlinlib$maintainAi(CallbackInfo info) {
         if (!AiRouter.hasHooks()) {

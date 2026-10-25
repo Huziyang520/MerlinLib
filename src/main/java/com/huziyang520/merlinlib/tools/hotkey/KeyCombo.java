@@ -1,3 +1,5 @@
+// One action bound to one or more keys that have to be held together.
+
 package com.huziyang520.merlinlib.tools.hotkey;
 
 import java.util.ArrayList;
@@ -5,34 +7,17 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * One action bound to one or more keys that have to be held together.
- */
 public final class KeyCombo {
-
-    /** The keys, sorted ascending and without duplicates. Empty means "not bound". */
     private final int[] keys;
 
     private KeyCombo(int[] keys) {
         this.keys = keys;
     }
 
-    /**
-     * Builds a combination from key codes.
-     *
-     * @param keys GLFW key codes; negative values are dropped
-     * @return the combination, possibly empty
-     */
     public static KeyCombo of(int... keys) {
         return new KeyCombo(normalise(keys));
     }
 
-    /**
-     * Builds a combination from a list of key codes, as stored in a configuration file.
-     *
-     * @param keys the key codes
-     * @return the combination, or empty when there is no usable key
-     */
     public static Optional<KeyCombo> of(List<Integer> keys) {
         if (keys == null) {
             return Optional.empty();
@@ -50,12 +35,10 @@ public final class KeyCombo {
         return Arrays.stream(keys).filter(key -> key >= 0).distinct().sorted().toArray();
     }
 
-    /** @return a copy of the key codes, ascending */
     public int[] keys() {
         return this.keys.clone();
     }
 
-    /** @return the key codes as a list, ready to be written to a file */
     public List<Integer> keyList() {
         List<Integer> list = new ArrayList<>(this.keys.length);
         for (int key : this.keys) {
@@ -64,28 +47,18 @@ public final class KeyCombo {
         return list;
     }
 
-    /** @return true when no key is bound */
     public boolean isEmpty() {
         return this.keys.length == 0;
     }
 
-    /** @return how many keys have to be held together */
     public int size() {
         return this.keys.length;
     }
 
-    /**
-     * @param key a GLFW key code
-     * @return true when the combination contains that key
-     */
     public boolean contains(int key) {
         return Arrays.binarySearch(this.keys, key) >= 0;
     }
 
-    /**
-     * @param pressed the keys pressed during this tick
-     * @return true when at least one of them belongs to this combination
-     */
     public boolean containsAny(java.util.Set<Integer> pressed) {
         for (int key : this.keys) {
             if (pressed.contains(key)) {
@@ -95,15 +68,6 @@ public final class KeyCombo {
         return false;
     }
 
-    /**
-     * Adds the key when it is missing, removes it when it is already there.
-     *
-     * <p>This is what the capture button does: the first press adds a key, pressing the same key again
-     * takes it back out, so a combination can be built and corrected without a separate undo.
-     *
-     * @param key the GLFW key code
-     * @return the resulting combination
-     */
     public KeyCombo toggle(int key) {
         if (key < 0) {
             return this;
@@ -129,10 +93,6 @@ public final class KeyCombo {
         return result;
     }
 
-    /**
-     * @param other another combination
-     * @return true when every key of this combination is also in the other, and the other has more keys
-     */
     public boolean isStrictSubsetOf(KeyCombo other) {
         return other.keys.length > this.keys.length && other.supersetOf(this);
     }
@@ -146,10 +106,6 @@ public final class KeyCombo {
         return true;
     }
 
-    /**
-     * @param other another combination
-     * @return true when the two combinations share at least one key, which is what makes them clash
-     */
     public boolean intersects(KeyCombo other) {
         for (int key : this.keys) {
             if (other.contains(key)) {

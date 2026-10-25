@@ -1,3 +1,5 @@
+// Client to server item edit request from the item editor screen.
+
 package com.huziyang520.merlinlib.network;
 
 import com.huziyang520.merlinlib.Constants;
@@ -7,11 +9,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
-/**
- * Client to server item edit request from the item editor screen.
- */
 public record ItemEditPayload(ItemStack stack) implements CustomPacketPayload {
-
     public static final Type<ItemEditPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "item_edit"));
 

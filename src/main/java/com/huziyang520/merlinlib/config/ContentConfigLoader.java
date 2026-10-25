@@ -1,3 +1,5 @@
+// Reads config/MerlinLib/*.json into immutable enchantment drafts.
+
 package com.huziyang520.merlinlib.config;
 
 import com.google.gson.Gson;
@@ -16,7 +18,6 @@ import com.huziyang520.merlinlib.effect.EffectOverrides;
 import com.huziyang520.merlinlib.impl.IdValidator;
 import com.huziyang520.merlinlib.util.MerlinColor;
 import net.minecraft.resources.ResourceLocation;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -30,38 +31,21 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * Reads {@code config/MerlinLib/*.json} into immutable enchantment drafts.
- */
 public final class ContentConfigLoader {
-
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private ContentConfigLoader() {
     }
 
-    /**
-     * Reads every file and merges the content with the java api registrations.
-     *
-     * @param apiEntries     enchantments registered through {@code MerlinApi}
-     * @param disabledByApi  ids disabled through {@code MerlinApi}
-     * @return the effective snapshot, never {@code null}
-     */
     public static ContentSnapshot load(Collection<EnchantmentDraft> apiEntries, Set<ResourceLocation> disabledByApi) {
         List<ContentError> errors = new ArrayList<>();
         Map<ResourceLocation, EnchantmentDraft> fromConfig = new LinkedHashMap<>();
         Set<ResourceLocation> disabled = new LinkedHashSet<>(disabledByApi);
-
         ensureDirectory();
-
         Map<ResourceLocation, EffectOverrides.Entry> effectOverrides = new LinkedHashMap<>();
         for (Path file : ConfigDirectory.jsonFiles()) {
             String name = file.getFileName().toString();
             if (RESERVED_FILES.contains(name)) {
-                // MerlinLib's own files sit in the same folder as the content files. Reading one of them as a
-                // list of enchantments does not fail loudly - it fails per entry, so a macro file with two
-                // macros produced two "this definition could not be loaded" warnings on every reload, which
-                // made a healthy configuration look broken. Names listed here are simply not content.
                 continue;
             }
             if (EFFECTS_FILE.equals(name)) {
@@ -167,7 +151,6 @@ public final class ContentConfigLoader {
             return;
         }
         ResourceLocation id = IdValidator.parse(rawId).orElseThrow();
-
         boolean enabled = boolField(object, "enabled", true, file, path, id.toString(), errors);
 
         JsonElement description = object.has("description")
@@ -177,10 +160,8 @@ public final class ContentConfigLoader {
         int weight = intField(object, "weight", 10, 1, 1024, file, path, id, errors);
         int maxLevel = intField(object, "max_level", 1, 1, 255, file, path, id, errors);
         int anvilCost = intField(object, "anvil_cost", 1, 0, Integer.MAX_VALUE, file, path, id, errors);
-
         int[] minCost = costField(object, "min_cost", 1, 11, file, path, id, errors);
         int[] maxCost = costField(object, "max_cost", 21, 11, file, path, id, errors);
-
         List<String> slots = stringList(object, "slots", List.of("any"), file, path, id, errors);
         JsonElement supportedItems = elementOrDefault(object, "supported_items", EnchantmentJson.tag("minecraft:enchantable/durability"));
         JsonElement primaryItems = object.has("primary_items") ? object.get("primary_items") : null;
@@ -361,15 +342,6 @@ public final class ContentConfigLoader {
         return "'" + element.getAsString() + "'";
     }
 
-    /**
-     * Creates {@code config/MerlinLib} together with a documented sample file on first launch so the
-     * feature is discoverable without reading the source code.
-     *
-     * <p>Only the content files are created here. The switches of the mod are not written into this folder
-     * any more: they are declared in {@link NeoSpecBackend} and the loader writes their own file below
-     * {@code config}, so a sample switch file here would be a second, silent copy of settings that nothing
-     * reads.
-     */
     public static void ensureDirectory() {
         Path root = ConfigDirectory.root();
         try {
@@ -387,25 +359,9 @@ public final class ContentConfigLoader {
         }
     }
 
-    /** File name holding effect colour and disable overrides. */
     public static final String EFFECTS_FILE = "effects.json";
-
-    /**
-     * Files in the configuration folder that are not enchantment content.
-     *
-     * <p>{@code macros.json} belongs to the macro toolkit ({@code MacroStorage}); anything else added here must
-     * be a file MerlinLib itself owns and writes.
-     */
     private static final java.util.Set<String> RESERVED_FILES = java.util.Set.of("macros.json");
 
-    /**
-     * Reads {@code effects.json}: a list of entries shaped
-     * {@code {"id": ..., "enabled": true, "color": "cyan"}}.
-     *
-     * <p>Effects are a code registry, so this file can only recolour or disable an effect that a mod
-     * declared in code; it can never create a new one. That boundary is intentional and documented in
-     * the README.
-     */
     private static void readEffectOverrides(Path file, Map<ResourceLocation, EffectOverrides.Entry> into, List<ContentError> errors) {
         String fileName = file.getFileName().toString();
         String text;
@@ -456,7 +412,6 @@ public final class ContentConfigLoader {
             }
             ResourceLocation id = parsed.get();
             boolean enabled = boolField(object, "enabled", true, fileName, path, id.toString(), errors);
-
             Optional<Integer> color = Optional.empty();
             JsonElement colorElement = object.get("color");
             if (colorElement != null) {

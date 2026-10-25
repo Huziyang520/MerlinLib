@@ -1,3 +1,5 @@
+// Confirmation dialog for "remove every enchantment".
+
 package com.huziyang520.merlinlib.tools.ui;
 
 import com.huziyang520.merlinlib.tools.ui.vanilla.PanelLayout;
@@ -7,23 +9,13 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-
 import java.util.List;
 
-/**
- * Confirmation dialog for "remove every enchantment".
- */
 public class DeleteEnchantsConfirmScreen extends VanillaScreen {
-
     private static final int MIN_CONTENT_WIDTH = 200;
-
     private final Screen parent;
     private final Runnable onConfirm;
 
-    /**
-     * @param parent    the screen to return to, both after confirming and after cancelling
-     * @param onConfirm run when the player confirms; the screen closes itself afterwards
-     */
     public DeleteEnchantsConfirmScreen(Screen parent, Runnable onConfirm) {
         super(Component.translatable("gui.merlinlib.confirm.title"));
         this.parent = parent;
@@ -38,8 +30,7 @@ public class DeleteEnchantsConfirmScreen extends VanillaScreen {
     @Override
     protected int contentWidth() {
         List<Component> labels = List.of(this.title, Component.translatable("gui.merlinlib.confirm.warning"));
-        // No button width in the measurement any more: the two buttons split the content width between them, so
-        // only the text decides how wide the dialog has to be.
+
         return Math.max(MIN_CONTENT_WIDTH,
                 VanillaUi.labelWidth(this.font, labels) + VanillaUi.PADDING);
     }
@@ -61,8 +52,7 @@ public class DeleteEnchantsConfirmScreen extends VanillaScreen {
                 }, layout.sliceX(0, 2), y, half));
         Button cancel = this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.cancel"),
                 button -> this.onClose(), layout.sliceX(1, 2), y, half));
-        // The two buttons are the same size and mirror each other; the cancel one is focused, so the default
-        // action of a stray Enter or Escape is the harmless one.
+
         this.setInitialFocus(cancel);
     }
 
@@ -71,7 +61,6 @@ public class DeleteEnchantsConfirmScreen extends VanillaScreen {
         PanelLayout layout = layout();
         int left = layout.left();
         int content = layout.contentWidth();
-
         VanillaUi.text(graphics, this.font, this.title, left, layout.top(), VanillaUi.TEXT_ERROR, content);
         VanillaUi.text(graphics, this.font, Component.translatable("gui.merlinlib.confirm.warning"),
                 left, layout.top() + 16, VanillaUi.TEXT, content);

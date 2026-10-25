@@ -1,3 +1,5 @@
+// Sends join notices.
+
 package com.huziyang520.merlinlib.notice;
 
 import com.huziyang520.merlinlib.Constants;
@@ -8,52 +10,27 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Sends join notices.
- */
 public final class NoticeManager {
-
     private NoticeManager() {
     }
 
-    /** Hooks the join moment. Safe to call from the mod constructor. */
     public static void install() {
         Services.LIFECYCLE.onPlayerJoin(NoticeManager::onJoin);
     }
 
-    /**
-     * Every notice that could be sent in this server, code and data pack together.
-     *
-     * @param server the running server
-     * @return the notices, in a stable order
-     */
     public static List<NoticeEntry> all(MinecraftServer server) {
         List<NoticeEntry> entries = new ArrayList<>(code());
         entries.addAll(NoticeReader.read(server));
         return entries;
     }
 
-    /**
-     * The notices registered from code, which both sides can see, because the same mods run on both.
-     *
-     * <p>What the per mod switch covers on a dedicated server: a client cannot ask that server what its packs
-     * contain, so the switch is keyed by mods rather than by packs, and it still works.
-     *
-     * @return the code notices
-     */
     public static List<NoticeEntry> code() {
         return NoticeRegistry.codeNotices();
     }
 
-    /**
-     * Offers every unseen notice to a player who just joined.
-     *
-     * @param player the player
-     */
     private static void onJoin(ServerPlayer player) {
         if (!(player.level() instanceof ServerLevel level)) {
             return;
@@ -84,14 +61,6 @@ public final class NoticeManager {
         }
     }
 
-    /**
-     * Decides whether one notice is due, recording it when the mode says it may be shown only once.
-     *
-     * @param level  the level the player is in
-     * @param player the player
-     * @param entry  the notice
-     * @return true when it should be sent
-     */
     private static boolean shouldSend(ServerLevel level, ServerPlayer player, NoticeEntry entry) {
         return switch (entry.mode()) {
             case EVERY_JOIN -> true;
@@ -100,13 +69,6 @@ public final class NoticeManager {
         };
     }
 
-    /**
-     * Records a key in the save's store, reporting whether it is new.
-     *
-     * @param level the level, used to reach the save's storage
-     * @param key   the key to record
-     * @return true when the key had not been recorded before
-     */
     private static boolean remember(ServerLevel level, String key) {
         MinecraftServer server = level.getServer();
         if (server == null) {

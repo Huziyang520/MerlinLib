@@ -1,3 +1,5 @@
+// The command macro screen.
+
 package com.huziyang520.merlinlib.tools.ui;
 
 import com.huziyang520.merlinlib.tools.hotkey.HotkeyRegistry;
@@ -13,7 +15,6 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.MultiLineEditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,52 +22,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * The command macro screen.
- */
 public class MacroScreen extends VanillaScreen {
-
-    /** Macro rows visible at once on a window tall enough. */
     private static final int MAX_ROWS = 6;
-    /** Fewest macro rows a window too short for {@link #MAX_ROWS} still shows. */
     private static final int MIN_ROWS = 1;
-    /** Height of one macro row. */
     private static final int ROW_HEIGHT = VanillaUi.LIST_ROW_HEIGHT;
-    /** Width of the per row delete button. */
     private static final int DELETE_WIDTH = VanillaUi.STEP_BUTTON;
-    /** Narrowest width of the macro list column. */
     private static final int MIN_LIST_WIDTH = 150;
-    /** Narrowest width of the editor column. */
     private static final int MIN_EDITOR_WIDTH = 230;
-    /** Height of the multi line command area. */
     private static final int COMMANDS_HEIGHT = 90;
-    /** Width of the key capture button. */
     private static final int KEY_WIDTH = 170;
-    /** Height of a label plus the control under it. */
     private static final int LABEL = 12;
-    /**
-     * Character ceiling of the command area.
-     *
-     * <p>4096 characters, which is what 26.3 used. The line ceiling 26.3 also set is not repeated because
-     * this version has no such limit to set; see the class comment.
-     */
     private static final int COMMANDS_CHARACTER_LIMIT = 4096;
-
     private final Screen parent;
     private final List<MacroStorage.Macro> macros = new ArrayList<>(MacroStorage.macros());
-
     private int selected = -1;
     private KeyCombo pending = KeyCombo.of();
-    /** The combination a capture started from, restored when it is cancelled. */
     private KeyCombo beforeCapture = KeyCombo.of();
     private boolean capturing;
-
     private EditBox nameBox;
     private MultiLineEditBox commandsBox;
     private Button keyButton;
     private ScrollArea list;
     private final List<Button> deleteButtons = new ArrayList<>();
-
     private int listLabelY;
     private int nameLabelY;
     private int commandsLabelY;
@@ -74,9 +51,6 @@ public class MacroScreen extends VanillaScreen {
     private int hintY;
     private int hovered = -1;
 
-    /**
-     * @param parent the screen to return to, or {@code null} to resume the game
-     */
     public MacroScreen(Screen parent) {
         super(Component.translatable("gui.merlinlib.macro.title"));
         this.parent = parent;
@@ -108,15 +82,6 @@ public class MacroScreen extends VanillaScreen {
                 contentHeightLimit());
     }
 
-    /**
-     * How many macro rows fit at the current window height.
-     *
-     * <p>The editor column has a fixed height - two labelled fields, the command area and the key button - so
-     * it is subtracted first; what is left belongs to the list. A high GUI scale therefore shortens the list
-     * instead of running off the bottom of the window.
-     *
-     * @return the number of rows to show, between {@link #MIN_ROWS} and {@link #MAX_ROWS}
-     */
     private int visibleRows() {
         int editorColumn = (LABEL + VanillaUi.WIDGET_HEIGHT + 6) * 2 + LABEL + COMMANDS_HEIGHT;
         int other = 12 + 4 + 6 + 10 + 6 + VanillaUi.WIDGET_HEIGHT
@@ -131,25 +96,16 @@ public class MacroScreen extends VanillaScreen {
         int listWidth = listWidth(layout);
         int editorX = left + listWidth + VanillaUi.GAP * 2;
         int editorWidth = layout.right() - editorX;
-
-        // The bottom of the panel is laid out first, from the panel's own bottom edge. The hint and the two
-        // buttons belong there rather than to wherever a cursor walking down the rows happens to end up: with a
-        // tall editor column the cursor ran past the bottom of the panel, and the hint and the buttons then
-        // overlapped each other outside it. The hint's height is measured because it wraps.
         int bottom = layout.contentBottom() - VanillaUi.WIDGET_HEIGHT;
         int hintLines = VanillaUi.wrap(this.font,
                 Component.translatable("gui.merlinlib.macro.hint").getString(),
                 layout.contentWidth()).size();
         this.hintY = bottom - 6 - hintLines * 10;
-
         layout.gap(12 + 4);
         int bodyTop = layout.cursor();
-
-        // ---------------------------------------------------------- left: the macro list
         this.listLabelY = bodyTop;
         this.list = new ScrollArea(left, bodyTop + LABEL, listWidth, visibleRows() * ROW_HEIGHT, ROW_HEIGHT);
         this.list.setContentHeight(this.macros.size() * ROW_HEIGHT);
-
         int listButtonsY = this.list.y() + this.list.height() + 6;
         int half = (listWidth - VanillaUi.GAP) / 2;
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.merlinlib.macro.new"),
@@ -158,33 +114,23 @@ public class MacroScreen extends VanillaScreen {
                 button -> this.deleteAll(), left + half + VanillaUi.GAP, listButtonsY,
                 listWidth - half - VanillaUi.GAP));
 
-        // ---------------------------------------------------------- right: the editor
         this.nameLabelY = bodyTop;
         int nameY = bodyTop + LABEL;
         this.nameBox = VanillaUi.field(this.font, editorX, nameY, editorWidth,
                 Component.translatable("gui.merlinlib.macro.name"),
                 this.selected >= 0 ? this.macros.get(this.selected).name() : "", 48);
         this.addRenderableWidget(this.nameBox);
-
         this.commandsLabelY = nameY + VanillaUi.WIDGET_HEIGHT + 6;
         int commandsY = this.commandsLabelY + LABEL;
-        // The command area grows only as far as the row above the hint. A fixed height could not be clamped, so
-        // in a small window it reached down into the hint and the buttons - which is what put the character
-        // counter of the box on top of them.
+
         int commandsHeight = Math.max(30, Math.min(COMMANDS_HEIGHT,
                 this.hintY - 6 - LABEL - 6 - VanillaUi.WIDGET_HEIGHT - commandsY));
-        // What changed / 1.20.1 note: 26.3 built this with MultiLineEditBox.builder() and then set
-        // setCharacterLimit(4096) and setLineLimit(64). This version has neither a builder class nor a line
-        // limit - the seven argument constructor below is the whole of the API, and the placeholder is its
-        // sixth argument. The background and the decorations cannot be switched off here because
-        // AbstractScrollWidget always draws them, which is the state 26.3 asked for anyway. The 64 line
-        // ceiling is simply not available; see the class comment.
+
         this.commandsBox = new MultiLineEditBox(this.font, editorX, commandsY, editorWidth, commandsHeight,
                 Component.translatable("gui.merlinlib.macro.commands_hint"),
                 Component.translatable("gui.merlinlib.macro.commands"));
         this.commandsBox.setCharacterLimit(COMMANDS_CHARACTER_LIMIT);
         this.addRenderableWidget(this.commandsBox);
-
         this.keyLabelY = commandsY + commandsHeight + 6;
         this.keyButton = this.addRenderableWidget(VanillaUi.button(keyLabel(), button -> this.beginCapture(),
                 editorX, this.keyLabelY + LABEL, KEY_WIDTH));
@@ -201,8 +147,7 @@ public class MacroScreen extends VanillaScreen {
             final int index = slot;
             this.deleteButtons.add(this.addRenderableWidget(VanillaUi.compact(Component.literal("X"),
                     button -> this.deleteMacro(index),
-                    // rowWidth, not the whole area: the last 6 px of the list are the vanilla scrollbar, and a
-                    // button placed over it both covered the bar and could not be dragged past.
+
                     left + this.list.rowWidth() - DELETE_WIDTH - 4, 0)));
         }
 
@@ -223,7 +168,6 @@ public class MacroScreen extends VanillaScreen {
         return Math.max(MIN_LIST_WIDTH, Math.min(wanted, Math.max(MIN_LIST_WIDTH, maximum)));
     }
 
-    /** Moves the per row delete buttons and hides the rows beyond the viewport. */
     private void layoutRows() {
         if (this.list == null) {
             return;
@@ -237,8 +181,6 @@ public class MacroScreen extends VanillaScreen {
             button.active = visible;
         }
     }
-
-    // ---------------------------------------------------------------- data
 
     private void loadSelection() {
         if (this.selected < 0 || this.selected >= this.macros.size()) {
@@ -269,7 +211,6 @@ public class MacroScreen extends VanillaScreen {
         }
     }
 
-    /** Copies the editor into the selected macro, so switching rows or saving never loses an edit. */
     private void commit() {
         if (this.selected < 0 || this.selected >= this.macros.size()) {
             return;
@@ -334,31 +275,22 @@ public class MacroScreen extends VanillaScreen {
         loadSelection();
     }
 
-    /**
-     * Starts a fresh capture.
-     *
-     * <p>Fresh, not additive: the point of clicking the button is to set a new combination, and keeping the
-     * previous keys is how the previous version ended up with a combination of eight keys nobody intended.
-     */
     private void beginCapture() {
         if (this.selected < 0) {
             return;
         }
-        // Remembered so Escape can put it back: starting a capture drops the old binding, and "cancel" that
-        // only stops the capture would leave the binding destroyed - which is what it used to do.
+
         this.beforeCapture = this.pending;
         this.pending = KeyCombo.of();
         this.capturing = true;
         refreshKeyButton();
     }
 
-    /** Ends the capture, keeping what was pressed: this is the "click elsewhere to finish" path. */
     private void endCapture() {
         this.capturing = false;
         refreshKeyButton();
     }
 
-    /** Ends the capture and restores the combination it started from. */
     private void cancelCapture() {
         this.pending = this.beforeCapture;
         this.capturing = false;
@@ -385,33 +317,14 @@ public class MacroScreen extends VanillaScreen {
         return inside && index >= 0 && index < this.macros.size() ? index : -1;
     }
 
-    // ---------------------------------------------------------------- input
-
-    /**
-     * Feeds a key to the capture, or to the screen.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> the 26.3 override took a {@code KeyEvent} and asked it for
-     * {@code key()}; this version takes the key code, the scan code and the modifier mask as three separate
-     * arguments. Only the first is read, and it is compared against {@link MerlinUi}, which now names the
-     * GLFW codes this version's events carry. The behaviour - Escape cancels, any other key toggles itself
-     * into the combination and is released - is unchanged.
-     *
-     * @param keyCode   the GLFW key code the event carries
-     * @param scanCode  the platform scan code, unused
-     * @param modifiers the modifier mask, unused
-     * @return {@code true} when the key was consumed
-     */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (this.capturing) {
-            // Escape is the way out; Enter is an ordinary key here, so a combination may contain it. The
-            // capture ends on a click elsewhere (see mouseClicked), which is what the button says.
             if (keyCode == MerlinUi.KEY_ESCAPE) {
                 cancelCapture();
                 return true;
             }
-            // Toggling is what makes a combination correctable: press a key to add it, press it again to drop
-            // it. The key is released right away, so closing the screen does not immediately run the macro.
+
             this.pending = this.pending.toggle(keyCode);
             HotkeyRegistry.release(keyCode);
             refreshKeyButton();
@@ -420,17 +333,6 @@ public class MacroScreen extends VanillaScreen {
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
-    /**
-     * While a combination is being captured, Escape belongs to the capture and not to the screen.
-     *
-     * <p>This is the fix for a real complaint. The button promises "Esc 取消", but Escape reaches the engine's
-     * own "close this screen" path, so the capture never saw the key: pressing Escape closed the whole macro
-     * screen with the half captured combination still in it, and the player read that as "Escape did not
-     * cancel". Both doors are shut here - the key handler cancels the capture, and this makes the screen refuse
-     * to close on Escape while that capture is running.
-     *
-     * @return whether Escape may close this screen
-     */
     @Override
     public boolean shouldCloseOnEsc() {
         return !this.capturing;
@@ -439,34 +341,14 @@ public class MacroScreen extends VanillaScreen {
     @Override
     public void onClose() {
         if (this.capturing) {
-            // The second door: a close that arrived anyway - from the engine, or from another mod's key
-            // handling - cancels the capture instead of throwing the screen away.
             cancelCapture();
             return;
         }
         super.onClose();
     }
 
-    /**
-     * Handles a click: it binds a mouse button during a capture, ends the capture, selects a row, or reaches
-     * the scrollbar.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> the cursor and the button arrive as three separate arguments
-     * instead of one {@code MouseButtonEvent} with {@code x()} / {@code y()} / {@code button()} accessors,
-     * and this version's method has <b>no</b> double-click parameter, so the flag 26.3 forwarded is gone.
-     * {@link #overDeleteButton(double, double)} and {@link ScrollArea#mouseClicked} were both ported to the
-     * same unpacked shape, so the two calls below are straight pass-throughs.
-     *
-     * @param mouseX the cursor x
-     * @param mouseY the cursor y
-     * @param button the mouse button, a GLFW button number
-     * @return {@code true} when the click was consumed
-     */
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // While capturing, clicking the key button binds the mouse button that was clicked; a click anywhere
-        // else ends the capture, so the text fields become usable again. The end click is consumed so it
-        // cannot hit a control the player was not aiming at.
         if (this.capturing) {
             if (this.keyButton != null && this.keyButton.isMouseOver(mouseX, mouseY)) {
                 this.pending = this.pending.toggle(button);
@@ -477,8 +359,7 @@ public class MacroScreen extends VanillaScreen {
             endCapture();
             return true;
         }
-        // The per row delete buttons live inside the list column, so they have to be offered the click before
-        // the list turns it into a row selection: the row branch used to swallow it, so X did nothing.
+
         if (overDeleteButton(mouseX, mouseY)) {
             return super.mouseClicked(mouseX, mouseY, button);
         }
@@ -496,13 +377,6 @@ public class MacroScreen extends VanillaScreen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    /**
-     * Whether a point is over one of the per row delete buttons.
-     *
-     * @param mouseX the cursor x
-     * @param mouseY the cursor y
-     * @return {@code true} when a visible delete button is under the cursor
-     */
     private boolean overDeleteButton(double mouseX, double mouseY) {
         for (Button button : this.deleteButtons) {
             if (button.visible && button.isMouseOver(mouseX, mouseY)) {
@@ -512,19 +386,6 @@ public class MacroScreen extends VanillaScreen {
         return false;
     }
 
-    /**
-     * Continues a scrollbar drag.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> the vanilla five argument drag signature; the two trailing deltas
-     * are forwarded unused, which is exactly the shape {@link ScrollArea#mouseDragged} takes.
-     *
-     * @param mouseX the cursor x
-     * @param mouseY the cursor y
-     * @param button the mouse button
-     * @param dragX  the x delta, forwarded but unused
-     * @param dragY  the y delta, forwarded but unused
-     * @return {@code true} when the drag was consumed
-     */
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         if (this.list != null && this.list.mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
@@ -533,16 +394,6 @@ public class MacroScreen extends VanillaScreen {
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
-    /**
-     * Ends a scrollbar drag.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> three separate arguments instead of one event object.
-     *
-     * @param mouseX the cursor x
-     * @param mouseY the cursor y
-     * @param button the mouse button
-     * @return {@code true} when the release was consumed
-     */
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         if (this.list != null && this.list.mouseReleased(mouseX, mouseY, button)) {
@@ -551,18 +402,6 @@ public class MacroScreen extends VanillaScreen {
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
-    /**
-     * Scrolls the macro list with the wheel.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> <b>three</b> arguments, not four. 1.20.1 has no horizontal wheel,
-     * so the 26.3 {@code scrollX} parameter does not exist and the single delta arrives where 26.3 put
-     * {@code scrollY}.
-     *
-     * @param mouseX  the cursor x
-     * @param mouseY  the cursor y
-     * @param scrollY the wheel delta
-     * @return {@code true} when the scroll was consumed
-     */
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (this.list != null && this.list.mouseScrolled(mouseX, mouseY, scrollY)) {
@@ -577,9 +416,6 @@ public class MacroScreen extends VanillaScreen {
         super.mouseMoved(mouseX, mouseY);
     }
 
-    // ---------------------------------------------------------------- drawing
-
-    /** The list is recessed: this has to happen before the widgets, or it covers the delete buttons. */
     @Override
     protected void drawContentBackground(GuiGraphics graphics) {
         if (this.list == null) {
@@ -594,7 +430,6 @@ public class MacroScreen extends VanillaScreen {
         int left = layout.left();
         int editorX = this.list.x() + this.list.width() + VanillaUi.GAP * 2;
         int editorWidth = layout.right() - editorX;
-
         VanillaUi.text(graphics, this.font, this.title, left, layout.top(), VanillaUi.TEXT, layout.contentWidth());
         VanillaUi.separator(graphics, left, layout.right(), layout.top() + 12);
         VanillaUi.text(graphics, this.font, Component.translatable("gui.merlinlib.macro.list"),
@@ -627,16 +462,12 @@ public class MacroScreen extends VanillaScreen {
                 VanillaUi.rowOutline(graphics, this.list.x(), rowY, this.list.width(), ROW_HEIGHT, false);
             }
             boolean conflict = clashes.contains(Set.copyOf(macro.keys()));
-            // The name and the combination it is bound to, so what a macro does is visible without clicking it.
             String text = macro.name() + "  " + HotkeyRegistry.comboName(macro.combo());
             VanillaUi.text(graphics, this.font, Component.literal(text), this.list.x() + 3, rowY + 6,
                     conflict ? VanillaUi.TEXT_ERROR : VanillaUi.TEXT, nameWidth);
         }
 
         this.list.render(graphics);
-
-        // Wrapped, never clipped: this line explains the whole screen, and the room for it is measured when the
-        // panel is laid out.
         int hintLine = 0;
         for (String line : VanillaUi.wrap(this.font, bottomLine().getString(), layout.contentWidth())) {
             VanillaUi.text(graphics, this.font, Component.literal(line), left, this.hintY + hintLine * 10,
@@ -645,16 +476,6 @@ public class MacroScreen extends VanillaScreen {
         }
     }
 
-    /**
-     * The combinations that more than one macro uses, down to the exact key set.
-     *
-     * <p>Only an identical combination is a clash. Two macros that merely share a key - both with left control
-     * held, say - are different bindings and can both be used, so marking them was wrong: the shared key is
-     * the whole point of a combination. The clash is a hint on the row (the name turns red) and nothing more;
-     * it never blocks a macro from being saved or fired.
-     *
-     * @return the key sets used by at least two macros
-     */
     private Set<Set<Integer>> duplicatedCombos() {
         Map<Set<Integer>, Integer> counts = new HashMap<>();
         for (MacroStorage.Macro macro : this.macros) {
@@ -669,7 +490,6 @@ public class MacroScreen extends VanillaScreen {
         return duplicated;
     }
 
-    /** @return the line under the list */
     private Component bottomLine() {
         return Component.translatable("gui.merlinlib.macro.hint");
     }

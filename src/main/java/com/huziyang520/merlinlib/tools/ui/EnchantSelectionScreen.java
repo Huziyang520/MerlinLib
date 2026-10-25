@@ -1,3 +1,5 @@
+// Second level picker: every enchantment of the running game, one row per level.
+
 package com.huziyang520.merlinlib.tools.ui;
 
 import com.huziyang520.merlinlib.config.ConfigManager;
@@ -15,53 +17,32 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
 
-/**
- * Second level picker: every enchantment of the running game, one row per level.
- */
 public class EnchantSelectionScreen extends VanillaScreen {
-
-    /** Rows visible at once on a window tall enough. */
     private static final int MAX_ROWS = 6;
-    /** Fewest rows a window too short for {@link #MAX_ROWS} still shows. */
     private static final int MIN_ROWS = 1;
-    /** Height of one row. */
     private static final int ROW_HEIGHT = VanillaUi.LIST_ROW_HEIGHT;
-    /** Width of the per row add button. */
     private static final int ADD_WIDTH = 46;
-    /** Height of the per row add button: four pixels shorter than the row, so it cannot touch the frame. */
     private static final int ADD_HEIGHT = ROW_HEIGHT - 4;
-    /** Narrowest content that still lays out sensibly. */
     private static final int MIN_CONTENT_WIDTH = 230;
-    /** Height of a label plus the control under it. */
     private static final int LABEL = 12;
-
     private final Screen parent;
     private final Consumer<EnchantmentLevel> onPick;
     private final ItemStack target;
-
     private final List<EnchantmentLevel> all = new ArrayList<>();
     private final List<EnchantmentLevel> filtered = new ArrayList<>();
     private final List<Button> rowButtons = new ArrayList<>();
-
     private EditBox search;
     private ScrollArea list;
     private int titleY;
     private int searchLabelY;
     private int hintY;
 
-    /**
-     * @param parent the screen to return to
-     * @param onPick receives the chosen enchantment and level
-     * @param target the item the enchantment will be added to, used for the applicability filter;
-     *               {@code null} disables the filter
-     */
     public EnchantSelectionScreen(Screen parent, Consumer<EnchantmentLevel> onPick, ItemStack target) {
         super(Component.translatable("gui.merlinlib.select.title"));
         this.parent = parent;
@@ -85,19 +66,14 @@ public class EnchantSelectionScreen extends VanillaScreen {
 
     @Override
     protected int contentHeight() {
-        return Math.min(12 + 4                                       // title and separator
-                + LABEL + VanillaUi.WIDGET_HEIGHT + 6              // search label and field
-                + visibleRows() * ROW_HEIGHT + 6                   // list
-                + 10 + 6                                           // hint
-                + VanillaUi.WIDGET_HEIGHT,                         // close button
+        return Math.min(12 + 4
+                + LABEL + VanillaUi.WIDGET_HEIGHT + 6
+                + visibleRows() * ROW_HEIGHT + 6
+                + 10 + 6
+                + VanillaUi.WIDGET_HEIGHT,
                 contentHeightLimit());
     }
 
-    /**
-     * How many rows fit at the current window height.
-     *
-     * @return the number of rows to show, between {@link #MIN_ROWS} and {@link #MAX_ROWS}
-     */
     private int visibleRows() {
         int fixed = 12 + 4 + LABEL + VanillaUi.WIDGET_HEIGHT + 6 + 6 + 10 + 6 + VanillaUi.WIDGET_HEIGHT;
         return VanillaUi.clamp((contentHeightLimit() - fixed) / ROW_HEIGHT, MIN_ROWS, MAX_ROWS);
@@ -107,10 +83,8 @@ public class EnchantSelectionScreen extends VanillaScreen {
     protected void build(PanelLayout layout) {
         int left = layout.left();
         int content = layout.contentWidth();
-
         this.titleY = layout.row(12);
         layout.gap(4);
-
         this.searchLabelY = layout.cursor();
         layout.gap(LABEL);
         int searchY = layout.row(VanillaUi.WIDGET_HEIGHT);
@@ -126,15 +100,12 @@ public class EnchantSelectionScreen extends VanillaScreen {
         });
         this.addRenderableWidget(this.search);
         layout.gap(6);
-
         int listY = layout.row(visibleRows() * ROW_HEIGHT);
         this.list = new ScrollArea(left, listY, content, visibleRows() * ROW_HEIGHT, ROW_HEIGHT);
         this.list.setContentHeight(this.filtered.size() * ROW_HEIGHT);
         layout.gap(6);
-
         this.hintY = layout.cursor();
         layout.gap(10 + 6);
-
         int bottom = layout.row(VanillaUi.WIDGET_HEIGHT);
         this.addRenderableWidget(VanillaUi.button(Component.translatable("gui.cancel"), button -> this.onClose(),
                 layout.sliceX(1, 2), bottom, layout.sliceWidth(2)));
@@ -142,9 +113,7 @@ public class EnchantSelectionScreen extends VanillaScreen {
         this.rowButtons.clear();
         for (int slot = 0; slot < visibleRows(); slot++) {
             final int index = slot;
-            // ADD_HEIGHT rather than the full widget height: a twenty pixel button in a twenty pixel row
-            // touched the row outline above and below (the "buttons run into the frame" report). The row
-            // buttons are centred by layoutRows(), which leaves the two pixel gap on both sides.
+
             this.rowButtons.add(this.addRenderableWidget(Button.builder(
                     Component.translatable("gui.merlinlib.select.add"),
                     button -> pick(index))
@@ -154,7 +123,6 @@ public class EnchantSelectionScreen extends VanillaScreen {
         layoutRows();
     }
 
-    /** Moves the row buttons to follow the scroll position and hides the unused ones. */
     private void layoutRows() {
         if (this.list == null) {
             return;
@@ -178,18 +146,6 @@ public class EnchantSelectionScreen extends VanillaScreen {
         Minecraft.getInstance().setScreen(this.parent);
     }
 
-    /**
-     * Enumerates the registry once, sorted by name and level so the picker stays stable between openings.
-     *
-     * <p>Enchantments the target cannot carry are skipped unless the server allows mismatched ones, which is
-     * the switch that decides whether this list shows "everything" or "everything that works here".
-     *
-     * <p><b>What changed / 1.20.1 note:</b> {@code RegistryAccess#lookup} and
-     * {@code RegistryLookup#listElements()} are the same calls as on 26.3 and yield the same
-     * {@code Holder.Reference} stream, so only the name lookup differs: 1.21's
-     * {@code Enchantment#description()} does not exist here, and the display name is built from
-     * {@code getDescriptionId()} instead - the same substitution {@link EnchantmentLevel#label()} makes.
-     */
     private void buildList() {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) {
@@ -229,25 +185,7 @@ public class EnchantSelectionScreen extends VanillaScreen {
         }
     }
 
-    /**
-     * The registry id of an enchantment, for the search box.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> 26.3 read the id off the holder's key
-     * ({@code entry.enchantment().unwrapKey().map(key -> key.location())}) because the row carried a
-     * {@code Holder}. This version's row carries the enchantment itself, so the id has to be looked up.
-     *
-     * <p>The lookup goes through {@code ForgeRegistries.ENCHANTMENTS} rather than
-     * {@code BuiltInRegistries.ENCHANTMENT}: both answer the same question, but Forge deprecated the
-     * latter precisely so that modded lookup goes through its own registry, and a deprecation warning
-     * from a class that is still perfectly functional is worse than using the one Forge asks for. The
-     * two are backed by the same map, so the id returned is identical.
-     *
-     * @param enchantment the enchantment
-     * @return the id as text, or an empty string when the enchantment is not in the registry
-     */
     private static String idOf(Enchantment enchantment) {
-        // 1.21.1 has no BuiltInRegistries.ENCHANTMENT: enchantments are a data driven registry, so its
-        // keys are read through the level's registry access.
         var level = net.minecraft.client.Minecraft.getInstance().level;
         if (level == null) {
             return "";
@@ -257,18 +195,6 @@ public class EnchantSelectionScreen extends VanillaScreen {
         return id == null ? "" : id.toString();
     }
 
-    /**
-     * Forwards a click to the scrollbar before the widgets see it.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> the 26.3 signature took one {@code MouseButtonEvent} plus the
-     * double-click flag; this version takes the cursor and the button separately, and has no double-click
-     * flag to forward.
-     *
-     * @param mouseX the cursor x
-     * @param mouseY the cursor y
-     * @param button the mouse button
-     * @return {@code true} when the click was consumed
-     */
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (this.list != null && this.list.mouseClicked(mouseX, mouseY, button)) {
@@ -278,19 +204,6 @@ public class EnchantSelectionScreen extends VanillaScreen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    /**
-     * Forwards a drag to the scrollbar.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> the cursor, the button and the two drag deltas are separate
-     * arguments here; {@link ScrollArea} was ported to the same shape, so they are passed straight through.
-     *
-     * @param mouseX the cursor x
-     * @param mouseY the cursor y
-     * @param button the mouse button
-     * @param dragX  the x delta, forwarded but unused by the region
-     * @param dragY  the y delta, forwarded but unused by the region
-     * @return {@code true} when the drag was consumed
-     */
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         if (this.list != null && this.list.mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
@@ -300,16 +213,6 @@ public class EnchantSelectionScreen extends VanillaScreen {
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
-    /**
-     * Ends a scrollbar drag.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> three separate arguments instead of one event object.
-     *
-     * @param mouseX the cursor x
-     * @param mouseY the cursor y
-     * @param button the mouse button
-     * @return {@code true} when the release was consumed
-     */
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         if (this.list != null && this.list.mouseReleased(mouseX, mouseY, button)) {
@@ -318,18 +221,6 @@ public class EnchantSelectionScreen extends VanillaScreen {
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
-    /**
-     * Scrolls the list with the wheel.
-     *
-     * <p><b>What changed / 1.20.1 note:</b> this is the three argument overload, not the four argument one
-     * this project's mapping table warns about - 1.20.1 has no horizontal wheel, so the single delta is what
-     * 26.3 passed as {@code scrollY}.
-     *
-     * @param mouseX  the cursor x
-     * @param mouseY  the cursor y
-     * @param scrollY the wheel delta
-     * @return {@code true} when the scroll was consumed
-     */
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (this.list != null && this.list.mouseScrolled(mouseX, mouseY, scrollY)) {
@@ -339,7 +230,6 @@ public class EnchantSelectionScreen extends VanillaScreen {
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
-    /** The list is recessed: this has to happen before the widgets, or it covers the add buttons. */
     @Override
     protected void drawContentBackground(GuiGraphics graphics) {
         if (this.list == null) {
@@ -353,7 +243,6 @@ public class EnchantSelectionScreen extends VanillaScreen {
         PanelLayout layout = layout();
         int left = layout.left();
         int content = layout.contentWidth();
-
         VanillaUi.text(graphics, this.font, this.title, left, this.titleY, VanillaUi.TEXT, content);
         VanillaUi.separator(graphics, left, layout.right(), this.titleY + 12);
         VanillaUi.text(graphics, this.font, Component.translatable("gui.merlinlib.select.search"),

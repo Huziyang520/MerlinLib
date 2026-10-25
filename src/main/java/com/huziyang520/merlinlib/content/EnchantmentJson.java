@@ -1,3 +1,5 @@
+// Small helpers for building vanilla shaped json fragments without depending on any loader type.
+
 package com.huziyang520.merlinlib.content;
 
 import com.google.gson.JsonArray;
@@ -6,26 +8,16 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import net.minecraft.resources.ResourceLocation;
 
-/**
- * Small helpers for building vanilla shaped json fragments without depending on any loader type.
- */
 public final class EnchantmentJson {
-
     private EnchantmentJson() {
     }
 
-    /** Builds the vanilla {@code description} component for an enchantment id. */
     public static JsonElement defaultDescription(ResourceLocation id) {
         JsonObject object = new JsonObject();
         object.addProperty("translate", EnchantmentDraft.defaultTranslationKey(id));
         return object;
     }
 
-    /**
-     * Wraps an item id or tag reference into the shape the vanilla codec accepts.
-     *
-     * <p>{@code "#namespace:tag"} stays a string, everything else becomes a single element array.
-     */
     public static JsonElement tag(String value) {
         if (value == null) {
             return null;
@@ -38,7 +30,6 @@ public final class EnchantmentJson {
         return array;
     }
 
-    /** Builds a vanilla {@code {"base": x, "per_level_above_first": y}} cost object. */
     public static JsonObject cost(int base, int perLevel) {
         JsonObject object = new JsonObject();
         object.addProperty("base", base);

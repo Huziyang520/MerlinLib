@@ -1,11 +1,8 @@
+// Easing curves for interface animation, reachable by any mod.
+
 package com.huziyang520.merlinlib.ui.anim;
 
-/**
- * Easing curves for interface animation, reachable by any mod.
- */
 public enum Easing {
-
-    /** No easing: linear progress. */
     LINEAR {
         @Override
         public double apply(double progress) {
@@ -13,7 +10,6 @@ public enum Easing {
         }
     },
 
-    /** Starts fast and settles gently; the default for anything that slides or grows. */
     EASE_OUT_CUBIC {
         @Override
         public double apply(double progress) {
@@ -22,7 +18,6 @@ public enum Easing {
         }
     },
 
-    /** Slow, fast, slow: for a movement that has a clear start and end. */
     EASE_IN_OUT_SINE {
         @Override
         public double apply(double progress) {
@@ -30,12 +25,6 @@ public enum Easing {
         }
     },
 
-    /**
-     * Overshoots slightly before settling - the "pop" of a window that jumps open.
-     *
-     * <p>The value exceeds {@code 1} in the middle of the curve on purpose: a caller that scales by it will see
-     * the window grow a little past its final size and come back, which is the whole effect.
-     */
     EASE_OUT_BACK {
         @Override
         public double apply(double progress) {
@@ -45,7 +34,6 @@ public enum Easing {
         }
     },
 
-    /** Springs in from below zero: for something that should punch in from the bottom of the screen. */
     EASE_OUT_ELASTIC {
         @Override
         public double apply(double progress) {
@@ -60,17 +48,8 @@ public enum Easing {
             return eased * Math.sin((progress - period / 4.0D) * (2.0D * Math.PI) / period) + 1.0D;
         }
     };
-
-    /**
-     * @param progress linear progress, clamped to {@code [0, 1]}
-     * @return the eased value
-     */
     public abstract double apply(double progress);
 
-    /**
-     * @param progress linear progress, may be outside {@code [0, 1]}
-     * @return the eased value for the clamped progress
-     */
     public final double applyClamped(double progress) {
         return this.apply(Math.max(0.0D, Math.min(1.0D, progress)));
     }
