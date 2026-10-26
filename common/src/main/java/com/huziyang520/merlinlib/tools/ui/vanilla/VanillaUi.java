@@ -156,6 +156,10 @@ public final class VanillaUi {
         return Button.builder(label, onPress).bounds(x, y, width, WIDGET_HEIGHT).build();
     }
 
+    public static Button rowButton(Component label, Button.OnPress onPress, int x, int y, int width, int height) {
+        return Button.builder(label, onPress).bounds(x, y, width, height).build();
+    }
+
     public static Button compact(Component label, Button.OnPress onPress, int x, int y) {
         return Button.builder(label, onPress).bounds(x, y, STEP_BUTTON, STEP_BUTTON).build();
     }

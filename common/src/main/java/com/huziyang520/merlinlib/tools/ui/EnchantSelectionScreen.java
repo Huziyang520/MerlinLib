@@ -10,6 +10,7 @@ import com.huziyang520.merlinlib.tools.ui.vanilla.VanillaUi;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import com.huziyang520.merlinlib.api.SearchApi;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -113,9 +114,10 @@ public class EnchantSelectionScreen extends VanillaScreen {
         this.rowButtons.clear();
         for (int slot = 0; slot < visibleRows(); slot++) {
             final int index = slot;
-            this.rowButtons.add(this.addRenderableWidget(VanillaUi.button(
+            this.rowButtons.add(this.addRenderableWidget(VanillaUi.rowButton(
                     Component.translatable("gui.merlinlib.select.add"),
-                    button -> pick(index), this.list.x() + this.list.rowWidth() - ADD_WIDTH, 0, ADD_WIDTH)));
+                    button -> pick(index), this.list.x() + this.list.rowWidth() - ADD_WIDTH, 0,
+                    ADD_WIDTH, ROW_HEIGHT - 4)));
         }
         layoutRows();
     }
@@ -174,7 +176,7 @@ public class EnchantSelectionScreen extends VanillaScreen {
             return;
         }
         for (EnchantmentLevel entry : this.all) {
-            if (entry.label().toLowerCase(Locale.ROOT).contains(query)
+            if (SearchApi.matches(entry.label(), query)
                     || entry.enchantment().unwrapKey()
                     .map(key -> key.identifier().toString().contains(query))
                     .orElse(false)) {
