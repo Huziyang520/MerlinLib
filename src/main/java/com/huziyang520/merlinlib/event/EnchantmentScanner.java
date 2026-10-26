@@ -11,11 +11,25 @@ import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.EnchantmentInstance;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class EnchantmentScanner {
+    private static final List<EnchantmentScanSource> SOURCES = new CopyOnWriteArrayList<>();
+
     private EnchantmentScanner() {
+    }
+
+    public static void addSource(EnchantmentScanSource source) {
+        if (source != null && !SOURCES.contains(source)) {
+            SOURCES.add(source);
+        }
+    }
+
+    public static boolean removeSource(EnchantmentScanSource source) {
+        return SOURCES.remove(source);
     }
 
     public static List<EnchantmentContext> scan(LivingEntity entity, EnchantmentEventType<?> type) {
@@ -25,6 +39,16 @@ public final class EnchantmentScanner {
         }
         for (EquipmentSlot slot : type.relevantSlots()) {
             addFromStack(entity.getItemBySlot(slot), slot, found);
+        }
+        for (EnchantmentScanSource source : SOURCES) {
+            try {
+                List<EnchantmentContext> extra = source.collect(entity, type);
+                if (extra != null && !extra.isEmpty()) {
+                    merge(found, extra);
+                }
+            } catch (RuntimeException ignored) {
+                // A broken source must not break damage or tick handling for everyone else.
+            }
         }
         return found;
     }
@@ -52,6 +76,22 @@ public final class EnchantmentScanner {
         List<EnchantmentContext> found = new ArrayList<>();
         addFromStack(stack, null, found);
         return found;
+    }
+
+    private static void merge(List<EnchantmentContext> into, List<EnchantmentContext> extra) {
+        Map<Object, Boolean> seen = new IdentityHashMap<>();
+        for (EnchantmentContext context : into) {
+            seen.put(key(context), Boolean.TRUE);
+        }
+        for (EnchantmentContext context : extra) {
+            if (seen.put(key(context), Boolean.TRUE) == null) {
+                into.add(context);
+            }
+        }
+    }
+
+    private static Object key(EnchantmentContext context) {
+        return context.id() + "#" + context.level() + "@" + System.identityHashCode(context.itemStack());
     }
 
     private static void addFromStack(ItemStack stack, EquipmentSlot slot, List<EnchantmentContext> into) {

@@ -7,6 +7,10 @@ import com.huziyang520.merlinlib.impl.EffectRegistry;
 import com.huziyang520.merlinlib.util.MerlinColor;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectCategory;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public final class EffectBuilder {
@@ -15,7 +19,12 @@ public final class EffectBuilder {
     private MobEffectCategory category = EffectApi.defaultCategory();
     private int color = MerlinColor.GRAY;
     private MerlinMobEffect.TickBehaviour behaviour;
+    private final List<AttributeSpec> attributes = new ArrayList<>();
     private boolean instant;
+
+    record AttributeSpec(Attribute attribute, ResourceLocation id, double amount,
+                         AttributeModifier.Operation operation) {
+    }
 
     public EffectBuilder(EffectRegistry owner, ResourceLocation id) {
         this.owner = owner;
@@ -43,6 +52,12 @@ public final class EffectBuilder {
         return this;
     }
 
+    public EffectBuilder attribute(Attribute attribute, ResourceLocation id, double amount,
+                                   AttributeModifier.Operation operation) {
+        this.attributes.add(new AttributeSpec(attribute, id, amount, operation));
+        return this;
+    }
+
     public EffectBuilder onTick(MerlinMobEffect.TickBehaviour behaviour) {
         this.behaviour = behaviour;
         return this;
@@ -55,6 +70,9 @@ public final class EffectBuilder {
     public MerlinMobEffect build() {
         MerlinMobEffect effect = new MerlinMobEffect(this.id, this.category, this.color, this.behaviour);
         effect.setInstant(this.instant);
+        for (AttributeSpec spec : this.attributes) {
+            effect.addAttributeModifier(spec.attribute(), spec.id(), spec.amount(), spec.operation());
+        }
         return effect;
     }
 

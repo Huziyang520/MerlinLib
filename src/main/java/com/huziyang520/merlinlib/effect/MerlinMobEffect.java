@@ -8,6 +8,10 @@ import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
 public class MerlinMobEffect extends MobEffect {
     @FunctionalInterface
@@ -30,6 +34,12 @@ public class MerlinMobEffect extends MobEffect {
 
     public void setInstant(boolean instant) {
         this.instant = instant;
+    }
+
+    public void addAttributeModifier(Attribute attribute, ResourceLocation modifierId, double amount,
+                                     AttributeModifier.Operation operation) {
+        UUID uuid = UUID.nameUUIDFromBytes((this.id + "/" + modifierId).getBytes(StandardCharsets.UTF_8));
+        super.addAttributeModifier(attribute, uuid.toString(), amount, operation);
     }
 
     @Override

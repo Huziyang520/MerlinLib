@@ -3,6 +3,7 @@
 package com.huziyang520.merlinlib.tools.ui;
 
 import com.huziyang520.merlinlib.config.ConfigManager;
+import com.huziyang520.merlinlib.api.SearchApi;
 import com.huziyang520.merlinlib.tools.ui.vanilla.PanelLayout;
 import com.huziyang520.merlinlib.tools.ui.vanilla.ScrollArea;
 import com.huziyang520.merlinlib.tools.ui.vanilla.VanillaScreen;
@@ -115,11 +116,10 @@ public class EnchantSelectionScreen extends VanillaScreen {
         for (int slot = 0; slot < visibleRows(); slot++) {
             final int index = slot;
 
-            this.rowButtons.add(this.addRenderableWidget(Button.builder(
+            this.rowButtons.add(this.addRenderableWidget(VanillaUi.rowButton(
                     Component.translatable("gui.merlinlib.select.add"),
-                    button -> pick(index))
-                    .bounds(this.list.x() + this.list.rowWidth() - ADD_WIDTH, 0, ADD_WIDTH, ADD_HEIGHT)
-                    .build()));
+                    button -> pick(index),
+                    this.list.x() + this.list.rowWidth() - ADD_WIDTH, 0, ADD_WIDTH, ADD_HEIGHT)));
         }
         layoutRows();
     }
@@ -180,7 +180,7 @@ public class EnchantSelectionScreen extends VanillaScreen {
         }
         for (EnchantmentLevel entry : this.all) {
             Enchantment enchantment = entry.enchantment();
-            if (entry.label().toLowerCase(Locale.ROOT).contains(query)
+            if (SearchApi.matches(entry.label(), query)
                     || idOf(enchantment).toLowerCase(Locale.ROOT).contains(query)) {
                 this.filtered.add(entry);
             }
