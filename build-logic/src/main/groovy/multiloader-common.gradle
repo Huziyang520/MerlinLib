@@ -80,6 +80,7 @@ processResources {
             'license'                : license,
             'description'            : project.description,
             'neoforge_version'       : neoforge_version,
+            'neoforge_loader_version_range': project.findProperty('neoforge_loader_version_range') ?: '',
             'credits'                : credits,
             'java_version'           : java_version
     ]
