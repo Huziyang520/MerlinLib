@@ -165,6 +165,10 @@ public final class ClientConfig {
         return DEFAULTS;
     }
 
+    public static void write(String key, String value) {
+        TomlFile.rewrite(path(), DEFAULTS, Map.of(key, value));
+    }
+
     public boolean crosshairDamage() {
         return this.crosshairDamage;
     }

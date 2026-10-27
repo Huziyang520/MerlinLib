@@ -7,6 +7,7 @@ import com.huziyang520.merlinlib.network.DamageFeedbackSink;
 import com.huziyang520.merlinlib.network.ServerSender;
 import com.huziyang520.merlinlib.Constants;
 import com.huziyang520.merlinlib.config.FabricConfig;
+import com.huziyang520.merlinlib.config.MezzConfigBridge;
 import com.huziyang520.merlinlib.tools.hud.CombatFeedback;
 import com.huziyang520.merlinlib.tools.macro.MacroStorage;
 import com.huziyang520.merlinlib.tools.ui.HealthEditorScreen;
@@ -41,6 +42,7 @@ public class MerlinLibFabricClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        MezzConfigBridge.install();
         KeyMappingHelper.registerKeyMapping(OPEN_EDITOR);
         KeyMappingHelper.registerKeyMapping(OPEN_MACROS);
 
