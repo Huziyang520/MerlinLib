@@ -3,6 +3,7 @@
 package com.huziyang520.merlinlib.client;
 
 import com.huziyang520.merlinlib.Constants;
+import com.huziyang520.merlinlib.config.MezzConfigBridge;
 import com.huziyang520.merlinlib.network.DamageFeedbackSink;
 import com.huziyang520.merlinlib.network.ServerSender;
 import com.huziyang520.merlinlib.network.ToolOpenSink;
@@ -79,6 +80,7 @@ public final class MerlinLibForgeClient {
     }
 
     public static void install() {
+        MezzConfigBridge.install();
         DamageFeedbackSink.setClientSink(payload ->
                 CombatFeedback.instance().onServerDamage(payload.damage(), payload.critical(), payload.targetId()));
 
