@@ -160,6 +160,10 @@ public final class VanillaUi {
         return Button.builder(label, onPress).bounds(x, y, width, height).build();
     }
 
+    public static int rowButtonY(int rowTop, int buttonHeight) {
+        return rowTop + Math.max(2, (LIST_ROW_HEIGHT - buttonHeight) / 2);
+    }
+
     public static Button compact(Component label, Button.OnPress onPress, int x, int y) {
         return Button.builder(label, onPress).bounds(x, y, STEP_BUTTON, STEP_BUTTON).build();
     }

@@ -20,8 +20,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class EnchantSelectionScreen extends VanillaScreen {
@@ -29,6 +31,7 @@ public class EnchantSelectionScreen extends VanillaScreen {
     private static final int MIN_ROWS = 1;
     private static final int ROW_HEIGHT = VanillaUi.LIST_ROW_HEIGHT;
     private static final int ADD_WIDTH = 46;
+    private static final int ADD_HEIGHT = ROW_HEIGHT - 4;
     private static final int MIN_CONTENT_WIDTH = 230;
     private static final int LABEL = 12;
     private final Screen parent;
@@ -117,7 +120,7 @@ public class EnchantSelectionScreen extends VanillaScreen {
             this.rowButtons.add(this.addRenderableWidget(VanillaUi.rowButton(
                     Component.translatable("gui.merlinlib.select.add"),
                     button -> pick(index), this.list.x() + this.list.rowWidth() - ADD_WIDTH, 0,
-                    ADD_WIDTH, ROW_HEIGHT - 4)));
+                    ADD_WIDTH, ADD_HEIGHT)));
         }
         layoutRows();
     }
@@ -130,7 +133,7 @@ public class EnchantSelectionScreen extends VanillaScreen {
         for (int slot = 0; slot < visibleRows(); slot++) {
             boolean visible = firstRow + slot < this.filtered.size();
             Button button = this.rowButtons.get(slot);
-            button.setY(this.list.y() + slot * ROW_HEIGHT);
+            button.setY(VanillaUi.rowButtonY(this.list.y() + slot * ROW_HEIGHT, ADD_HEIGHT));
             button.visible = visible;
             button.active = visible;
         }
@@ -146,6 +149,7 @@ public class EnchantSelectionScreen extends VanillaScreen {
     }
 
     private void buildList() {
+        this.all.clear();
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) {
             return;
@@ -155,15 +159,21 @@ public class EnchantSelectionScreen extends VanillaScreen {
             return;
         }
         boolean onlyApplicable = !ConfigManager.server().allowMismatchedEnchantments() && this.target != null;
+        Set<String> seen = new HashSet<>();
         lookup.get().listElements()
                 .sorted(Comparator.comparing(holder -> holder.value().description().getString()))
                 .forEach(holder -> {
                     if (onlyApplicable && !holder.value().canEnchant(this.target)) {
                         return;
                     }
+                    String enchantmentId = holder.unwrapKey()
+                            .map(key -> key.identifier().toString())
+                            .orElseGet(() -> "unnamed:" + holder.value().description().getString());
                     int max = Math.max(1, holder.value().getMaxLevel());
                     for (int level = 1; level <= max; level++) {
-                        this.all.add(new EnchantmentLevel(holder, level));
+                        if (seen.add(enchantmentId + "#" + level)) {
+                            this.all.add(new EnchantmentLevel(holder, level));
+                        }
                     }
                 });
     }
