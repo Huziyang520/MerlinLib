@@ -20,8 +20,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class EnchantSelectionScreen extends VanillaScreen {
@@ -155,6 +157,8 @@ public class EnchantSelectionScreen extends VanillaScreen {
         if (lookup.isEmpty()) {
             return;
         }
+        this.all.clear();
+        Set<String> seen = new HashSet<>();
         boolean onlyApplicable = !ConfigManager.server().allowMismatchedEnchantments() && this.target != null;
         lookup.get().listElements()
                 .sorted(Comparator.comparing(holder -> holder.value().description().getString()))
@@ -164,7 +168,13 @@ public class EnchantSelectionScreen extends VanillaScreen {
                     }
                     int max = Math.max(1, holder.value().getMaxLevel());
                     for (int level = 1; level <= max; level++) {
-                        this.all.add(new EnchantmentLevel(holder.value(), level));
+                        String enchantmentId = idOf(holder.value());
+                        if (enchantmentId.isEmpty()) {
+                            enchantmentId = "unnamed:" + holder.value().description().getString();
+                        }
+                        if (seen.add(enchantmentId + "#" + level)) {
+                            this.all.add(new EnchantmentLevel(holder.value(), level));
+                        }
                     }
                 });
     }
