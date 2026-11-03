@@ -1,0 +1,287 @@
+// MerlinLib —— 1.21.1 编译目标（NeoForge 单端）。
+//
+// 源码来源：../../common（26.X 主线 common）经 Sync 到 build/shared，再与 overlay/ 合并。
+// 版本强制差异全部落在 overlay/，不在这里写 if。
+//
+// 工艺：ModDevGradle 2.0.147 + Gradle 8.x + JDK 21。1.21.1 的 NeoForge 跑在 Mojang 官方名上，
+// 所以既不需要 refmap，也不需要 Mixin 注解处理器。
+
+plugins {
+    id 'java'
+    id 'net.neoforged.moddev' version '2.0.147'
+}
+
+base {
+    archivesName = "${mod_id}-${version}-neoforge-${minecraft_version}"
+}
+
+tasks.withType(org.gradle.api.tasks.bundling.AbstractArchiveTask).configureEach {
+    archiveVersion.set('')
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(java_version as int)
+
+neoForge {
+    version = project.neo_version
+
+    runs {
+        client {
+            client()
+        }
+        server {
+            server()
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+repositories {
+    maven { name = 'AliyunPublic'; url = uri('https://maven.aliyun.com/repository/public') }
+    maven { name = 'TencentPublic'; url = uri('https://mirrors.cloud.tencent.com/nexus/repository/maven-public/') }
+    maven { name = 'NeoForged'; url = uri('https://maven.neoforged.net/releases') }
+}
+
+// ---------------------------------------------------------------------------
+// 共享源码：26.X common + overlay
+// ---------------------------------------------------------------------------
+// 清单由 文档\Plans\.probe-1.7.0\gen-ml-target.ps1 从实际 overlay 文件生成，
+// 判据是「1.21.1 原文与 common 对应文件是否逐字节相同」：相同的不进 overlay，由 common 提供。
+
+// overlay 覆盖的 Java 文件（相对 java/ 的路径）。这些路径不会再从 common 取。
+def overlaidJava = [
+        'com/huziyang520/merlinlib/MerlinLib.java',
+        'com/huziyang520/merlinlib/MerlinLibNeoForge.java',
+        'com/huziyang520/merlinlib/api/EffectApi.java',
+        'com/huziyang520/merlinlib/api/EffectBuilder.java',
+        'com/huziyang520/merlinlib/api/EnchantmentApi.java',
+        'com/huziyang520/merlinlib/api/EnchantmentBuilder.java',
+        'com/huziyang520/merlinlib/api/EnchantmentInfo.java',
+        'com/huziyang520/merlinlib/api/EntityCounter.java',
+        'com/huziyang520/merlinlib/api/EventApi.java',
+        'com/huziyang520/merlinlib/api/LootInjectionBuilder.java',
+        'com/huziyang520/merlinlib/api/MerlinApi.java',
+        'com/huziyang520/merlinlib/api/NoticeApi.java',
+        'com/huziyang520/merlinlib/api/PotionApi.java',
+        'com/huziyang520/merlinlib/api/PotionBuilder.java',
+        'com/huziyang520/merlinlib/client/HudRowPolicy.java',
+        'com/huziyang520/merlinlib/client/MerlinConfigSectionScreen.java',
+        'com/huziyang520/merlinlib/client/MerlinLibNeoForgeClient.java',
+        'com/huziyang520/merlinlib/client/TestTridentRenderer.java',
+        'com/huziyang520/merlinlib/command/MerlinCommand.java',
+        'com/huziyang520/merlinlib/config/ClientConfig.java',
+        'com/huziyang520/merlinlib/config/ConfigBackend.java',
+        'com/huziyang520/merlinlib/config/ConfigManager.java',
+        'com/huziyang520/merlinlib/config/ConfigScope.java',
+        'com/huziyang520/merlinlib/config/ContentConfigLoader.java',
+        'com/huziyang520/merlinlib/config/ContentSnapshot.java',
+        'com/huziyang520/merlinlib/config/NeoConfigs.java',
+        'com/huziyang520/merlinlib/config/NeoSpecBackend.java',
+        'com/huziyang520/merlinlib/config/NoticeSettings.java',
+        'com/huziyang520/merlinlib/config/ServerConfig.java',
+        'com/huziyang520/merlinlib/config/TomlFile.java',
+        'com/huziyang520/merlinlib/content/BuiltInContent.java',
+        'com/huziyang520/merlinlib/content/ContentReport.java',
+        'com/huziyang520/merlinlib/content/EnchantmentDraft.java',
+        'com/huziyang520/merlinlib/content/EnchantmentJson.java',
+        'com/huziyang520/merlinlib/datapack/EnchantmentJsonWriter.java',
+        'com/huziyang520/merlinlib/datapack/GeneratedPack.java',
+        'com/huziyang520/merlinlib/datapack/GeneratedPackSource.java',
+        'com/huziyang520/merlinlib/effect/EffectOverrides.java',
+        'com/huziyang520/merlinlib/effect/MerlinMobEffect.java',
+        'com/huziyang520/merlinlib/event/BuiltInEvents.java',
+        'com/huziyang520/merlinlib/event/EnchantmentContext.java',
+        'com/huziyang520/merlinlib/event/EnchantmentEvent.java',
+        'com/huziyang520/merlinlib/event/EnchantmentEventDispatcher.java',
+        'com/huziyang520/merlinlib/event/EnchantmentEventRegistrar.java',
+        'com/huziyang520/merlinlib/event/EnchantmentEventType.java',
+        'com/huziyang520/merlinlib/event/EnchantmentScanner.java',
+        'com/huziyang520/merlinlib/impl/ContentManager.java',
+        'com/huziyang520/merlinlib/impl/EffectRegistry.java',
+        'com/huziyang520/merlinlib/impl/EnchantmentRegistry.java',
+        'com/huziyang520/merlinlib/impl/IdValidator.java',
+        'com/huziyang520/merlinlib/impl/PermissionGate.java',
+        'com/huziyang520/merlinlib/impl/PotionRegistry.java',
+        'com/huziyang520/merlinlib/loot/LootInjector.java',
+        'com/huziyang520/merlinlib/mixin/MixinAngers.java',
+        'com/huziyang520/merlinlib/mixin/MixinBlockDrops.java',
+        'com/huziyang520/merlinlib/mixin/MixinCatAvoidEntityGoal.java',
+        'com/huziyang520/merlinlib/mixin/MixinClientLevelParticles.java',
+        'com/huziyang520/merlinlib/mixin/MixinClientPacketListenerParticles.java',
+        'com/huziyang520/merlinlib/mixin/MixinFoodDataTick.java',
+        'com/huziyang520/merlinlib/mixin/MixinGuiGraphics.java',
+        'com/huziyang520/merlinlib/mixin/MixinHud.java',
+        'com/huziyang520/merlinlib/mixin/MixinItemEnchantmentsMutable.java',
+        'com/huziyang520/merlinlib/mixin/MixinLivingEntityDie.java',
+        'com/huziyang520/merlinlib/mixin/MixinLivingEntityHurt.java',
+        'com/huziyang520/merlinlib/mixin/MixinMinecraft.java',
+        'com/huziyang520/merlinlib/mixin/MixinMinecraftUseItem.java',
+        'com/huziyang520/merlinlib/mixin/MixinMobAi.java',
+        'com/huziyang520/merlinlib/mixin/MixinProjectileHit.java',
+        'com/huziyang520/merlinlib/mixin/MixinTitleScreen.java',
+        'com/huziyang520/merlinlib/network/DamageFeedbackPayload.java',
+        'com/huziyang520/merlinlib/network/HealthEditPayload.java',
+        'com/huziyang520/merlinlib/network/ItemEditPayload.java',
+        'com/huziyang520/merlinlib/notice/NoticeEntry.java',
+        'com/huziyang520/merlinlib/notice/NoticeManager.java',
+        'com/huziyang520/merlinlib/notice/NoticePreferences.java',
+        'com/huziyang520/merlinlib/notice/NoticeReader.java',
+        'com/huziyang520/merlinlib/notice/NoticeRegistry.java',
+        'com/huziyang520/merlinlib/notice/NoticeStore.java',
+        'com/huziyang520/merlinlib/platform/NeoForgeLifecycleBridge.java',
+        'com/huziyang520/merlinlib/platform/NeoForgeLootBridge.java',
+        'com/huziyang520/merlinlib/platform/NeoForgeModNameBridge.java',
+        'com/huziyang520/merlinlib/platform/NeoForgePackBridge.java',
+        'com/huziyang520/merlinlib/platform/NeoForgePlatformHelper.java',
+        'com/huziyang520/merlinlib/platform/NeoForgeRegistrationBridge.java',
+        'com/huziyang520/merlinlib/platform/services/ILootBridge.java',
+        'com/huziyang520/merlinlib/platform/services/IPackBridge.java',
+        'com/huziyang520/merlinlib/platform/services/IRegistrationBridge.java',
+        'com/huziyang520/merlinlib/reload/ContentReloadListener.java',
+        'com/huziyang520/merlinlib/tools/HealthCeiling.java',
+        'com/huziyang520/merlinlib/tools/HealthEditorItem.java',
+        'com/huziyang520/merlinlib/tools/MerlinCreativeEntries.java',
+        'com/huziyang520/merlinlib/tools/ParticleDiagnostics.java',
+        'com/huziyang520/merlinlib/tools/TestTridentItem.java',
+        'com/huziyang520/merlinlib/tools/TestWeapons.java',
+        'com/huziyang520/merlinlib/tools/hotkey/HotkeyRegistry.java',
+        'com/huziyang520/merlinlib/tools/hud/CombatFeedback.java',
+        'com/huziyang520/merlinlib/tools/ui/ConfigScreens.java',
+        'com/huziyang520/merlinlib/tools/ui/DeleteEnchantsConfirmScreen.java',
+        'com/huziyang520/merlinlib/tools/ui/EnchantSelectionScreen.java',
+        'com/huziyang520/merlinlib/tools/ui/EnchantmentLevel.java',
+        'com/huziyang520/merlinlib/tools/ui/HealthEditorScreen.java',
+        'com/huziyang520/merlinlib/tools/ui/ItemEditorScreen.java',
+        'com/huziyang520/merlinlib/tools/ui/MacroScreen.java',
+        'com/huziyang520/merlinlib/tools/ui/MerlinScreens.java',
+        'com/huziyang520/merlinlib/tools/ui/MerlinUi.java',
+        'com/huziyang520/merlinlib/tools/ui/NoticesScreen.java',
+        'com/huziyang520/merlinlib/tools/ui/vanilla/PanelLayout.java',
+        'com/huziyang520/merlinlib/tools/ui/vanilla/ScrollArea.java',
+        'com/huziyang520/merlinlib/tools/ui/vanilla/VanillaScreen.java',
+        'com/huziyang520/merlinlib/tools/ui/vanilla/VanillaUi.java',
+        'com/huziyang520/merlinlib/ui/anim/UiAnimation.java',
+        'com/huziyang520/merlinlib/util/SmeltingLookup.java',
+]
+
+// common 独有的 Java（1.21.1 线根本没有对应类）。排除理由逐条写在下面：
+// 这些类都是 26.3 线新增的功能栈，1.21.1 侧既没有它们，也没有任何参与编译的类引用它们
+// （gen-ml-target.ps1 的共享/overlay 全集扫描已确认引用数为 0）。
+def droppedJava = [
+        // 26.3 的冷却 API 及其后端：1.21.1 侧没有 CooldownStore 的调用方
+        'com/huziyang520/merlinlib/api/CooldownApi.java',
+        'com/huziyang520/merlinlib/impl/CooldownStore.java',
+        // 26.3 的掉落门控 API 及其后端：1.21.1 的掉落走 mixin/MixinBlockDrops + api/LootApi
+        'com/huziyang520/merlinlib/api/DropApi.java',
+        'com/huziyang520/merlinlib/impl/DropGate.java',
+        // 26.3 的效果账本 API 及其后端：1.21.1 侧没有效果账本概念
+        'com/huziyang520/merlinlib/api/EffectLedger.java',
+        'com/huziyang520/merlinlib/impl/EffectLedgerStore.java',
+        // 26.3 的村民交易 API 及其后端：1.21.1 线没有交易注册表
+        'com/huziyang520/merlinlib/api/TradeApi.java',
+        'com/huziyang520/merlinlib/impl/TradeRegistry.java',
+        // 26.3 的配置栈（ClientOptions / ServerOptions / ConfigOption / TomlBackend）：
+        // 1.21.1 用 NeoForge ModConfigSpec，即 overlay 里的 NeoSpecBackend + ClientConfig/ServerConfig
+        'com/huziyang520/merlinlib/config/ClientOptions.java',
+        'com/huziyang520/merlinlib/config/ServerOptions.java',
+        'com/huziyang520/merlinlib/config/ConfigOption.java',
+        'com/huziyang520/merlinlib/config/TomlBackend.java',
+        // 引用了 net.minecraft.resources.Identifier（26.x 改名后的 ResourceLocation），
+        // 1.21.1 只有 ResourceLocation，编译不过；1.21.1 用 overlay 里的 impl/IdValidator
+        'com/huziyang520/merlinlib/config/Coefficients.java',
+        'com/huziyang520/merlinlib/impl/ContentValidator.java',
+]
+
+def sharedJava = layout.buildDirectory.dir('shared/java')
+def sharedResources = layout.buildDirectory.dir('shared/resources')
+
+tasks.register('sharedJava', Sync) {
+    from('../../common/src/main/java') {
+        overlaidJava.each { exclude it }
+        droppedJava.each { exclude it }
+    }
+    from('overlay/java')
+    into sharedJava
+}
+
+tasks.register('sharedResources', Sync) {
+    from('../../common/src/main/resources') {
+        // mixin 配置由 overlay 提供：1.21.1 的 compatibilityLevel 是 JAVA_21，且多一个 MixinGuiGraphics
+        exclude 'merlinlib.mixins.json'
+
+        // 1.21.1 不读 assets/<ns>/items/（1.21.4 才引入 item model definitions）
+        exclude 'assets/merlinlib/items/**'
+
+        // 1.21.1 线没有 test_spear 这个工具（模型只在 26.x 存在），与 1.21.1 目标既有资源集保持一致
+        exclude 'assets/merlinlib/models/item/test_spear.json'
+        exclude 'assets/merlinlib/models/item/test_spear_in_hand.json'
+    }
+    from('overlay/resources')
+    into sharedResources
+}
+
+tasks.named('compileJava') { dependsOn 'sharedJava' }
+tasks.named('processResources') { dependsOn 'sharedResources' }
+
+sourceSets {
+    main {
+        java {
+            setSrcDirs([])
+            srcDir sharedJava
+        }
+        resources {
+            setSrcDirs([])
+            srcDir sharedResources
+            // 本目标独有、common 侧没有对应文件的资源：
+            // neoforge.mods.toml / merlinlib.neoforge.mixins.json / pack.mcmeta / merlinlib.png / META-INF/services
+            srcDir 'src/main/resources'
+        }
+    }
+}
+
+tasks.named('processResources', ProcessResources).configure {
+    filteringCharset = 'UTF-8'
+
+    var replaceProperties = [
+            minecraft_version      : minecraft_version, minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version, neo_version_range: neo_version_range,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id, mod_name: mod_name, mod_license: license, mod_version: version,
+            mod_authors            : mod_author, mod_description: mod_description,
+            mod_credits            : credits,
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching(['META-INF/neoforge.mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties + [project: project]
+    }
+}
+
+tasks.named('jar', Jar).configure {
+    manifest {
+        attributes([
+                'Specification-Title'     : mod_name,
+                'Specification-Vendor'    : mod_author,
+                'Specification-Version'   : '1',
+                'Implementation-Title'    : project.name,
+                'Implementation-Version'  : project.version,
+                'Implementation-Vendor'   : mod_author,
+                'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+                'Built-On-Minecraft'      : minecraft_version,
+        ])
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs += ['-Xmaxerrs', '1000']
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.encoding = 'UTF-8'
+    options.addStringOption('Xdoclint:none', '-quiet')
+}

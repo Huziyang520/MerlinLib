@@ -1,0 +1,42 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.huziyang520.merlinlib.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "RangedAttributeAccessor",
+    "MixinItemEnchantments",
+    "MixinItemEnchantmentsMutable",
+    "MixinPlayerAttack",
+    "MixinLivingEntityHurt",
+    "MixinLivingEntityDie",
+    "MixinServerPlayerDie",
+    "MixinLivingEntityTick",
+    "MixinProjectileHit",
+    "MixinBlockDrops",
+    "MixinFoodDataTick",
+    "MixinPlayerDestroyBlock",
+    "MixinServerLevelParticles",
+    "MixinMobAi",
+    "MixinAngers$PiglinAnger",
+    "MixinAngers$BruteAnger",
+    "AvoidEntityGoalAccessor",
+    "MixinAvoidEntityGoal",
+    "MixinCatAvoidEntityGoal"
+  ],
+  "client": [
+    "MixinMinecraft",
+    "MixinMinecraftUseItem",
+    "MixinHud",
+    "MixinGuiGraphics",
+    "MixinClientLevelParticles",
+    "MixinClientPacketListenerParticles"
+  ],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}
