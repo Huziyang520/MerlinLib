@@ -151,7 +151,7 @@ dependencies {
 // 1.20.1 mod that ships one without the other.
 def srgToMcpFile = file("${project.buildDir}/createSrgToMcp/output.srg")
 def refmapTsrgFile = file("${project.buildDir}/tmp/mojmap-to-srg.tsrg")
-def refmapFile = file("${project.buildDir}/resources/main/${mod_id}.refmap.json")
+def refmapFile = file("${project.buildDir}/mixin-refmap/${mod_id}.refmap.json")
 
 tasks.register('convertSrgToTsrg') {
     dependsOn 'createSrgToMcp'
@@ -264,6 +264,9 @@ tasks.named('compileJava', JavaCompile).configure {
 // The processor writes into build/resources/main, which processResources then packages.
 tasks.named('processResources', ProcessResources).configure {
     dependsOn tasks.named('compileJava')
+    // The processor writes the refmap outside any task output directory, so it has to be
+    // declared as an input here or Gradle has no reason to copy it.
+    from("${project.buildDir}/mixin-refmap")
 }
 
 // The source files carry Chinese comments; javac would otherwise use the platform charset (GBK)

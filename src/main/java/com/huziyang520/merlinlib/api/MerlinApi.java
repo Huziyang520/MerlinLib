@@ -46,4 +46,8 @@ public final class MerlinApi {
     public static AiApi ai() {
         return AiApi.INSTANCE;
     }
+
+    public static CombatApi combat() {
+        return CombatApi.INSTANCE;
+    }
 }
