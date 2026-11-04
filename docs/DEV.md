@@ -221,6 +221,17 @@ int softer = MerlinColor.mix(MerlinColor.CYAN, MerlinColor.WHITE, 0.25F);
 the pattern behind "a temporary effect that ends when the enchantment is removed". `SmeltingLookup`
 answers what an item smelts into.
 
+### Knockback that works on every target line
+
+```java
+MerlinApi.combat().knockback(target, 0.4D, dx, dz);
+```
+
+`LivingEntity.knockback` lost its three-argument form in 26.3 and gained a five-argument one. This helper
+calls whichever form the running version has, so one call site works on 1.20.1, 1.21.1 and 26.x.
+`dx`/`dz` are a direction, not a distance — normalise them before calling. Knockback resistance is
+honoured, and the call does nothing on the client.
+
 ---
 
 ## 中文
@@ -352,3 +363,11 @@ ScreenIntro intro = UiAnimation.intro();          // 默认 SCALE_POP，需要�
 - `ScreenIntro` 是一个入场动画——`SCALE_POP`、`SLIDE_UP`、`SLIDE_SIDE` 或 `FADE`——给出某个时长下的进度、缩放与偏移；
 - `UiAnimation` 只负责取值，不读任何配置文件，所以模组用自己开关，不继承别人的。
 
+### 击退
+
+```java
+MerlinApi.combat().knockback(target, 0.4D, dx, dz);
+```
+
+26.3 删掉了三参 `LivingEntity.knockback`、只剩五参版本，1.21.1 与 1.20.1 仍是三参。这个入口按运行版本
+调用对应形态，一处调用三线通用。`dx` / `dz` 是方向不是距离，调用前自己归一化；会走击退抗性，客户端调用无效。

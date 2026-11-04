@@ -35,6 +35,7 @@ configurations {
 }
 
 def overlaidJava = [
+        'com/huziyang520/merlinlib/api/CombatApi.java',
         'com/huziyang520/merlinlib/loot/LootInjector.java',
         'com/huziyang520/merlinlib/datapack/GeneratedPackSource.java',
         'com/huziyang520/merlinlib/tools/TestWeapons.java',

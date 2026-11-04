@@ -20,6 +20,7 @@ public class MerlinMobEffect extends MobEffect {
     private final TickBehaviour behaviour;
     private volatile boolean disabled;
     private volatile boolean instant;
+    private int tickInterval = 1;
 
     public MerlinMobEffect(ResourceLocation id, MobEffectCategory category, int color, TickBehaviour behaviour) {
         super(category, color);
@@ -43,6 +44,15 @@ public class MerlinMobEffect extends MobEffect {
 
     public int getColor() {
         return EffectOverrides.colorOf(this.id, this.declaredColor);
+    }
+
+    @Override
+    public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
+        return this.tickInterval <= 1 || duration % this.tickInterval == 0;
+    }
+
+    public void setTickInterval(int tickInterval) {
+        this.tickInterval = Math.max(1, tickInterval);
     }
 
     @Override

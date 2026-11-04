@@ -34,4 +34,11 @@ public final class CombatApi {
     public void clear() {
         CombatTracker.INSTANCE.clear();
     }
+
+    public void knockback(LivingEntity target, double strength, double dx, double dz) {
+        if (target == null || target.level().isClientSide()) {
+            return;
+        }
+        target.knockback(strength, dx, dz, target.damageSources().generic(), 0.0F);
+    }
 }

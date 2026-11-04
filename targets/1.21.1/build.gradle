@@ -56,6 +56,7 @@ repositories {
 def overlaidJava = [
         'com/huziyang520/merlinlib/MerlinLib.java',
         'com/huziyang520/merlinlib/MerlinLibNeoForge.java',
+        'com/huziyang520/merlinlib/api/CombatApi.java',
         'com/huziyang520/merlinlib/api/EffectApi.java',
         'com/huziyang520/merlinlib/api/EffectBuilder.java',
         'com/huziyang520/merlinlib/api/EnchantmentApi.java',
@@ -209,6 +210,8 @@ tasks.register('sharedJava', Sync) {
 }
 
 tasks.register('sharedResources', Sync) {
+    // overlay 要覆盖 common 的同名资源（lang、enchantment json 等），后写入者胜
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
     from('../../common/src/main/resources') {
         // mixin 配置由 overlay 提供：1.21.1 的 compatibilityLevel 是 JAVA_21，且多一个 MixinGuiGraphics
         exclude 'merlinlib.mixins.json'
