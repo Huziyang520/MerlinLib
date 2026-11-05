@@ -183,5 +183,8 @@
   "merlinlib.notice.config_ui": "MerlinLib：配置项在模组列表的配置界面里，Fabric 上需要安装 Cloth Config API 或 Jupiter。该通知可以在配置中关闭。",
   "message.merlinlib.no_permission": "MerlinLib：服务端未授予你使用该工具的权限",
   "pack.merlinlib.generated": "MerlinLib 生成内容",
-  "pack.merlinlib.generated.description": "由 MerlinLib 根据配置文件生成的附魔与标签。"
+  "pack.merlinlib.generated.description": "由 MerlinLib 根据配置文件生成的附魔与标签。",
+  "command.merlinlib.layers.done": "已为 %1$s 叠加 %2$s 层，每层 %3$s 秒",
+  "command.merlinlib.layers.unknown": "没有名为 %s 的分层效果",
+  "command.merlinlib.layers.player_only": "只能由玩家执行"
 }

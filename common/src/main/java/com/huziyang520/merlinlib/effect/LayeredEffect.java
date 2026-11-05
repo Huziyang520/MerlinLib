@@ -18,6 +18,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class LayeredEffect {
+    /** 指令按 id 找到对应的分层实现。 */
+    private static final java.util.Map<String, LayeredEffect> REGISTRY = new java.util.concurrent.ConcurrentHashMap<>();
+    private Holder<MobEffect> display;
     private final Map<UUID, Deque<Integer>> layers = new ConcurrentHashMap<>();
     private final int layerTicks;
     private final int maxLayers;
@@ -25,6 +28,22 @@ public final class LayeredEffect {
     public LayeredEffect(int layerTicks, int maxLayers) {
         this.layerTicks = Math.max(1, layerTicks);
         this.maxLayers = Math.max(1, maxLayers);
+    }
+
+    public void bindDisplay(Holder<MobEffect> holder) {
+        this.display = holder;
+    }
+
+    public Holder<MobEffect> display() {
+        return this.display;
+    }
+
+    public static void register(String id, LayeredEffect effect) {
+        REGISTRY.put(id, effect);
+    }
+
+    public static LayeredEffect find(String id) {
+        return REGISTRY.get(id);
     }
 
     public int layerTicks() {

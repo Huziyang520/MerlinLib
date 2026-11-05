@@ -59,6 +59,14 @@ public final class MerlinCommand {
                                 .executes(context -> giveBook(context, 1))
                                 .then(Commands.argument("level", IntegerArgumentType.integer(1, 255))
                                         .executes(context -> giveBook(context, IntegerArgumentType.getInteger(context, "level"))))))
+                .then(Commands.literal("layers")
+                        .then(Commands.argument("effect", StringArgumentType.string())
+                                .then(Commands.argument("layers", IntegerArgumentType.integer(1, 255))
+                                        .then(Commands.argument("seconds", IntegerArgumentType.integer(1, 3600))
+                                                .executes(context -> LayerCommand.apply(context.getSource(),
+                                                        StringArgumentType.getString(context, "effect"),
+                                                        IntegerArgumentType.getInteger(context, "layers"),
+                                                        IntegerArgumentType.getInteger(context, "seconds")))))))
                 .then(Commands.literal("editorhotkey")
                         .requires(MerlinCommand::mayManage)
                         .then(Commands.literal("on")

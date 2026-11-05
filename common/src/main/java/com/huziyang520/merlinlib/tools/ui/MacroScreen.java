@@ -475,7 +475,7 @@ public class MacroScreen extends VanillaScreen {
                     conflict ? VanillaUi.TEXT_ERROR : VanillaUi.TEXT, nameWidth);
         }
 
-        this.list.render(graphics);
+        this.list.render(graphics, mouseX, mouseY);
         int hintLine = 0;
         for (String line : VanillaUi.wrap(this.font, bottomLine().getString(), layout.contentWidth())) {
             VanillaUi.text(graphics, this.font, Component.literal(line), left, this.hintY + hintLine * 10,

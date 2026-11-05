@@ -278,7 +278,7 @@ public class EnchantSelectionScreen extends VanillaScreen {
                     this.list.y() + slot * ROW_HEIGHT + 6, VanillaUi.TEXT, nameWidth);
         }
 
-        this.list.render(graphics);
+        this.list.render(graphics, mouseX, mouseY);
         VanillaUi.text(graphics, this.font, Component.translatable("gui.merlinlib.select.hint"),
                 left, this.hintY, VanillaUi.TEXT_HINT, content);
     }

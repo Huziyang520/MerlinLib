@@ -83,6 +83,10 @@ public final class ScrollArea {
     }
 
     public void render(GuiGraphicsExtractor graphics) {
+        render(graphics, -1, -1);
+    }
+
+    public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         if (!scrollable()) {
             return;
         }
@@ -94,8 +98,8 @@ public final class ScrollArea {
         if (!scrollable() || event.button() != 0) {
             return false;
         }
-        int barX = this.x + this.width - VanillaUi.SCROLLBAR_WIDTH;
-        if (event.x() < barX || event.x() >= this.x + this.width
+        int barX = this.x + this.width - VanillaUi.SCROLLBAR_WIDTH - 2;
+        if (event.x() < barX || event.x() >= this.x + this.width + 2
                 || event.y() < this.y || event.y() >= this.y + this.height) {
             return false;
         }
@@ -131,10 +135,6 @@ public final class ScrollArea {
      */
     public boolean mouseMoved(double mouseX, double mouseY) {
         if (this.dragGrab == Integer.MIN_VALUE) {
-            return false;
-        }
-        if (!net.minecraft.client.Minecraft.getInstance().mouseHandler.isLeftPressed()) {
-            this.dragGrab = Integer.MIN_VALUE;
             return false;
         }
         scrollTo((int) mouseY - this.dragGrab);

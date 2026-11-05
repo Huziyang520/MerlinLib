@@ -517,6 +517,6 @@ public class ItemEditorScreen extends VanillaScreen {
                     VanillaUi.TEXT, nameWidth);
         }
 
-        this.list.render(graphics);
+        this.list.render(graphics, mouseX, mouseY);
     }
 }
