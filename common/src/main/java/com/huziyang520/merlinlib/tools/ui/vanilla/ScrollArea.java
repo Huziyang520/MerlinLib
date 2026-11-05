@@ -86,21 +86,34 @@ public final class ScrollArea {
         render(graphics, -1, -1);
     }
 
-    public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
-        if (!scrollable()) {
-            return;
+    /**
+     * 26.x 按住左键期间不派发 mouseMoved，mouseDragged 也常收不到，
+     * 所以拖动直接按每帧指针位置算：按下置位、松开清除，中间不依赖任何事件。
+     *
+     * @return 本帧滚动位置是否变化，变了要让调用方重排行控件
+     */
+    public boolean render(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+        boolean moved = false;
+        if (this.dragGrab != Integer.MIN_VALUE && mouseY >= 0) {
+            int before = this.scroll;
+            scrollTo(mouseY - this.dragGrab);
+            moved = this.scroll != before;
         }
-        VanillaUi.scroller(graphics, this.x + this.width - VanillaUi.SCROLLBAR_WIDTH, this.y,
-                this.height, handleTop(), handleHeight());
+        if (scrollable()) {
+            VanillaUi.scroller(graphics, this.x + this.width - VanillaUi.SCROLLBAR_WIDTH, this.y,
+                    this.height, handleTop(), handleHeight());
+        }
+        return moved;
+    }
+
+    private boolean inBar(double mouseX, double mouseY) {
+        int barX = this.x + this.width - VanillaUi.SCROLLBAR_WIDTH - 2;
+        return mouseX >= barX && mouseX < this.x + this.width + 2
+                && mouseY >= this.y && mouseY < this.y + this.height;
     }
 
     public boolean mouseClicked(MouseButtonEvent event) {
-        if (!scrollable() || event.button() != 0) {
-            return false;
-        }
-        int barX = this.x + this.width - VanillaUi.SCROLLBAR_WIDTH - 2;
-        if (event.x() < barX || event.x() >= this.x + this.width + 2
-                || event.y() < this.y || event.y() >= this.y + this.height) {
+        if (!scrollable() || event.button() != 0 || !inBar(event.x(), event.y())) {
             return false;
         }
         int top = handleTop();
@@ -116,7 +129,11 @@ public final class ScrollArea {
 
     public boolean mouseDragged(MouseButtonEvent event) {
         if (this.dragGrab == Integer.MIN_VALUE) {
-            return false;
+            // 按下事件没收到也不要紧：拖动落点在滚条上就从指针处接管
+            if (!scrollable() || !inBar(event.x(), event.y())) {
+                return false;
+            }
+            this.dragGrab = handleHeight() / 2;
         }
         scrollTo((int) event.y() - this.dragGrab);
         return true;
@@ -128,18 +145,6 @@ public final class ScrollArea {
         return dragging;
     }
 
-
-    /**
-     * 26.x 的 mouseDragged 只在特定状态下派发，滚条经常收不到；
-     * mouseMoved 每次移动都会来，这里按住左键时自己跟手。
-     */
-    public boolean mouseMoved(double mouseX, double mouseY) {
-        if (this.dragGrab == Integer.MIN_VALUE) {
-            return false;
-        }
-        scrollTo((int) mouseY - this.dragGrab);
-        return true;
-    }
 
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
         if (!scrollable() || amount == 0.0D || !contains(mouseX, mouseY)) {

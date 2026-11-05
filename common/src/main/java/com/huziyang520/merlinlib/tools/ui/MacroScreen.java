@@ -418,9 +418,6 @@ public class MacroScreen extends VanillaScreen {
     @Override
     public void mouseMoved(double mouseX, double mouseY) {
         this.hovered = rowAt(mouseX, mouseY);
-        if (this.list != null) {
-            this.list.mouseMoved(mouseX, mouseY);
-        }
         super.mouseMoved(mouseX, mouseY);
     }
 
@@ -475,7 +472,9 @@ public class MacroScreen extends VanillaScreen {
                     conflict ? VanillaUi.TEXT_ERROR : VanillaUi.TEXT, nameWidth);
         }
 
-        this.list.render(graphics, mouseX, mouseY);
+        if (this.list.render(graphics, mouseX, mouseY)) {
+            layoutRows();
+        }
         int hintLine = 0;
         for (String line : VanillaUi.wrap(this.font, bottomLine().getString(), layout.contentWidth())) {
             VanillaUi.text(graphics, this.font, Component.literal(line), left, this.hintY + hintLine * 10,

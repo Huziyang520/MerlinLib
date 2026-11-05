@@ -207,14 +207,6 @@ public class EnchantSelectionScreen extends VanillaScreen {
     }
 
     @Override
-    public void mouseMoved(double mouseX, double mouseY) {
-        if (this.list != null && this.list.mouseMoved(mouseX, mouseY)) {
-            layoutRows();
-        }
-        super.mouseMoved(mouseX, mouseY);
-    }
-
-    @Override
     public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
         if (this.list != null && this.list.mouseDragged(event)) {
             layoutRows();
@@ -278,7 +270,9 @@ public class EnchantSelectionScreen extends VanillaScreen {
                     this.list.y() + slot * ROW_HEIGHT + 6, VanillaUi.TEXT, nameWidth);
         }
 
-        this.list.render(graphics, mouseX, mouseY);
+        if (this.list.render(graphics, mouseX, mouseY)) {
+            layoutRows();
+        }
         VanillaUi.text(graphics, this.font, Component.translatable("gui.merlinlib.select.hint"),
                 left, this.hintY, VanillaUi.TEXT_HINT, content);
     }
