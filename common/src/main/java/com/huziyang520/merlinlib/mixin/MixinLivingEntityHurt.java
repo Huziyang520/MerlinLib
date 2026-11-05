@@ -17,10 +17,20 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArgs;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
 @Mixin(LivingEntity.class)
 public class MixinLivingEntityHurt {
+    // 已经死掉的实体再吃伤害会让 NeoForge 在 LivingDamageEvent.Pre 后断言失败，直接挡掉。
+    @Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
+    private void merlinlib$skipDying(ServerLevel level, DamageSource source, float amount,
+                                     CallbackInfoReturnable<Boolean> cir) {
+        if (((LivingEntity) (Object) this).isDeadOrDying()) {
+            cir.setReturnValue(false);
+        }
+    }
+
     @ModifyArgs(method = "hurtServer", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/world/entity/LivingEntity;actuallyHurt(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)V"))
     private void merlinlib$modifyDamage(Args args) {
