@@ -404,6 +404,8 @@ public class ItemEditorScreen extends VanillaScreen {
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         if (this.list != null && this.list.mouseClicked(event)) {
             layoutRows();
+            // 26.x 只有在拖动状态下才会派发 mouseDragged，按住滚动条才滑得动
+            setDragging(true);
             return true;
         }
         return super.mouseClicked(event, doubleClick);
@@ -421,6 +423,7 @@ public class ItemEditorScreen extends VanillaScreen {
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
         if (this.list != null && this.list.mouseReleased(event)) {
+            setDragging(false);
             return true;
         }
         return super.mouseReleased(event);

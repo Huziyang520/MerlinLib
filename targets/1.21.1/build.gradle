@@ -108,6 +108,9 @@ def overlaidJava = [
         'com/huziyang520/merlinlib/impl/PermissionGate.java',
         'com/huziyang520/merlinlib/impl/PotionRegistry.java',
         'com/huziyang520/merlinlib/loot/LootInjector.java',
+        'com/huziyang520/merlinlib/particle/MerlinParticles.java',
+        'com/huziyang520/merlinlib/particle/ParticleApi.java',
+        'com/huziyang520/merlinlib/particle/ParticleProfile.java',
         'com/huziyang520/merlinlib/mixin/MixinAngers.java',
         'com/huziyang520/merlinlib/mixin/MixinBlockDrops.java',
         'com/huziyang520/merlinlib/mixin/MixinCatAvoidEntityGoal.java',
@@ -212,7 +215,6 @@ tasks.register('sharedJava', Sync) {
 tasks.register('sharedResources', Sync) {
     // overlay 先写入，同名资源由它决定（EXCLUDE 会跳过后续重复）
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    from('overlay/resources')
     from('overlay/resources')
     from('../../common/src/main/resources') {
         // mixin 配置由 overlay 提供：1.21.1 的 compatibilityLevel 是 JAVA_21，且多一个 MixinGuiGraphics

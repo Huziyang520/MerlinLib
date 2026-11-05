@@ -375,6 +375,7 @@ public class MacroScreen extends VanillaScreen {
         }
         if (this.list != null && this.list.mouseClicked(event)) {
             this.hovered = -1;
+            setDragging(true);
             return true;
         }
         return super.mouseClicked(event, doubleClick);
@@ -400,6 +401,7 @@ public class MacroScreen extends VanillaScreen {
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
         if (this.list != null && this.list.mouseReleased(event)) {
+            setDragging(false);
             return true;
         }
         return super.mouseReleased(event);

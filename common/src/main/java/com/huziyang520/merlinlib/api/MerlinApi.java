@@ -59,6 +59,10 @@ public final class MerlinApi {
         return LootApi.INSTANCE;
     }
 
+    public static com.huziyang520.merlinlib.particle.ParticleApi particles() {
+        return com.huziyang520.merlinlib.particle.ParticleApi.INSTANCE;
+    }
+
     public static NoticeApi notices() {
         return NoticeApi.INSTANCE;
     }
