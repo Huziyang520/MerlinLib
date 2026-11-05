@@ -48,6 +48,9 @@ public class MerlinMobEffect extends MobEffect {
 
     @Override
     public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
+        if (this.behaviour == null) {
+            return false;
+        }
         return this.tickInterval <= 1 || duration % this.tickInterval == 0;
     }
 

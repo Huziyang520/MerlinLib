@@ -418,6 +418,9 @@ public class MacroScreen extends VanillaScreen {
     @Override
     public void mouseMoved(double mouseX, double mouseY) {
         this.hovered = rowAt(mouseX, mouseY);
+        if (this.list != null) {
+            this.list.mouseMoved(mouseX, mouseY);
+        }
         super.mouseMoved(mouseX, mouseY);
     }
 

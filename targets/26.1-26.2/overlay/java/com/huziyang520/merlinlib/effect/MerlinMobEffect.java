@@ -48,6 +48,9 @@ public class MerlinMobEffect extends MobEffect {
 
     @Override
     public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
+        if (this.behaviour == null) {
+            return false;
+        }
         return this.tickInterval <= 1 || duration % this.tickInterval == 0;
     }
 
@@ -57,7 +60,8 @@ public class MerlinMobEffect extends MobEffect {
 
     public boolean applyEffectTick(ServerLevel level, LivingEntity entity, int amplifier) {
         if (this.disabled || this.behaviour == null) {
-            return false;
+            // 返回 false 等于让原版移除效果，没有行为的药水（如嗔怒）会被立刻清掉
+            return true;
         }
         return this.behaviour.tick(level, entity, amplifier);
     }

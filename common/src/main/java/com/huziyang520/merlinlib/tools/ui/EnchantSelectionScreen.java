@@ -207,6 +207,14 @@ public class EnchantSelectionScreen extends VanillaScreen {
     }
 
     @Override
+    public void mouseMoved(double mouseX, double mouseY) {
+        if (this.list != null && this.list.mouseMoved(mouseX, mouseY)) {
+            layoutRows();
+        }
+        super.mouseMoved(mouseX, mouseY);
+    }
+
+    @Override
     public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
         if (this.list != null && this.list.mouseDragged(event)) {
             layoutRows();

@@ -124,6 +124,23 @@ public final class ScrollArea {
         return dragging;
     }
 
+
+    /**
+     * 26.x 的 mouseDragged 只在特定状态下派发，滚条经常收不到；
+     * mouseMoved 每次移动都会来，这里按住左键时自己跟手。
+     */
+    public boolean mouseMoved(double mouseX, double mouseY) {
+        if (this.dragGrab == Integer.MIN_VALUE) {
+            return false;
+        }
+        if (!net.minecraft.client.Minecraft.getInstance().mouseHandler.isLeftPressed()) {
+            this.dragGrab = Integer.MIN_VALUE;
+            return false;
+        }
+        scrollTo((int) mouseY - this.dragGrab);
+        return true;
+    }
+
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
         if (!scrollable() || amount == 0.0D || !contains(mouseX, mouseY)) {
             return false;
