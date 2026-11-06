@@ -15,6 +15,9 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.core.Holder;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -159,11 +162,17 @@ public class EnchantSelectionScreen extends VanillaScreen {
             return;
         }
         boolean onlyApplicable = !ConfigManager.server().allowMismatchedEnchantments() && this.target != null;
+        // 互斥附魔不再列出：冲突不只看效果本身，也看叠在一起是否过强
+        List<Holder<Enchantment>> existing = this.target == null ? List.of()
+                : List.copyOf(EnchantmentHelper.getEnchantmentsForCrafting(this.target).keySet());
         Set<String> seen = new HashSet<>();
         lookup.get().listElements()
                 .sorted(Comparator.comparing(holder -> holder.value().description().getString()))
                 .forEach(holder -> {
                     if (onlyApplicable && !holder.value().canEnchant(this.target)) {
+                        return;
+                    }
+                    if (!existing.isEmpty() && !EnchantmentHelper.isEnchantmentCompatible(existing, holder)) {
                         return;
                     }
                     String enchantmentId = holder.unwrapKey()

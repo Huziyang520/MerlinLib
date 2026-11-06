@@ -160,10 +160,19 @@ public class EnchantSelectionScreen extends VanillaScreen {
         this.all.clear();
         Set<String> seen = new HashSet<>();
         boolean onlyApplicable = !ConfigManager.server().allowMismatchedEnchantments() && this.target != null;
+        // 互斥附魔不再列出：冲突不只看效果本身，也看叠在一起是否过强
+        java.util.List<net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment>> existing =
+                this.target == null ? java.util.List.of()
+                        : java.util.List.copyOf(net.minecraft.world.item.enchantment.EnchantmentHelper
+                                .getEnchantmentsForCrafting(this.target).keySet());
         lookup.get().listElements()
                 .sorted(Comparator.comparing(holder -> holder.value().description().getString()))
                 .forEach(holder -> {
                     if (onlyApplicable && !holder.value().canEnchant(this.target)) {
+                        return;
+                    }
+                    if (!existing.isEmpty() && !net.minecraft.world.item.enchantment.EnchantmentHelper
+                            .isEnchantmentCompatible(existing, holder)) {
                         return;
                     }
                     int max = Math.max(1, holder.value().getMaxLevel());
